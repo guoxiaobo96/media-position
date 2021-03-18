@@ -3,3 +3,4 @@ shell/train_0.sh
 runs/*
 .vscode/*
 shell/*
+temp.py
