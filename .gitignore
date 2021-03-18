@@ -1,0 +1,5 @@
+program/__pycache__/*
+shell/train_0.sh
+runs/*
+.vscode/*
+shell/*
