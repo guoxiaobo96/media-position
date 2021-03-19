@@ -1,0 +1,2 @@
+{"encode": "term", "method": "AgglomerativeClustering", "result": {"0": ["BreitbartNews", "FoxNews", "republican", "seanhannity"], "1": ["CNN", "democrat", "MSNBC", "NBCNews", "NPR", "nytimes", "washingtonpost"]}}
+{"encode": "word2vec", "method": "AgglomerativeClustering", "result": {"0": ["BreitbartNews", "CNN", "democrat", "FoxNews", "MSNBC", "NBCNews", "NPR", "nytimes", "republican", "washingtonpost"], "1": ["seanhannity"]}}

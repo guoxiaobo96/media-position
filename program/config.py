@@ -28,9 +28,9 @@ class MiscArgument:
     task: str = field(
         metadata={"help": "The task of running"}
     )
-    target: str = field(
-        metadata={"help": "The task of running"}
-    )
+    # target: str = field(
+    #     metadata={"help": "The task of running"}
+    # )
     root_dir: str = field(
         default='/home/xiaobo/media-position', metadata={"help": "The relative path to the root dir"}
     )
@@ -214,10 +214,10 @@ class TrustMap:
     republican_datasets_list: List[str] = field(
         default_factory=lambda: ['Fox News', 'Sean Hannity Show (radio)', 'Breitbart'])
     democrat_datasets_list: List[str] = field(
-        default_factory=lambda: ['CNN', 'New York Times', 'Washington Post'])
+        default_factory=lambda: ['CNN', 'New York Times', 'Washington Post', 'MSNBC', 'NBC NEWS', 'NPR'])
 
     dataset_to_name: Dict = field(default_factory=lambda: {
-                                  'FoxNews': 'Fox News', 'seanhannity': 'Sean Hannity Show (radio)', 'BreitbartNews': 'Breitbart', 'CNN': 'CNN', 'nytimes': 'New York Times', 'washingtonpost': 'Washington Post'})
+                                  'FoxNews': 'Fox News', 'seanhannity': 'Sean Hannity Show (radio)', 'BreitbartNews': 'Breitbart', 'CNN': 'CNN', 'nytimes': 'New York Times', 'washingtonpost': 'Washington Post','MSNBC':'MSNBC','NBCNews':'NBC NEWS','NPR':'NPR'})
 
     name_to_dataset: Dict = field(init=False)
     position_to_name: Dict = field(init=False)
@@ -253,15 +253,6 @@ def get_config() -> Tuple:
         adapter_args: AdapterArguments,
         analysis_args: AnalysisArguments
     ) -> None:
-        data_args.data_dir = os.path.join(
-            data_args.data_dir, misc_args.target)
-        training_args.output_dir = os.path.join(
-            training_args.output_dir, misc_args.target)
-        misc_args.log_dir = os.path.join(misc_args.log_dir, misc_args.target)
-        analysis_args.analysis_data_dir = os.path.join(
-            analysis_args.analysis_data_dir, misc_args.target)
-        analysis_args.analysis_result_dir = os.path.join(
-            analysis_args.analysis_result_dir, misc_args.target)
 
         data_args.data_path = os.path.join(
             data_args.data_dir, os.path.join(data_args.dataset, data_args.data_type))

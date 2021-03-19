@@ -133,6 +133,7 @@ class ClusterAnalysis(BaseAnalysis):
         analysis_args: AnalysisArguments
     ) -> Dict[int, Set[str]]:
         cluster_result = dict()
+        data.pop('vanilla')
         dataset_list, encoded_list = self._encode_data(data)
         clusters = self._analyser.fit(encoded_list)
         labels = clusters.labels_

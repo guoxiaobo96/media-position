@@ -1,11 +1,11 @@
 import os
 import random
-republican_media_list= ['FoxNews', 'BreitbartNews']
-democrat_media_list= ['CNN', 'nytimes', 'NPR']
+republican_media_list= ['FoxNews', 'BreitbartNews','seanhannity']
+democrat_media_list= ['CNN', 'nytimes', 'washingtonpost', 'NBCNews','MSNBC','NPR']
 
 
 media_dict = {"republican":republican_media_list, "democrat":democrat_media_list}
-data_dir = '/data/xiaobo/media-position/data/source'
+data_dir = '/data/xiaobo/media-position/data'
 
 for name, media_list in media_dict.items():
   train_data = list()

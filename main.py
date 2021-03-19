@@ -2,7 +2,7 @@ from program.config import AnalysisArguments, get_config, DataArguments, MiscArg
 from program.data import extract_data
 from program.util import prepare_dirs_and_logger, save_config
 from program.run_function import train_adapter, predict_adapter,analysis
-from program.data_collect import twitter_collect
+from program.data_collect import twitter_collect, article_collect
 
 
 def main(
@@ -21,14 +21,17 @@ def main(
         predict_adapter(misc_args, model_args, data_args, training_args, adapter_args)
     elif misc_args.task == 'analysis':
         analysis(misc_args, model_args, data_args, training_args, analysis_args)
-    elif misc_args.task == "twitter_collect":
-        twitter_collect(misc_args, data_args)
+    elif misc_args.task == "data_collect":
+        if data_args.data_type=='tweet':
+            twitter_collect(misc_args, data_args)
+        elif data_args.data_type=='article':
+            article_collect(misc_args, data_args)
 
 
 
 if __name__ == '__main__':
     misc_args, model_args, data_args, training_args, adapter_args, analysis_args = get_config()
-    misc_args.global_debug = False
+    # misc_args.global_debug = False
     prepare_dirs_and_logger(misc_args, model_args,
                             data_args, training_args, adapter_args, analysis_args)
     main(misc_args, model_args, data_args, training_args, adapter_args, analysis_args)
