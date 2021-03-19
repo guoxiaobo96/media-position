@@ -25,29 +25,28 @@ def plot_dendrogram(model, **kwargs):
     # Plot the corresponding dendrogram
     dendrogram(linkage_matrix, **kwargs)
 
-
-for data_type in ['source','trust']:
-    label_list = []
-    data = []
-    with open('./analysis/'+data_type+'/baseline/baseline_'+data_type+'.csv', mode='r', encoding='utf8') as fp:
-        reader = csv.reader(fp)
-        header = next(reader)
-        for row in reader:
-            label_list.append(row[0])
-            data.append([float(x.strip()) for x in row[1:]])
-    analyzer = AgglomerativeClustering(n_clusters=2, compute_distances=True)
-    cluster_result = dict()
-    clusters = analyzer.fit(data)
-    labels = clusters.labels_
-    for i, label in enumerate(labels.tolist()):
-        if label not in cluster_result:
-            cluster_result[label] = list()
-        cluster_result[label].append(label_list[i])
-    plt.title('Baseline')
-    plot_dendrogram(analyzer, orientation='right',
-                    labels=label_list)
-    plt_file = './analysis/'+data_type+'/baseline/baseline_'+data_type+'.png'
-    plt.savefig(plt_file, bbox_inches='tight')
-    plt.close()
+data_type  = 'source'
+label_list = []
+data = []
+with open('./analysis/baseline/baseline_'+data_type+'.csv', mode='r', encoding='utf8') as fp:
+    reader = csv.reader(fp)
+    header = next(reader)
+    for row in reader:
+        label_list.append(row[0])
+        data.append([float(x.strip()) for x in row[1:]])
+analyzer = AgglomerativeClustering(n_clusters=2, compute_distances=True)
+cluster_result = dict()
+clusters = analyzer.fit(data)
+labels = clusters.labels_
+for i, label in enumerate(labels.tolist()):
+    if label not in cluster_result:
+        cluster_result[label] = list()
+    cluster_result[label].append(label_list[i])
+plt.title('Baseline')
+plot_dendrogram(analyzer, orientation='right',
+                labels=label_list)
+plt_file = './analysis/baseline/baseline_'+data_type+'.png'
+plt.savefig(plt_file, bbox_inches='tight')
+plt.close()
 
 
