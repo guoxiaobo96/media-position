@@ -1,3 +1,0 @@
-{"encode": "binary", "method": "Cosine", "result": {"BreitbartNews": 0.8, "CNN": 0.9, "FoxNews": 0.9, "nytimes": 0.9, "seanhannity": 0.9, "washingtonpost": 0.9}}
-{"encode": "term", "method": "Cosine", "result": {"BreitbartNews": 0.6814075379936941, "CNN": 0.7607846557626133, "FoxNews": 0.8352556230092133, "nytimes": 0.9515703189721829, "seanhannity": 0.9411561291627654, "washingtonpost": 0.8208521271807571}}
-{"encode": "word2vec", "method": "Cosine", "result": {"BreitbartNews": 0.527477494188528, "CNN": 0.4303125340636824, "FoxNews": 0.5116254889103873, "nytimes": 0.5658131404329162, "seanhannity": 0.6531745244338488, "washingtonpost": 0.4368313758066642}}

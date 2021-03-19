@@ -1,3 +1,2 @@
-{"encode": "binary", "method": "Cosine", "result": {"BreitbartNews": 0.6, "CNN": 0.7, "FoxNews": 0.7, "nytimes": 0.5, "seanhannity": 0.7, "washingtonpost": 0.7}}
-{"encode": "term", "method": "Cosine", "result": {"BreitbartNews": 0.5328427608592838, "CNN": 0.6631374991638145, "FoxNews": 0.8872108268705188, "nytimes": 0.678471304633671, "seanhannity": 0.43261955293997545, "washingtonpost": 0.6773376971989834}}
-{"encode": "word2vec", "method": "Cosine", "result": {"BreitbartNews": 0.2924962107809437, "CNN": 0.4074041624751946, "FoxNews": 0.652561683184598, "nytimes": 0.41625106371204534, "seanhannity": 0.19999763300855267, "washingtonpost": 0.43104521644873706}}
+{"encode": "term", "method": "Cosine", "result": {"BreitbartNews": 0.9133831049900278, "CNN": 0.9578204662712353, "FoxNews": 0.8455281793274728, "nytimes": 0.9751200236257092, "seanhannity": 0.9247146964792053, "washingtonpost": 0.9564065266180116}}
+{"encode": "word2vec", "method": "Cosine", "result": {"BreitbartNews": 0.487615200978724, "CNN": 0.5153158317131147, "FoxNews": 0.44503034460655333, "nytimes": 0.5427144675416775, "seanhannity": 0.5588343327524059, "washingtonpost": 0.5632715304650968}}

@@ -36,10 +36,11 @@ def predict_adapter(
     training_args: TrainingArguments,
     adapter_args: AdapterArguments,
 ) -> Dict:
-    dataset_map = (
-        SourceMap() if misc_args.target=='source' else TrustMap()
-    )
-
+    # dataset_map = (
+    #     SourceMap() if misc_args.target=='source' else TrustMap()
+    # )
+    dataset_map = TrustMap()
+    
     data_type = list()
     dataset = data_args.dataset
     if dataset in dataset_map.dataset_to_name:
