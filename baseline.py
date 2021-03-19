@@ -2,7 +2,11 @@ from sklearn.cluster import AgglomerativeClustering
 from matplotlib import pyplot as plt
 import csv
 import numpy as np
-from scipy.cluster.hierarchy import dendrogram
+from scipy.cluster.hierarchy import dendrogram, linkage
+from sklearn.metrics.pairwise import cosine_similarity
+import seaborn as sns
+import pandas as pd
+
 
 def plot_dendrogram(model, **kwargs):
     # Create linkage matrix and then plot the dendrogram
@@ -25,7 +29,8 @@ def plot_dendrogram(model, **kwargs):
     # Plot the corresponding dendrogram
     dendrogram(linkage_matrix, **kwargs)
 
-data_type  = 'source'
+
+data_type = 'trust'
 label_list = []
 data = []
 with open('./analysis/baseline/baseline_'+data_type+'.csv', mode='r', encoding='utf8') as fp:
@@ -34,7 +39,8 @@ with open('./analysis/baseline/baseline_'+data_type+'.csv', mode='r', encoding='
     for row in reader:
         label_list.append(row[0])
         data.append([float(x.strip()) for x in row[1:]])
-analyzer = AgglomerativeClustering(n_clusters=2, compute_distances=True)
+analyzer = AgglomerativeClustering(
+    n_clusters=2, compute_distances=True, affinity='cosine', linkage='average')
 cluster_result = dict()
 clusters = analyzer.fit(data)
 labels = clusters.labels_
@@ -49,4 +55,9 @@ plt_file = './analysis/baseline/baseline_'+data_type+'.png'
 plt.savefig(plt_file, bbox_inches='tight')
 plt.close()
 
-
+data = cosine_similarity(data)
+data = pd.DataFrame(data,columns=label_list,index=label_list)
+sns.heatmap(data)
+plt_file = './analysis/baseline/baseline_'+data_type+'_heat.png'
+plt.savefig(plt_file, bbox_inches='tight')
+plt.close()
