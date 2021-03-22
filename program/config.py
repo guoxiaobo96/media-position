@@ -280,8 +280,12 @@ def get_config() -> Tuple:
 
     parser = HfArgumentParser((MiscArgument, DataArguments,
                                ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments))
+
     misc_args, data_args, model_args, training_args, adapter_args, analysis_args = parser.parse_args_into_dataclasses()
     _get_config(misc_args, data_args, model_args,
                 training_args, adapter_args, analysis_args)
     set_seed(training_args.seed)
     return misc_args, model_args, data_args, training_args, adapter_args, analysis_args
+
+if __name__=='__main__':
+    get_config()

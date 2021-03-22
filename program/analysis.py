@@ -118,7 +118,8 @@ class ClusterAnalysis(BaseAnalysis):
         elif cluster_method == SpectralClustering():
             self._analyser = SpectralClustering()
         elif cluster_method == "AgglomerativeClustering":
-            self._analyser = AgglomerativeClustering(n_clusters=2, compute_distances=True)
+            # self._analyser =  AgglomerativeClustering(n_clusters=2, compute_distances=True)
+            self._analyser =  AgglomerativeClustering(n_clusters=2, compute_distances=True, affinity='cosine',linkage='complete')
         elif cluster_method == "DBSCAN":
             self._analyser = DBSCAN(eps=0.5, min_samples=2)
         elif cluster_method == "OPTICS":
@@ -188,7 +189,7 @@ class DistanceAnalysis(BaseAnalysis):
         data,
         sentence_number : str,
         analysis_args: AnalysisArguments
-    ) -> Dict[int, Set[str]]:
+    ) -> None:
         distance_result = dict()
         dataset_list, encoded_list = self._encode_data(data)
 
@@ -199,13 +200,14 @@ class DistanceAnalysis(BaseAnalysis):
             if dataset_list[i] != 'vanilla':
                 exclusive_vector_list.append(vector)
                 exclusive_dataset_list.append(dataset_list[i])
-        distance_list = np.squeeze(self._analyser(
-            [base_vector], exclusive_vector_list))
+        distance_list = np.squeeze(self._analyser(exclusive_vector_list))
+        # distance_list = np.squeeze(self._analyser(
+        #     [base_vector], exclusive_vector_list))
 
-        for i, distance in enumerate(distance_list.tolist()):
-            distance_result[exclusive_dataset_list[i]] = distance
+        # for i, distance in enumerate(distance_list.tolist()):
+        #     distance_result[exclusive_dataset_list[i]] = distance
 
-        return distance_result
+        return exclusive_dataset_list, distance_list
 
 
 class TermEncoder(object):
