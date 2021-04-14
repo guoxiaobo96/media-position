@@ -1,3 +1,4 @@
+from torch import mode
 from .util import prepare_dirs_and_logger
 from .config import AnalysisArguments, DataArguments, MiscArgument, TweetAccount, get_config, SourceMap, TrustMap
 import tweepy
@@ -11,6 +12,8 @@ import twint
 from bs4 import BeautifulSoup
 import requests
 from tqdm import tqdm
+import json
+from multiprocessing import Pool
 
 warnings.filterwarnings('ignore')
 
@@ -86,196 +89,90 @@ def _clean_text(original_tweet: str) -> str:
 def article_collect(
     misc_args: MiscArgument,
     data_args: DataArguments
-) -> None:
-    cleaned_tweet_list = []
+) -> None:  
 
-    train_url_list = []
-    valid_url_list = []
-    train_tweet_list = []
-    valid_tweet_list = []
-    train_article_list = []
-    valid_article_list = []
+    article_dict = dict()
+    data_path_dir_list_temp = []
+    data_path_dir_list = []
+    file_path_list = []
 
+    year_list = os.listdir(data_args.original_data_dir)
+    for year in year_list:
+        data_path_dir = os.path.join(data_args.original_data_dir, year)
+        data_path_dir_list_temp.append(data_path_dir)
 
-    tweet_file_path = os.path.join(data_args.data_dir, os.path.join(data_args.dataset, 'twitter'))
-    if not os.path.exists(tweet_file_path):
-        os.makedirs(tweet_file_path)
-    if not os.path.exists(data_args.data_path):
-        os.makedirs(data_args.data_path)
-
-    c = twint.Config()
-    c.Username = data_args.dataset
+    for data_path_year in data_path_dir_list_temp:
+        topic_list = os.listdir(data_path_year)
+        for topic in topic_list:
+            data_path_dir = os.path.join(data_path_year, topic)
+            data_path_dir_list.append(data_path_dir)
+    
+    result_list = []
     if misc_args.global_debug:
-        c.Limit = 100
-    c.Store_object = True
-    c.Hide_output = True
-    twint.run.Search(c)
-    tweet_list = twint.output.tweets_list
-
-
-    for tweet in tweet_list:
-        if tweet.lang != 'en':
-            continue
-        cleaned_tweet_list.append(tweet)
-    
-    random.seed(123)
-    random.shuffle(cleaned_tweet_list)
-    train_number = int(len(cleaned_tweet_list)*0.7)
-
-
-    train_file = os.path.join(tweet_file_path, 'en.train')
-    with open(train_file, mode='w', encoding='utf8') as fp:
-        for tweet in cleaned_tweet_list[:train_number]:
-            text = _clean_text(tweet.tweet)
-            fp.write(text+'\n')
-            train_url_list.extend(tweet.urls)
-    eval_file = os.path.join(tweet_file_path, 'en.valid')
-    with open(eval_file, mode='w', encoding='utf8') as fp:
-        for tweet in cleaned_tweet_list[train_number:]:
-            text = _clean_text(tweet.tweet)
-            fp.write(text+'\n')
-            valid_url_list.extend(tweet.urls)
-    
-    for i, url in enumerate(tqdm(train_url_list)):
-        try:
-            if i!=0 and i%1000==0:
-                time.sleep(1)
-            content = _download_page(url)
-            text_list = _parse_content(content, data_args.dataset)
-            if len(text_list) > 5:
-                train_article_list.append(text_list)
-        except:
-            continue
-
-    for i, url in enumerate(tqdm(valid_url_list)):
-        try:
-            if i!=0 and i%1000==0:
-                time.sleep(1)
-            content = _download_page(url)
-            text_list = _parse_content(content, data_args.dataset)
-            if len(text_list) > 5:
-                valid_article_list.append(text_list)
-        except:
-            continue
-
-    train_file = os.path.join(data_args.data_path, 'en.train')
-    with open(train_file, mode='w', encoding='utf8') as fp:
-        for text_list in train_article_list:
-            for text in text_list:
-                fp.write(text)
-            fp.write('\n')
-    eval_file = os.path.join(data_args.data_path, 'en.valid')
-    with open(eval_file, mode='w', encoding='utf8') as fp:
-        for text_list in valid_article_list:
-            for text in text_list:
-                fp.write(text)
-            fp.write('\n')
-
-    print("{} articles out of {} urls".format(len(train_article_list)+len(valid_article_list), len(train_url_list)+len(valid_url_list)))
-
-
-def _download_page(url: str) -> str:
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.67 Safari/537.36',
-    }
-
-    r = requests.get(url=url, headers=headers)
-    # r.encoding = 'utf-8'
-    # r = requests.get(url=url)
-    content = r.text
-    return content
-
-# parse content
-def _parse_content(content: str, dataset: str) -> List[str]:
-    if dataset == 'washingtonpost':
-        return _washingtonpost_prase_content(content)
-    elif dataset == 'nprpolitics':
-        return _npr_prase_content(content)
-    elif dataset == 'FoxNews':
-        return _fox_prase_content(content)
-    elif dataset == 'CNN':
-        return _cnn_prase_content(content)
-    elif dataset in ['MSNBC', 'NBCNews']:
-        return _msnbbc_and_nbcnews_prase_content(content)
+        for data_path_dir in data_path_dir_list:
+            article_dict_temp = _article_collect(data_path_dir, misc_args.global_debug)
+            result_list.append(article_dict_temp)
     else:
-        return _basic_prase_content(content)
+        with Pool(processes=10) as pool:
+            for data_path_dir in data_path_dir_list:
+                article_dict_temp = pool.apply_async(func=_article_collect, args=(data_path_dir, misc_args.global_debug,))
+                result_list.append(article_dict_temp)
+            pool.close()
+            pool.join()
 
+    for result in result_list:
+        if misc_args.global_debug:
+            result = result
+        else:
+            result = result.get()
+        for media, text_list in result.items():
+            if media not in article_dict:
+                article_dict[media] = list()
+            article_dict[media].extend(text_list)
 
-def _basic_prase_content(content: str) -> List[str]:
-    text_list = []
-    soup = BeautifulSoup(content, 'html.parser')
-    para_list = soup.find_all('p')
-    for para in para_list:
-        text_list.append(" ".join(para.text.split()))
-    return text_list
+    random.seed(123)
+    for media, text_list in article_dict.items():
+        text_list = list(set(text_list))
+        random.shuffle(text_list)
+        train_number = int(len(text_list)*0.7)
+        data_path = os.path.join(os.path.join(data_args.data_dir, media),data_args.data_type)
+        if not os.path.exists(data_path):
+            os.makedirs(data_path)
+        train_file = os.path.join(data_path, 'en.train')
+        with open(train_file, mode='w', encoding='utf8') as fp:
+            for text in text_list[:train_number]:
+                if len(text)<5:
+                    continue
+                fp.write(text+'\n')
+        eval_file = os.path.join(data_path, 'en.valid')
+        with open(eval_file, mode='w', encoding='utf8') as fp:
+            for text in text_list[train_number:]:
+                if len(text)<5:
+                    continue
+                fp.write(text+'\n')
 
-
-def _washingtonpost_prase_content(content: str) -> List[str]:
-    text_list = []
-    soup = BeautifulSoup(content, 'html.parser')
-    para_list = soup.find_all('p')
-    for para in para_list:
-        if not para.attrs or 'data-el' in para.attrs:
-            text_list.append(" ".join(para.text.split()))
-    return text_list
-
-
-def _npr_prase_content(content: str) -> List[str]:
-    text_list = []
-    soup = BeautifulSoup(content, 'html.parser')
-    para_list = soup.find_all('p')
-    for para in para_list:
-        if not para.attrs or ('class' in para.attrs and not 'left' in para.attrs['class'] and not 'right' in para.attrs['class']):
-            text_list.append(" ".join(para.text.split()))
-    return text_list
-
-
-def _fox_prase_content(content: str) -> List[str]:
-    text_list = []
-    soup = BeautifulSoup(content, 'html.parser')
-    para_list = soup.find_all('p')
-    for para in para_list:
-        if not para.attrs or ('class' in para.attrs and 'speakable' in para.attrs['class']):
-            text_list.append(" ".join(para.text.split()))
-    return text_list
-
-
-def _cnn_prase_content(content: str) -> List[str]:
-    text_list = []
-    soup = BeautifulSoup(content, 'html.parser')
-    para_list = soup.find_all('h1')
-    for para in para_list:
-        text_list.append(" ".join(para.text.split()))
-    para_list = soup.find_all('div')
-    for para in para_list:
-        if 'class' in para.attrs:
-            for tag in para.attrs['class']:
-                if 'paragraph' in tag or 'Paragraph' in tag:
-                    text_list.append(" ".join(para.text.split()))
-    para_list = soup.find_all('p')
-    for para in para_list:
-        if 'class' in para.attrs:
-            for tag in para.attrs['class']:
-                if 'paragraph' in tag or 'Paragraph' in tag:
-                    text_list.append(" ".join(para.text.split()))
-    return text_list
-
-
-def _msnbbc_and_nbcnews_prase_content(content: str) -> List[str]:
-    text_list = []
-    soup = BeautifulSoup(content, 'html.parser')
-    para_list = soup.find_all('p')
-    for para in para_list:
-        if not para.attrs or ('class' in para.attrs and not 'menu-section-heading' in para.attrs['class']):
-            text_list.append(" ".join(para.text.split()))
-    return text_list
-
+def _article_collect(data_path_dir, global_debug):
+    article_dict = dict()
+    file_path_list = os.listdir(data_path_dir)
+    if global_debug:
+        file_path_list = file_path_list[:30]
+    for file in file_path_list:
+        file_path = os.path.join(data_path_dir, file)
+        with open(file_path, mode='r',encoding='utf8') as fp:
+            item = json.load(fp)
+            text = item['text']
+            media = item['media']
+        if media not in article_dict:
+            article_dict[media] = list()
+        article_dict[media].append(_clean_text(text))
+    return article_dict
 
 def main():
     misc_args, model_args, data_args, training_args, adapter_args, analysis_args = get_config()
     prepare_dirs_and_logger(misc_args, model_args,
                             data_args, training_args, adapter_args, analysis_args)
-    twitter_collect(misc_args, data_args)
+    # twitter_collect(misc_args, data_args)
+    article_collect(misc_args, data_args)
 
 
 if __name__ == '__main__':
