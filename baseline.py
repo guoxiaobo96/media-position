@@ -30,7 +30,7 @@ def plot_dendrogram(model, **kwargs):
     dendrogram(linkage_matrix, **kwargs)
 
 
-data_type = 'trust'
+data_type = 'source'
 label_list = []
 data = []
 with open('./analysis/baseline/baseline_'+data_type+'.csv', mode='r', encoding='utf8') as fp:
