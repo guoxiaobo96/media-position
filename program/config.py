@@ -55,6 +55,10 @@ class DataArguments:
     """
     Arguments pertaining to what data we are going to input our model for training and eval.
     """
+    original_data_dir: str = field(
+        default="/data/xiaobo/media-position/data_original", metadata={"help": "The dir of original data"}
+    )
+    
     data_dir: str = field(
         default="/data/xiaobo/media-position/data", metadata={"help": "The dir of processed data"}
     )
@@ -62,6 +66,11 @@ class DataArguments:
     dataset: str = field(
         default='', metadata={"help": "The dataset of train and eval data"}
     )
+
+    data_topic: str = field(
+        default='', metadata={"help": "The topic of train and eval data"}
+    )
+
     data_type: str = field(
         default='', metadata={"help": "The data type of train and eval data should be twitter or article"}
     )
@@ -130,7 +139,6 @@ class DataArguments:
         default=False, metadata={"help": "Overwrite the cached training and evaluation sets"}
     )
 
-
 @dataclass
 class ModelArguments:
     """
@@ -158,7 +166,6 @@ class ModelArguments:
         default=None, metadata={"help": "Where do you want to store the pretrained models downloaded from s3"}
     )
 
-
 @dataclass
 class AnalysisArguments:
     analysis_data_dir: str = field(
@@ -183,7 +190,6 @@ class AnalysisArguments:
         default="Cosine", metadata={"help": "The method for calculating distance"}
     )
 
-
 @dataclass
 class SourceMap:
     republican_datasets_list: List[str] = field(
@@ -207,7 +213,6 @@ class SourceMap:
             'Republican': self.republican_datasets_list, 'Democrat': self.democrat_datasets_list}
 
         self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
-
 
 @dataclass
 class TrustMap:
@@ -253,7 +258,9 @@ def get_config() -> Tuple:
         adapter_args: AdapterArguments,
         analysis_args: AnalysisArguments
     ) -> None:
-
+    
+        data_args.original_data_dir = os.path.join(
+            data_args.original_data_dir, data_args.data_type)
         data_args.data_path = os.path.join(
             data_args.data_dir, os.path.join(data_args.dataset, data_args.data_type))
         training_args.output_dir = os.path.join(
@@ -280,8 +287,12 @@ def get_config() -> Tuple:
 
     parser = HfArgumentParser((MiscArgument, DataArguments,
                                ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments))
+
     misc_args, data_args, model_args, training_args, adapter_args, analysis_args = parser.parse_args_into_dataclasses()
     _get_config(misc_args, data_args, model_args,
                 training_args, adapter_args, analysis_args)
     set_seed(training_args.seed)
     return misc_args, model_args, data_args, training_args, adapter_args, analysis_args
+
+if __name__=='__main__':
+    get_config()

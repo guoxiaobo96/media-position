@@ -1,6 +1,10 @@
 from typing import Dict, List
 import json
 import os
+import pandas as pd
+from matplotlib import pyplot as plt
+import numpy as np
+
 
 from transformers.utils.dummy_tokenizers_objects import convert_slow_tokenizer
 from .config import DataArguments, MiscArgument, ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments, SourceMap, TrustMap
@@ -122,25 +126,58 @@ def analysis(
     for k, v in analysis_data.items():
         analysis_result[k] = analysis_model.analyze(v, k.split('.')[0], analysis_args)
     conclusion = dict()
-    for k, v in analysis_result.items():
-        analysis_file = os.path.join(analysis_args.analysis_result_dir, k.split('.')[0])
-        with open(analysis_file, mode='a',encoding='utf8') as fp:
-            fp.write(json.dumps({'encode': analysis_args.analysis_encode_method,'method':method, 'result':v},ensure_ascii=False)+'\n')
-        for country, distance in v.items():
-            if country not in conclusion:
-                conclusion[country] = dict()
-            conclusion[country][k] = distance
+    # for k, v in analysis_result.items():
+    #     analysis_file = os.path.join(analysis_args.analysis_result_dir, k.split('.')[0])
+    #     with open(analysis_file, mode='a',encoding='utf8') as fp:
+    #         fp.write(json.dumps({'encode': analysis_args.analysis_encode_method,'method':method, 'result':v},ensure_ascii=False)+'\n')
+    #     for country, distance in v.items():
+    #         if country not in conclusion:
+    #             conclusion[country] = dict()
+    #         conclusion[country][k] = distance
     if analysis_args.analysis_compare_method == 'distance':
-        with open(os.path.join(analysis_args.analysis_result_dir, analysis_args.analysis_encode_method+'_'+method+'.csv'), mode='w',encoding='utf8') as fp:
-            title = 'country,'
-            for i in range(len(analysis_result)):
-                title = title + str(i+1)+','
-            fp.write(title+'\n')
-            for country, distance_list in conclusion.items():
-                record = country+','
-                for i in range(len(distance_list)):
-                    record = record+str(distance_list[str(i+1)+'.json'])+','
-                fp.write(record+'\n')
-
+        for k, v in analysis_result.items():
+            label_list, data = v
+            _draw_heatmap(data, label_list, label_list)
+            # data = pd.DataFrame(v,columns=k,index=k)
+            # sns.heatmap(data)
+            plt_file = os.path.join(analysis_args.analysis_result_dir, analysis_args.analysis_encode_method+'_'+method+'_'+ k.split('.')[0]+'.png')
+            plt.savefig(plt_file, bbox_inches='tight')
+            plt.close()
+        # with open(os.path.join(analysis_args.analysis_result_dir, analysis_args.analysis_encode_method+'_'+method+'.csv'), mode='w',encoding='utf8') as fp:
+        #     title = 'country,'
+        #     for i in range(len(analysis_result)):
+        #         title = title + str(i+1)+','
+        #     fp.write(title+'\n')
+        #     for country, distance_list in conclusion.items():
+        #         record = country+','
+        #         for i in range(len(distance_list)):
+        #             record = record+str(distance_list[str(i+1)+'.json'])+','
+        #         fp.write(record+'\n')
         
     return analysis_result
+
+def _draw_heatmap(data, x_list, y_list):
+    fig, ax = plt.subplots()
+    im = ax.imshow(data)
+    cbar = ax.figure.colorbar(im, ax=ax)
+    cbar.ax.set_ylabel("", rotation=-90, va="bottom")
+
+    # We want to show all ticks...
+    ax.set_xticks(np.arange(len(x_list)))
+    ax.set_yticks(np.arange(len(y_list)))
+    # ... and label them with the respective list entries
+    ax.set_xticklabels(x_list)
+    ax.set_yticklabels(y_list)
+
+    # Rotate the tick labels and set their alignment.
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+            rotation_mode="anchor")
+
+    # Loop over data dimensions and create text annotations.
+    # for i in range(len(x_list)):
+    #     for j in range(len(y_list)):
+    #         text = ax.text(j, i, data[i, j],
+    #                     ha="center", va="center", color="w")
+    # ax.set_title("Harvest of local farmers (in tons/year)")
+    # fig.tight_layout()
+    # plt.show()

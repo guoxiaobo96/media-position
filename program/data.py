@@ -256,9 +256,11 @@ def get_analysis_data(
     args: AnalysisArguments,
 ) -> Dict[str, Dict[str, int]]:
     data = dict()
+    row_data = dict()
+    trust_map = TrustMap()
     for file in os.listdir(args.analysis_data_dir):
         analysis_data_file = os.path.join(args.analysis_data_dir, file)
-        data[file] = dict()
+        row_data[file] = dict()
         with open(analysis_data_file) as fp:
             for line in fp.readlines():
                 item = json.loads(line.strip())
@@ -267,7 +269,21 @@ def get_analysis_data(
                 elif args.analysis_data_type!='full' and args.analysis_data_type not in item['data_type']:
                     continue
                 else:
-                    data[file][item["dataset"]] = item["words"]
+                    row_data[file][item["dataset"]] = item["words"]
+    for file, file_data in row_data.items():
+        data[file] = dict()
+        for name in trust_map.republican_datasets_list:
+            dataset = trust_map.name_to_dataset[name]
+            if dataset in file_data:
+                data[file][dataset] = row_data[file][dataset]
+                
+        dataset = 'vanilla'
+        data[file][dataset] = row_data[file][dataset]
+
+        for name in trust_map.democrat_datasets_list:
+            dataset = trust_map.name_to_dataset[name]
+            if dataset in file_data:
+                data[file][dataset] = row_data[file][dataset]        
     return data
 
 def main():
