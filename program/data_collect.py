@@ -143,13 +143,43 @@ def article_collect(
             for text in text_list[:train_number]:
                 if len(text)<5:
                     continue
-                fp.write(text+'\n')
+                if len(text) > 512:
+                    start_index = 0
+                    end_index = 0
+                    while start_index < len(text):
+                        text_t = text[start_index:start_index+512]
+                        end_index = text_t.rfind('.')
+                        if end_index != -1:
+                            text_t = text_t[:end_index+1]
+                        text_t.strip()
+                        fp.write(text_t+'\n')
+                        if end_index != -1:
+                            start_index += (end_index+1)
+                        else:
+                            start_index +=512
+                else:
+                    fp.write(text+'\n')
         eval_file = os.path.join(data_path, 'en.valid')
         with open(eval_file, mode='w', encoding='utf8') as fp:
             for text in text_list[train_number:]:
                 if len(text)<5:
                     continue
-                fp.write(text+'\n')
+                if len(text) > 512:
+                    start_index = 0
+                    end_index = 0
+                    while start_index < len(text):
+                        text_t = text[start_index:start_index+512]
+                        end_index = text_t.rfind('.')
+                        if end_index != -1:
+                            text_t = text_t[:end_index+1]
+                        text_t.strip()
+                        fp.write(text_t+'\n')
+                        if end_index != -1:
+                            start_index += (end_index+1)
+                        else:
+                            start_index +=512
+                else:
+                    fp.write(text+'\n')
 
 def _article_collect(data_path_dir, global_debug):
     article_dict = dict()

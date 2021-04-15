@@ -270,21 +270,23 @@ def get_analysis_data(
                     continue
                 else:
                     row_data[file][item["dataset"]] = item["words"]
-    for file, file_data in row_data.items():
-        data[file] = dict()
-        for name in trust_map.republican_datasets_list:
-            dataset = trust_map.name_to_dataset[name]
-            if dataset in file_data:
-                data[file][dataset] = row_data[file][dataset]
+    # for file, file_data in row_data.items():
+    #     data[file] = dict()
+    #     for name in trust_map.republican_datasets_list:
+    #         dataset = trust_map.name_to_dataset[name]
+    #         if dataset in file_data:
+    #             data[file][dataset] = row_data[file][dataset]
                 
-        dataset = 'vanilla'
-        data[file][dataset] = row_data[file][dataset]
+    #     dataset = 'vanilla'
+    #     data[file][dataset] = row_data[file][dataset]
 
-        for name in trust_map.democrat_datasets_list:
-            dataset = trust_map.name_to_dataset[name]
-            if dataset in file_data:
-                data[file][dataset] = row_data[file][dataset]        
-    return data
+    #     for name in trust_map.democrat_datasets_list:
+    #         dataset = trust_map.name_to_dataset[name]
+    #         if dataset in file_data:
+    #             data[file][dataset] = row_data[file][dataset]        
+    # return data
+
+    return row_data
 
 def main():
     misc_args, model_args, data_args, training_args, adapter_args, analysis_args = get_config()
