@@ -47,10 +47,11 @@ def predict_adapter(
     
     data_type = list()
     dataset = data_args.dataset
-    if dataset in dataset_map.dataset_to_name:
-        data_type.append('dataset')
+    # if dataset in dataset_map.dataset_to_name:
+    #     data_type.append('dataset')
     if dataset in dataset_map.position_list:
         data_type.append('position')
+    data_type.append('dataset')
     if dataset in ['vanilla']:
         data_type = ['dataset', 'position']
         
