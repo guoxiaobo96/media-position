@@ -11,6 +11,7 @@ from abc import ABC, abstractmethod
 from glob import glob
 from typing import Any, Dict, Optional, Set, Tuple, Union, List
 from sklearn import cluster
+import joblib
 
 from sklearn.cluster import (
     KMeans,
@@ -51,6 +52,8 @@ class BaseAnalysis(ABC):
         self._config = config
         self._encoder = None
         self._analyser = None
+        self._misc_args = misc_args
+        self._data_args = data_args
 
         self._load_encoder(self._config.analysis_encode_method, misc_args,
                            model_args, data_args, training_args)
@@ -119,7 +122,7 @@ class ClusterAnalysis(BaseAnalysis):
             self._analyser = SpectralClustering()
         elif cluster_method == "AgglomerativeClustering":
             # self._analyser =  AgglomerativeClustering(n_clusters=2, compute_distances=True)
-            self._analyser =  AgglomerativeClustering(n_clusters=2, compute_distances=True, affinity='cosine',linkage='complete')
+            self._analyser =  AgglomerativeClustering(n_clusters=3, compute_distances=True, affinity='cosine',linkage='average')
         elif cluster_method == "DBSCAN":
             self._analyser = DBSCAN(eps=0.5, min_samples=2)
         elif cluster_method == "OPTICS":
@@ -131,11 +134,32 @@ class ClusterAnalysis(BaseAnalysis):
         self,
         data,
         sentence_number : str,
-        analysis_args: AnalysisArguments
+        analysis_args: AnalysisArguments,
+        encode:bool = True,
+        dataset_list :List = [],
+
     ) -> Dict[int, Set[str]]:
         cluster_result = dict()
-        data.pop('vanilla')
-        dataset_list, encoded_list = self._encode_data(data)
+        if 'vanilla' in data:
+            data.pop('vanilla')
+        if encode:
+            dataset_list, encoded_list = self._encode_data(data)
+        else:
+            encoded_list = list()
+            max_length = 0
+            for dataset_item in list(data.values()):
+                for item in dataset_item:
+                    max_length = max(max_length, item.size)
+            for dataset in dataset_list:
+                dataset_item = list()
+                for item in data[dataset]:
+                    temp_item = [0 for _ in range(max_length)]
+                    for i, v in enumerate(item):
+                        temp_item[i] = v
+                    dataset_item.append(temp_item)
+                encoded_list.append(np.array(dataset_item))
+
+
         clusters = self._analyser.fit(encoded_list)
         labels = clusters.labels_
         for i, label in enumerate(labels.tolist()):
@@ -145,9 +169,14 @@ class ClusterAnalysis(BaseAnalysis):
         plt.title('Hierarchical Clustering Dendrogram')
         plot_dendrogram(self._analyser, orientation='right', labels=dataset_list)
         plt_file = os.path.join(analysis_args.analysis_result_dir,analysis_args.analysis_encode_method+'_'+analysis_args.analysis_cluster_method+'_'+sentence_number+'.png')
+        model_path = os.path.join(os.path.join(os.path.join(self._misc_args.log_dir, self._data_args.data_type),'model'),analysis_args.analysis_data_type)
+        if not os.path.exists(model_path):
+            os.makedirs(model_path)
+        model_file = os.path.join(model_path,analysis_args.analysis_encode_method+'_'+analysis_args.analysis_cluster_method+'_'+sentence_number+'.c')
+        joblib.dump(self._analyser, model_file)
         plt.savefig(plt_file,bbox_inches = 'tight')
         plt.close()
-        return cluster_result
+        return clusters, cluster_result, dataset_list, encoded_list
 
 
 def plot_dendrogram(model, **kwargs):
