@@ -41,7 +41,7 @@ def build_baseline(data_type):
             label_list.append(row[0])
             data.append([float(x.strip()) for x in row[1:]])
     analyzer = AgglomerativeClustering(
-        n_clusters=3, compute_distances=True, affinity='cosine', linkage='average')
+        n_clusters=3, compute_distances=True, affinity='cosine', linkage='single')
     cluster_result = dict()
     clusters = analyzer.fit(data)
     labels = clusters.labels_
