@@ -1,9 +1,14 @@
 from typing import Dict, List
 import json
 import os
+import joblib
 import pandas as pd
 from matplotlib import pyplot as plt
 import numpy as np
+from sklearn import cluster
+from grakel import Graph, graph
+from grakel.kernels import WeisfeilerLehman, VertexHistogram, NeighborhoodSubgraphPairwiseDistance
+from sklearn.metrics.pairwise import euclidean_distances
 
 
 from transformers.utils.dummy_tokenizers_objects import convert_slow_tokenizer
@@ -116,16 +121,40 @@ def analysis(
     analysis_args: AnalysisArguments
 ) -> Dict:
     analysis_result = dict()
+    model_list = dict()
     analysis_data = get_analysis_data(analysis_args)
+    analysis_data['concatenate.json'] = dict()
+    # analysis_data['hstack.json'] = dict()
+    for k, v in analysis_data.items():
+        for media, item in v.items():
+            if media not in analysis_data['concatenate.json']:
+                analysis_data['concatenate.json'][media] = dict()
+            for w, c in item.items():
+                if w not in analysis_data['concatenate.json'][media]:
+                    analysis_data['concatenate.json'][media][w] = c
+                else:
+                    analysis_data['concatenate.json'][media][w] = float(analysis_data['concatenate.json'][media][w]) + float(c)
     method = str()
     if analysis_args.analysis_compare_method == 'cluster':
-        analysis_model = ClusterAnalysis(misc_args, model_args, data_args, training_args, analysis_args)
         method = analysis_args.analysis_cluster_method
     elif analysis_args.analysis_compare_method == 'distance':
-        analysis_model = DistanceAnalysis(misc_args, model_args, data_args, training_args, analysis_args)
         method = analysis_args.analysis_distance_method
     for k, v in analysis_data.items():
-        analysis_result[k] = analysis_model.analyze(v, k.split('.')[0], analysis_args)
+        if k == 'hstack.json' :
+            continue
+        if analysis_args.analysis_compare_method == 'cluster':
+            analysis_model = ClusterAnalysis(misc_args, model_args, data_args, training_args, analysis_args)
+        elif analysis_args.analysis_compare_method == 'distance':
+            analysis_model = DistanceAnalysis(misc_args, model_args, data_args, training_args, analysis_args)      
+        model, cluster_result, _, _ = analysis_model.analyze(v, k.split('.')[0], analysis_args)
+        analysis_result[k] = cluster_result
+        model_list[k] = model
+        # for i, encoded_data in enumerate(encoded_list):
+        #     if dataset_list[i] not in analysis_data['hstack.json']:
+        #         analysis_data['hstack.json'][dataset_list[i]] = list()
+        #     analysis_data['hstack.json'][dataset_list[i]].append(encoded_data)
+    # cluster_result, _, _ = analysis_model.analyze(analysis_data['hstack.json'], 'hstack', analysis_args,encode=False, dataset_list=list(analysis_data['hstack.json'].keys()))
+    # analysis_result['hstack.json'] = cluster_result
     conclusion = dict()
     # for k, v in analysis_result.items():
     #     analysis_file = os.path.join(analysis_args.analysis_result_dir, k.split('.')[0])
@@ -154,8 +183,48 @@ def analysis(
         #         for i in range(len(distance_list)):
         #             record = record+str(distance_list[str(i+1)+'.json'])+','
         #         fp.write(record+'\n')
+    else:
+        base_model = joblib.load('log/baseline/model/baseline_source.c')
+        model_list['base'] = base_model
+        graph_list = list()
+        name_list = list()
+        result_dict = dict()
+        for k, v in model_list.items():
+            graph_list.append(_build_graph(v))
+            name_list.append(k)
         
+        gk = WeisfeilerLehman(n_iter=1, normalize=False, base_graph_kernel=VertexHistogram)
+        G_t = gk.fit_transform(graph_list)
+        base_index = name_list.index('base')
+        for i, name in enumerate(name_list):
+            if i != base_index:
+                distance = euclidean_distances([G_t[i]], [G_t[base_index]])
+                result_dict[name] = distance[0][0]
+
+        result_file = os.path.join(analysis_args.analysis_result_dir, analysis_args.analysis_encode_method+'_'+method+'.txt')
+        with open(result_file, mode='w',encoding='utf8') as fp:
+            for k, v in result_dict.items():
+                fp.write(k+' : '+str(v)+'\n')
     return analysis_result
+
+def _build_graph(model):
+    edges = list()
+    edge_labels = dict()
+    node_labels = dict()
+    distance = model.distances_
+    counts = np.zeros(model.children_.shape[0])
+    n_samples = len(model.labels_)
+    for i, merge in enumerate(model.children_):
+        for child_idx in merge:
+            edges.append((i+n_samples, child_idx, distance[i] / 2))
+            edge_labels[(i+n_samples, child_idx)] = 1
+            if child_idx < n_samples:
+                node_labels[child_idx] = child_idx
+            else:
+                node_labels[child_idx] = -1
+    node_labels[n_samples*2-2] = -1
+    graph = Graph(edges, node_labels=node_labels, edge_labels=edge_labels)
+    return graph
 
 def _draw_heatmap(data, x_list, y_list):
     fig, ax = plt.subplots()
