@@ -8,6 +8,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import seaborn as sns
 import pandas as pd
 import joblib
+from program.config import ArticleMap, TwitterMap
 
 
 def plot_dendrogram(model, **kwargs):
@@ -31,15 +32,19 @@ def plot_dendrogram(model, **kwargs):
     # Plot the corresponding dendrogram
     dendrogram(linkage_matrix, **kwargs)
 
-def build_baseline(data_type):
-    label_list = []
-    data = []
-    with open('./analysis/baseline/baseline_'+data_type+'.csv', mode='r', encoding='utf8') as fp:
+def build_baseline(data_type, label_type):
+    data_map = ArticleMap () if data_type=='Article' else TwitterMap()
+    label_list = list(data_map.name_to_dataset.keys())
+
+    data = list()
+    data_temp = dict()
+    with open('./analysis/baseline/baseline_'+label_type+'_'+data_type+'.csv', mode='r', encoding='utf8') as fp:
         reader = csv.reader(fp)
         header = next(reader)
         for row in reader:
-            label_list.append(row[0])
-            data.append([float(x.strip()) for x in row[1:]])
+            data_temp[row[0]] = [float(x.strip()) for x in row[1:]]
+    for k, _ in data_map.name_to_dataset.items():
+        data.append(data_temp[k])
     analyzer = AgglomerativeClustering(
         n_clusters=2, compute_distances=True, affinity='cosine', linkage='single')
     cluster_result = dict()
@@ -59,15 +64,16 @@ def build_baseline(data_type):
     plt.savefig(plt_file, bbox_inches='tight')
     plt.close()
 
-    data = cosine_similarity(data)
-    data = pd.DataFrame(data,columns=label_list,index=label_list)
-    sns.heatmap(data)
-    plt_file = './analysis/baseline/baseline_'+data_type+'_heat.png'
-    plt.savefig(plt_file, bbox_inches='tight')
-    plt.close()
+    # data = cosine_similarity(data)
+    # data = pd.DataFrame(data,columns=label_list,index=label_list)
+    # sns.heatmap(data)
+    # plt_file = './analysis/baseline/baseline_'+data_type+'_heat.png'
+    # plt.savefig(plt_file, bbox_inches='tight')
+    # plt.close()
 
 def main():
-    for data_type in ['source', 'trust']:
-        build_baseline(data_type)
+    for data_type in ['Article','Twitter']:
+        for label_type in ['source', 'trust']:
+            build_baseline(data_type, label_type)
 if __name__ == '__main__':
     main()

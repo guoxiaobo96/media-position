@@ -49,7 +49,6 @@ class MiscArgument:
         default=False, metadata={"help": "Whether the program is in debug mode"}
     )
 
-
 @dataclass
 class DataArguments:
     """
@@ -191,6 +190,22 @@ class AnalysisArguments:
     )
 
 @dataclass
+class ArticleMap:
+    dataset_to_name: Dict = field(default_factory=lambda: {'ABC.com':'ABC News','BBC':'BBC','Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','guardiannews.com':'Guardian','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','rushlimbaugh.com':'Rush Limbaugh Show (radio)','sean':'Sean Hannity Show (radio)','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
+    name_to_dataset: Dict = field(init=False)
+
+    def __post_init__(self):
+        self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
+        
+@dataclass
+class TwitterMap:
+    dataset_to_name: Dict = field(default_factory=lambda: {'Breitbart':'Breitbart','CNN':'CNN','Fox':'Fox News','NYtimes':'New York Times','sean':'Sean Hannity Show (radio)','washington':'Washington Post'})
+    name_to_dataset: Dict = field(init=False)
+
+    def __post_init__(self):
+        self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
+
+@dataclass
 class SourceMap:
     republican_datasets_list: List[str] = field(
         default_factory=lambda: ['Fox News', 'Sean Hannity Show (radio)', 'Breitbart'])
@@ -238,14 +253,6 @@ class TrustMap:
 
         self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
 
-
-@dataclass
-class TweetAccount:
-    consumer_key: str = "gU8kUJdTwX404MORSayZvKXiI"
-    consumer_secret: str = "KTEOVKl4Lnlup9NHcfpS1UTsxFH9FVUnQeYQSt4ml5GPN7018F"
-    access_token: str = "1148258605465886720-sXKQY9vqak6YhDmOFldvNCFN36sWIh"
-    access_token_secret: str = "F6XYsA5cGQoQN5uWxYL6hZxWql5PAVFwLdNPzov9V4qGX"
-    bearer_token: str = "AAAAAAAAAAAAAAAAAAAAAI1gMwEAAAAADrW%2FAuLfoqzJmkCIa4QJNEAtwfo%3DdZ0Z93VN3npgOfWRdFXYV7tVn9ZBTwxX7ph6F35nX1sThU6Zdy"
 
 
 def get_config() -> Tuple:
