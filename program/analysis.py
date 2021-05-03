@@ -122,7 +122,7 @@ class ClusterAnalysis(BaseAnalysis):
             self._analyser = SpectralClustering()
         elif cluster_method == "AgglomerativeClustering":
             # self._analyser =  AgglomerativeClustering(n_clusters=2, compute_distances=True)
-            self._analyser =  AgglomerativeClustering(n_clusters=3, compute_distances=True, affinity='cosine',linkage='average')
+            self._analyser =  AgglomerativeClustering(n_clusters=2, compute_distances=True, affinity='cosine',linkage='single')
         elif cluster_method == "DBSCAN":
             self._analyser = DBSCAN(eps=0.5, min_samples=2)
         elif cluster_method == "OPTICS":

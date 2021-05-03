@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 from sklearn import cluster
 from grakel import Graph, graph
-from grakel.kernels import WeisfeilerLehman, VertexHistogram, NeighborhoodSubgraphPairwiseDistance
+from grakel.kernels import WeisfeilerLehman, VertexHistogram, NeighborhoodSubgraphPairwiseDistance, neighborhood_subgraph_pairwise_distance
 from sklearn.metrics.pairwise import euclidean_distances
 
 
@@ -186,6 +186,9 @@ def analysis(
     else:
         base_model = joblib.load('log/baseline/model/baseline_source.c')
         model_list['base'] = base_model
+        base_model = joblib.load('log/baseline/model/baseline_trust.c')
+        model_list['distance_base'] = base_model
+
         graph_list = list()
         name_list = list()
         result_dict = dict()
@@ -193,7 +196,8 @@ def analysis(
             graph_list.append(_build_graph(v))
             name_list.append(k)
         
-        gk = WeisfeilerLehman(n_iter=1, normalize=False, base_graph_kernel=VertexHistogram)
+        # gk = WeisfeilerLehman(n_iter=1, normalize=False, base_graph_kernel=VertexHistogram)
+        gk = NeighborhoodSubgraphPairwiseDistance(r=3,d=4)
         G_t = gk.fit_transform(graph_list)
         base_index = name_list.index('base')
         for i, name in enumerate(name_list):
@@ -215,14 +219,23 @@ def _build_graph(model):
     counts = np.zeros(model.children_.shape[0])
     n_samples = len(model.labels_)
     for i, merge in enumerate(model.children_):
+        current_counts = 0
         for child_idx in merge:
             edges.append((i+n_samples, child_idx, distance[i] / 2))
             edge_labels[(i+n_samples, child_idx)] = 1
             if child_idx < n_samples:
-                node_labels[child_idx] = child_idx
+                current_counts += 1 
             else:
-                node_labels[child_idx] = -1
-    node_labels[n_samples*2-2] = -1
+                current_counts += counts[child_idx - n_samples]
+        counts[i] = current_counts
+    for i in range(len(counts)+n_samples):
+        if i<n_samples:
+            if i in [0,2,4]:
+                node_labels[i] = 0
+            else:
+                node_labels[i] = 1
+        else:
+            node_labels[i] = counts[i-n_samples] + n_samples 
     graph = Graph(edges, node_labels=node_labels, edge_labels=edge_labels)
     return graph
 
