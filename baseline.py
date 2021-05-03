@@ -33,7 +33,7 @@ def plot_dendrogram(model, **kwargs):
     dendrogram(linkage_matrix, **kwargs)
 
 def build_baseline(data_type, label_type):
-    data_map = ArticleMap () if data_type=='Article' else TwitterMap()
+    data_map = ArticleMap () if data_type=='article' else TwitterMap()
     label_list = list(data_map.name_to_dataset.keys())
 
     data = list()
@@ -55,12 +55,12 @@ def build_baseline(data_type, label_type):
             cluster_result[label] = list()
         cluster_result[label].append(label_list[i])
 
-    model_file = './log/baseline/model/baseline_'+data_type+'.c'
+    model_file = './log/baseline/model/baseline_'+label_type+'_'+data_type+'.c'
     joblib.dump(analyzer, model_file)
     plt.title('Baseline')
     plot_dendrogram(analyzer, orientation='right',
                     labels=label_list)
-    plt_file = './analysis/baseline/baseline_'+data_type+'.png'
+    plt_file = './analysis/baseline/baseline_'+label_type+'_'+data_type+'.png'
     plt.savefig(plt_file, bbox_inches='tight')
     plt.close()
 
@@ -72,7 +72,7 @@ def build_baseline(data_type, label_type):
     # plt.close()
 
 def main():
-    for data_type in ['Article','Twitter']:
+    for data_type in ['article','twitter']:
         for label_type in ['source', 'trust']:
             build_baseline(data_type, label_type)
 if __name__ == '__main__':
