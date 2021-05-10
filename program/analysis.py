@@ -12,6 +12,8 @@ from glob import glob
 from typing import Any, Dict, Optional, Set, Tuple, Union, List
 from sklearn import cluster
 import joblib
+from grakel import Graph, graph
+from grakel.graph_kernels import *
 
 from sklearn.cluster import (
     KMeans,
@@ -26,13 +28,14 @@ from scipy.cluster.hierarchy import dendrogram
 from sklearn.metrics.pairwise import(
     cosine_distances
 )
+from scipy.sparse.csgraph import shortest_path
 
 
 import numpy as np
 from numpy import ndarray
 
 
-from tokenizers import Tokenizer, models
+from tokenizers import EncodeInput, Tokenizer, models
 
 
 from .config import AnalysisArguments, MiscArgument, ModelArguments, DataArguments, TrainingArguments
@@ -140,24 +143,12 @@ class ClusterAnalysis(BaseAnalysis):
 
     ) -> Dict[int, Set[str]]:
         cluster_result = dict()
-        if 'vanilla' in data:
-            data.pop('vanilla')
         if encode:
+            if 'vanilla' in data:
+                data.pop('vanilla')
             dataset_list, encoded_list = self._encode_data(data)
         else:
-            encoded_list = list()
-            max_length = 0
-            for dataset_item in list(data.values()):
-                for item in dataset_item:
-                    max_length = max(max_length, item.size)
-            for dataset in dataset_list:
-                dataset_item = list()
-                for item in data[dataset]:
-                    temp_item = [0 for _ in range(max_length)]
-                    for i, v in enumerate(item):
-                        temp_item[i] = v
-                    dataset_item.append(temp_item)
-                encoded_list.append(np.array(dataset_item))
+            encoded_list = data
 
 
         clusters = self._analyser.fit(encoded_list)
@@ -238,7 +229,6 @@ class DistanceAnalysis(BaseAnalysis):
 
         return exclusive_dataset_list, distance_list
 
-
 class TermEncoder(object):
     def __init__(self) -> None:
         self._term_dict = dict()
@@ -281,7 +271,6 @@ class BinaryEncoder(object):
             encode_result[dataset] = encode_array
         return encode_result
 
-
 class LiwcEncoder(object):
     def __init__(
         self,
@@ -322,7 +311,6 @@ class LiwcEncoder(object):
             encode_result[dataset] = np.sum(term_encode.T, axis=0)
         return encode_result
 
-
 class BertEncoder(object):
     def __init__(self, model_args, data_args, training_args) -> None:
         self._model = BertModel(model_args, data_args, training_args)
@@ -341,7 +329,6 @@ class BertEncoder(object):
             term_encode = term_encode.T*score_list
             encode_result[dataset] = np.sum(term_encode.T, axis=0)
         return encode_result
-
 
 class Word2VecEncoder(object):
     def __init__(self) -> None:
@@ -371,6 +358,183 @@ class Word2VecEncoder(object):
             encode_result[dataset] = np.sum(term_encode.T, axis=0)
         return encode_result
 
+class ClusterCompare(object):
+    def __init__(self, misc_args:MiscArgument, analysis_args:AnalysisArguments) -> None:
+        super().__init__()
+        self. _result_path = os.path.join(os.path.join(analysis_args.analysis_result_dir, analysis_args.graph_distance), analysis_args.graph_kernel)
+        self._analysis_args = analysis_args
+
+    def _calculate_leaf_distance(self, model:AgglomerativeClustering):
+        leaf_node_number = len(model.labels_)
+        inter_node_number = len(model.children_)
+        counts = np.zeros(leaf_node_number+inter_node_number)
+        for i in range(leaf_node_number):
+            counts[i] = 1
+
+        node_matrix = np.zeros((leaf_node_number+inter_node_number,leaf_node_number+inter_node_number))
+        distance_matrix = np.zeros((leaf_node_number,leaf_node_number))
+        for i, merge in enumerate(model.children_):
+            current_count = 0
+            for child_idx in merge:
+                for distance in self._analysis_args.graph_distance.split('_'):
+                    if distance == 'cluster':
+                        node_matrix[i+leaf_node_number][child_idx] += model.distances_[i]
+                        node_matrix[child_idx][i+leaf_node_number] += model.distances_[i]
+                    elif distance == 'alpha':
+                        node_matrix[i+leaf_node_number][child_idx] += 1
+                        node_matrix[child_idx][i+leaf_node_number] += 1
+                    elif distance == 'acc':
+                        node_matrix[i+leaf_node_number][child_idx] += counts[child_idx]
+                        node_matrix[child_idx][i+leaf_node_number] += counts[child_idx]
+                    current_count += counts[child_idx]
+                counts[i+leaf_node_number] = current_count
+
+        dist_matrix = shortest_path(csgraph=node_matrix, directed=False)
+        dist_matrix = dist_matrix[:leaf_node_number,:leaf_node_number]
+
+        return dist_matrix
+
+    def _tree_to_graph(self, model:AgglomerativeClustering, label_list: List[int] = None):
+        edges = list()
+        edge_labels = dict()
+        node_labels = dict()
+        counts = np.zeros(model.children_.shape[0])
+        n_samples = len(model.labels_)
+        if label_list is None:
+            label_list = [i for i in range(n_samples)]
+
+        for i, merge in enumerate(model.children_):
+            current_counts = 0
+            for child_idx in merge:
+                distance = 0
+                for distance_type in self._analysis_args.graph_distance.split('_'):
+                    if distance_type == 'cluster':
+                        distance += model.distances_[i]
+                        distance += model.distances_[i]
+                    elif distance_type == 'alpha':
+                        distance += 1
+                        distance += 1                   
+                edges.append((i+n_samples, child_idx, distance))
+                edge_labels[(i+n_samples, child_idx)] = 1
+                if child_idx < n_samples:
+                    current_counts += 1 
+                else:
+                    current_counts += counts[child_idx - n_samples]
+            counts[i] = current_counts
+        for i in range(len(counts)+n_samples):
+            if i<n_samples:
+                node_labels[i] = label_list[i]
+            else:
+                node_labels[i] = n_samples
+        graph = Graph(edges, node_labels=node_labels, edge_labels=edge_labels)
+        return graph        
+
+    def _cluster_generate(self, model:AgglomerativeClustering, label_list: List[int] = None):
+        cluster_dict = dict()
+        n_samples = len(model.labels_)
+        if label_list is None:
+            label_list = [i for i in range(n_samples)]
+        for i, merge in enumerate(model.children_):
+            cluster_set = set()
+            for child_idx in merge:
+                if child_idx < n_samples:
+                    cluster_set.add(label_list[child_idx])
+                else:
+                    cluster_set = cluster_set | cluster_dict[child_idx]
+            cluster_dict[i+n_samples] = cluster_set
+        cluster_list = list(cluster_dict.values())
+        return cluster_list
+
+
+    def _build_graph(self, model, label_list=None) -> None:
+        if self._analysis_args.graph_kernel == 'cluster':
+            if self._analysis_args.graph_distance != 'count':
+                return self._calculate_leaf_distance(model)
+            else:
+                return self._cluster_generate(model)
+        else:
+            return self._tree_to_graph(model, label_list)
+
+    def _calculate_distance(self, graph_list, name_list) -> None:
+        result_dict = dict()
+        if self._analysis_args.graph_kernel != 'cluster':
+            if self._analysis_args.graph_kernel == 'WeisfeilerLehman':
+                gk = WeisfeilerLehman()
+            elif self._analysis_args.graph_kernel == 'GraphletSampling':
+                gk = GraphletSampling()
+            elif self._analysis_args.graph_kernel == 'RandomWalk':
+                gk = RandomWalk()
+            elif self._analysis_args.graph_kernel == 'RandomWalkLabeled':
+                gk = RandomWalkLabeled()
+            elif self._analysis_args.graph_kernel == 'ShortestPath':
+                gk = ShortestPath()
+            elif self._analysis_args.graph_kernel == 'ShortestPathAttr':
+                gk = ShortestPathAttr()
+            elif self._analysis_args.graph_kernel == 'NeighborhoodHash':                
+                gk = NeighborhoodHash()
+            elif self._analysis_args.graph_kernel == 'PyramidMatch':                 
+                gk = PyramidMatch()
+            elif self._analysis_args.graph_kernel == 'SubgraphMatching': 
+                gk = SubgraphMatching()
+            elif self._analysis_args.graph_kernel == 'NeighborhoodSubgraphPairwiseDistance':
+                gk = NeighborhoodSubgraphPairwiseDistance()
+            elif self._analysis_args.graph_kernel == 'LovaszTheta':
+                gk = LovaszTheta()
+            elif self._analysis_args.graph_kernel == 'SvmTheta':
+                gk = SvmTheta()
+            elif self._analysis_args.graph_kernel == 'OddSth':
+                gk = OddSth()
+            elif self._analysis_args.graph_kernel == 'Propagation':
+                gk = Propagation()
+            elif self._analysis_args.graph_kernel == 'PropagationAttr':
+                gk = PropagationAttr()
+            elif self._analysis_args.graph_kernel == 'HadamardCode':
+                gk = HadamardCode()
+            elif self._analysis_args.graph_kernel == 'MultiscaleLaplacian':
+                gk = MultiscaleLaplacian()
+            elif self._analysis_args.graph_kernel == 'VertexHistogram':
+                gk = VertexHistogram()
+            elif self._analysis_args.graph_kernel == 'EdgeHistogram':
+                gk = EdgeHistogram()
+            elif self._analysis_args.graph_kernel == 'GraphHopper':
+                gk = GraphHopper()
+            elif self._analysis_args.graph_kernel == 'CoreFramework':
+                gk = CoreFramework()
+            elif self._analysis_args.graph_kernel == 'WeisfeilerLehmanOptimalAssignment':
+                gk = WeisfeilerLehmanOptimalAssignment()
+            
+            graph_list = gk.fit_transform(graph_list)
+        base_index = name_list.index('base')
+        for i, name in enumerate(name_list):
+            if i != base_index:
+                if self._analysis_args.graph_distance != 'count':
+                    distance = np.linalg.norm(graph_list[i]-graph_list[base_index])
+                else:
+                    count = 0
+                    for cluster in graph_list[i]:
+                        if cluster not in graph_list[base_index]:
+                            count += 1
+                    distance = count / (len(graph_list[base_index]) - 1)
+                result_dict[name] = distance
+        return result_dict        
+
+    def compare(self, model_dict:Dict[str,AgglomerativeClustering], label_list=None) -> None:
+        graph_list = list()
+        name_list = list()
+        method = str()
+        if self._analysis_args.analysis_compare_method == 'cluster':
+            method = self._analysis_args.analysis_cluster_method
+        elif self._analysis_args.analysis_compare_method == 'distance':
+            method = self._analysis_args.analysis_distance_method
+
+        for name, model in model_dict.items():
+            name_list.append(name)
+            graph_list.append(self._build_graph(model, label_list))
+        
+        result_dict = self._calculate_distance(graph_list,name_list)
+
+        
+        return result_dict
 
 
 

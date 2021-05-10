@@ -1,6 +1,6 @@
 from torch import mode
 from .util import prepare_dirs_and_logger
-from .config import AnalysisArguments, DataArguments, MiscArgument, TweetAccount, get_config, SourceMap, TrustMap
+from .config import AnalysisArguments, DataArguments, MiscArgument, get_config, SourceMap, TrustMap
 import tweepy
 import time
 import os

@@ -188,22 +188,34 @@ class AnalysisArguments:
     analysis_distance_method: Optional[str] = field(
         default="Cosine", metadata={"help": "The method for calculating distance"}
     )
+    graph_distance: Optional[str] = field(
+        default="", metadata={"help": "The distance used for creating graph"}
+    )
+    graph_kernel: Optional[str] = field(
+        default="", metadata={"help": "The kernel used for calculating difference"}
+    )    
 
 @dataclass
 class ArticleMap:
     dataset_to_name: Dict = field(default_factory=lambda: {'ABC.com':'ABC News','BBC':'BBC','Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','guardiannews.com':'Guardian','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','rushlimbaugh.com':'Rush Limbaugh Show (radio)','sean':'Sean Hannity Show (radio)','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
     name_to_dataset: Dict = field(init=False)
+    dataset_list: List[str] = field(init=False)
+    left_dataset_list: List[str] = field(default_factory=lambda:['Breitbart', 'Fox', 'sean','rushlimbaugh.com'])
 
     def __post_init__(self):
         self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
+        self.dataset_list = [k for k,v in self.dataset_to_name.items()]
         
 @dataclass
 class TwitterMap:
-    dataset_to_name: Dict = field(default_factory=lambda: {'Breitbart':'Breitbart','CNN':'CNN','Fox':'Fox News','NYtimes':'New York Times','sean':'Sean Hannity Show (radio)','washington':'Washington Post'})
+    dataset_to_name: Dict = field(default_factory=lambda: {'BreitbartNews':'Breitbart','CNN':'CNN','FoxNews':'Fox News','nytimes':'New York Times','seanhannity':'Sean Hannity Show (radio)','washingtonpost':'Washington Post'})
     name_to_dataset: Dict = field(init=False)
+    dataset_list: List[str] = field(init=False)
+    left_dataset_list: List[str] = field(default_factory=lambda:['BreitbartNews', 'FoxNews', 'seanhannity'])
 
     def __post_init__(self):
         self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
+        self.dataset_list = [k for k,v in self.dataset_to_name.items()]
 
 @dataclass
 class SourceMap:

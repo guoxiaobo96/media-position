@@ -2,20 +2,15 @@ from typing import Dict, List
 import json
 import os
 import joblib
-import pandas as pd
 from matplotlib import pyplot as plt
 import numpy as np
-from sklearn import cluster
-from grakel import Graph, graph
-from grakel.kernels import WeisfeilerLehman, VertexHistogram, NeighborhoodSubgraphPairwiseDistance, neighborhood_subgraph_pairwise_distance
 from sklearn.metrics.pairwise import euclidean_distances
 
 
-from transformers.utils.dummy_tokenizers_objects import convert_slow_tokenizer
-from .config import DataArguments, MiscArgument, ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments, SourceMap, TrustMap
+from .config import DataArguments, MiscArgument, ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap
 from .model import AdapterModel
 from .data import get_dataset, get_analysis_data
-from .analysis import ClusterAnalysis,DistanceAnalysis
+from .analysis import ClusterAnalysis,DistanceAnalysis,ClusterCompare
 
 
 def train_adapter(
@@ -120,11 +115,19 @@ def analysis(
     training_args: TrainingArguments,
     analysis_args: AnalysisArguments
 ) -> Dict:
+    data_map = ArticleMap () if data_args.data_type == 'article' else TwitterMap()
     analysis_result = dict()
     model_list = dict()
-    analysis_data = get_analysis_data(analysis_args)
+    analysis_data = dict()
+    analysis_data_temp = get_analysis_data(analysis_args)
+    
+    for k, v in analysis_data_temp.items():
+        analysis_data[k] = dict()
+        for d, _ in data_map.dataset_to_name.items():
+            analysis_data[k][d] = v[d]
+
     analysis_data['concatenate.json'] = dict()
-    # analysis_data['hstack.json'] = dict()
+    analysis_data['average.json'] = dict()
     for k, v in analysis_data.items():
         for media, item in v.items():
             if media not in analysis_data['concatenate.json']:
@@ -140,21 +143,35 @@ def analysis(
     elif analysis_args.analysis_compare_method == 'distance':
         method = analysis_args.analysis_distance_method
     for k, v in analysis_data.items():
-        if k == 'hstack.json' :
+        if k == 'average.json' or k == 'concatenate.json':
             continue
         if analysis_args.analysis_compare_method == 'cluster':
             analysis_model = ClusterAnalysis(misc_args, model_args, data_args, training_args, analysis_args)
         elif analysis_args.analysis_compare_method == 'distance':
             analysis_model = DistanceAnalysis(misc_args, model_args, data_args, training_args, analysis_args)      
-        model, cluster_result, _, _ = analysis_model.analyze(v, k.split('.')[0], analysis_args)
+        model, cluster_result, dataset_list, encoded_list = analysis_model.analyze(v, k.split('.')[0], analysis_args)
         analysis_result[k] = cluster_result
         model_list[k] = model
-        # for i, encoded_data in enumerate(encoded_list):
-        #     if dataset_list[i] not in analysis_data['hstack.json']:
-        #         analysis_data['hstack.json'][dataset_list[i]] = list()
-        #     analysis_data['hstack.json'][dataset_list[i]].append(encoded_data)
-    # cluster_result, _, _ = analysis_model.analyze(analysis_data['hstack.json'], 'hstack', analysis_args,encode=False, dataset_list=list(analysis_data['hstack.json'].keys()))
-    # analysis_result['hstack.json'] = cluster_result
+        for i, encoded_data in enumerate(encoded_list):
+            if dataset_list[i] not in analysis_data['average.json']:
+                analysis_data['average.json'][dataset_list[i]] = list()
+            analysis_data['average.json'][dataset_list[i]].append(encoded_data)
+    average_distance_matrix = np.zeros((len(data_map.dataset_list), len(data_map.dataset_list)))
+
+    for i, dataset_name_a in enumerate(data_map.dataset_list):
+        for j, dataset_name_b in enumerate(data_map.dataset_list):
+            if i == j :
+                continue
+            average_distance = 0
+            encoded_a = analysis_data['average.json'][dataset_name_a]
+            encoded_b = analysis_data['average.json'][dataset_name_b]
+            for k in range(len(analysis_data) - 2):
+                average_distance += euclidean_distances(encoded_a[k].reshape(1,-1), encoded_b[k].reshape(1,-1))[0][0]
+            average_distance_matrix[i][j] = average_distance
+    analysis_data['average.json'] = average_distance_matrix
+    model, cluster_result, _, _ = analysis_model.analyze(analysis_data['average.json'], 'average', analysis_args,encode=False, dataset_list=list(data_map.dataset_list))
+    model_list['average.json'] = model
+    analysis_result['average.json'] = cluster_result
     conclusion = dict()
     # for k, v in analysis_result.items():
     #     analysis_file = os.path.join(analysis_args.analysis_result_dir, k.split('.')[0])
@@ -184,60 +201,31 @@ def analysis(
         #             record = record+str(distance_list[str(i+1)+'.json'])+','
         #         fp.write(record+'\n')
     else:
-        base_model = joblib.load('log/baseline/model/baseline_source.c')
+        base_model = joblib.load('log/baseline/model/baseline_source_'+data_args.data_type+'.c')
         model_list['base'] = base_model
-        base_model = joblib.load('log/baseline/model/baseline_trust.c')
+        base_model = joblib.load('log/baseline/model/baseline_trust_'+data_args.data_type+'.c')
         model_list['distance_base'] = base_model
+        cluster_compare = ClusterCompare(misc_args, analysis_args)
 
-        graph_list = list()
-        name_list = list()
-        result_dict = dict()
-        for k, v in model_list.items():
-            graph_list.append(_build_graph(v))
-            name_list.append(k)
-        
-        # gk = WeisfeilerLehman(n_iter=1, normalize=False, base_graph_kernel=VertexHistogram)
-        gk = NeighborhoodSubgraphPairwiseDistance(r=3,d=4)
-        G_t = gk.fit_transform(graph_list)
-        base_index = name_list.index('base')
-        for i, name in enumerate(name_list):
-            if i != base_index:
-                distance = euclidean_distances([G_t[i]], [G_t[base_index]])
-                result_dict[name] = distance[0][0]
+        label_list = []
+        for name in data_map.dataset_list:
+            if name in data_map.left_dataset_list:
+                label_list.append(1)
+            else:
+                label_list.append(0)
 
-        result_file = os.path.join(analysis_args.analysis_result_dir, analysis_args.analysis_encode_method+'_'+method+'.txt')
+        analysis_result = cluster_compare.compare(model_list)
+        analysis_result = sorted(analysis_result.items(), key=lambda x: x[1])
+        analysis_result = {k:v for k,v in analysis_result}
+
+        result_path = os.path.join(analysis_args.analysis_result_dir, analysis_args.graph_distance)
+        if not os.path.exists(result_path):
+            os.makedirs(result_path)
+        result_file = os.path.join(result_path,analysis_args.analysis_encode_method+'_'+method+'_'+analysis_args.graph_kernel+'.txt')
         with open(result_file, mode='w',encoding='utf8') as fp:
-            for k, v in result_dict.items():
+            for k, v in analysis_result.items():
                 fp.write(k+' : '+str(v)+'\n')
     return analysis_result
-
-def _build_graph(model):
-    edges = list()
-    edge_labels = dict()
-    node_labels = dict()
-    distance = model.distances_
-    counts = np.zeros(model.children_.shape[0])
-    n_samples = len(model.labels_)
-    for i, merge in enumerate(model.children_):
-        current_counts = 0
-        for child_idx in merge:
-            edges.append((i+n_samples, child_idx, distance[i] / 2))
-            edge_labels[(i+n_samples, child_idx)] = 1
-            if child_idx < n_samples:
-                current_counts += 1 
-            else:
-                current_counts += counts[child_idx - n_samples]
-        counts[i] = current_counts
-    for i in range(len(counts)+n_samples):
-        if i<n_samples:
-            if i in [0,2,4]:
-                node_labels[i] = 0
-            else:
-                node_labels[i] = 1
-        else:
-            node_labels[i] = counts[i-n_samples] + n_samples 
-    graph = Graph(edges, node_labels=node_labels, edge_labels=edge_labels)
-    return graph
 
 def _draw_heatmap(data, x_list, y_list):
     fig, ax = plt.subplots()
