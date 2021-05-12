@@ -1,3 +1,4 @@
+import os
 from numpy.lib.utils import source
 from sklearn.cluster import AgglomerativeClustering
 from matplotlib import pyplot as plt
@@ -8,6 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import seaborn as sns
 import pandas as pd
 import joblib
+
 from program.config import ArticleMap, TwitterMap
 
 
@@ -55,6 +57,8 @@ def build_baseline(data_type, label_type):
             cluster_result[label] = list()
         cluster_result[label].append(label_list[i])
 
+    if not os.path.exists('./log/baseline/model/'):
+        os.makedirs('./log/baseline/model/')
     model_file = './log/baseline/model/baseline_'+label_type+'_'+data_type+'.c'
     joblib.dump(analyzer, model_file)
     plt.title('Baseline')

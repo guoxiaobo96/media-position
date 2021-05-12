@@ -138,6 +138,7 @@ class ClusterAnalysis(BaseAnalysis):
         data,
         sentence_number : str,
         analysis_args: AnalysisArguments,
+        keep_result = True,
         encode:bool = True,
         dataset_list :List = [],
 
@@ -157,16 +158,17 @@ class ClusterAnalysis(BaseAnalysis):
             if label not in cluster_result:
                 cluster_result[label] = list()
             cluster_result[label].append(dataset_list[i])
-        plt.title('Hierarchical Clustering Dendrogram')
-        plot_dendrogram(self._analyser, orientation='right', labels=dataset_list)
-        plt_file = os.path.join(analysis_args.analysis_result_dir,analysis_args.analysis_encode_method+'_'+analysis_args.analysis_cluster_method+'_'+sentence_number+'.png')
-        model_path = os.path.join(os.path.join(os.path.join(self._misc_args.log_dir, self._data_args.data_type),'model'),analysis_args.analysis_data_type)
-        if not os.path.exists(model_path):
-            os.makedirs(model_path)
-        model_file = os.path.join(model_path,analysis_args.analysis_encode_method+'_'+analysis_args.analysis_cluster_method+'_'+sentence_number+'.c')
-        joblib.dump(self._analyser, model_file)
-        plt.savefig(plt_file,bbox_inches = 'tight')
-        plt.close()
+        if keep_result:
+            plt.title('Hierarchical Clustering Dendrogram')
+            plot_dendrogram(self._analyser, orientation='right', labels=dataset_list)
+            plt_file = os.path.join(analysis_args.analysis_result_dir,analysis_args.analysis_encode_method+'_'+analysis_args.analysis_cluster_method+'_'+sentence_number+'.png')
+            model_path = os.path.join(os.path.join(os.path.join(self._misc_args.log_dir, self._data_args.data_type),'model'),analysis_args.analysis_data_type)
+            if not os.path.exists(model_path):
+                os.makedirs(model_path)
+            model_file = os.path.join(model_path,analysis_args.analysis_encode_method+'_'+analysis_args.analysis_cluster_method+'_'+sentence_number+'.c')
+            joblib.dump(self._analyser, model_file)
+            plt.savefig(plt_file,bbox_inches = 'tight')
+            plt.close()
         return clusters, cluster_result, dataset_list, encoded_list
 
 
@@ -208,7 +210,8 @@ class DistanceAnalysis(BaseAnalysis):
         self,
         data,
         sentence_number : str,
-        analysis_args: AnalysisArguments
+        analysis_args: AnalysisArguments,
+        keep_result = True
     ) -> None:
         distance_result = dict()
         dataset_list, encoded_list = self._encode_data(data)

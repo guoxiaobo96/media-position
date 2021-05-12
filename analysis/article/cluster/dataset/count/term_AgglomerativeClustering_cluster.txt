@@ -1,9 +1,0 @@
-distance_base : 0.38461538461538464
-5.json : 1.0
-7.json : 1.0
-1.json : 1.0
-3.json : 1.0
-2.json : 1.0
-4.json : 1.0
-6.json : 1.0
-average.json : 1.0

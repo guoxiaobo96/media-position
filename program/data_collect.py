@@ -1,6 +1,6 @@
 from torch import mode
 from .util import prepare_dirs_and_logger
-from .config import AnalysisArguments, DataArguments, MiscArgument, get_config, SourceMap, TrustMap
+from .config import AnalysisArguments, DataArguments, MiscArgument, get_config, SourceMap, TrustMap, ArticleMap
 import tweepy
 import time
 import os
@@ -90,6 +90,7 @@ def article_collect(
     misc_args: MiscArgument,
     data_args: DataArguments
 ) -> None:  
+    article_map = ArticleMap()
 
     article_dict = dict()
     data_path_dir_list_temp = []
@@ -102,7 +103,8 @@ def article_collect(
         data_path_dir_list_temp.append(data_path_dir)
 
     for data_path_year in data_path_dir_list_temp:
-        topic_list = os.listdir(data_path_year)
+        # topic_list = os.listdir(data_path_year)
+        topic_list = ['obamacare']
         for topic in topic_list:
             data_path_dir = os.path.join(data_path_year, topic)
             data_path_dir_list.append(data_path_dir)
@@ -131,7 +133,10 @@ def article_collect(
             article_dict[media].extend(text_list)
 
     random.seed(123)
-    for media, text_list in article_dict.items():
+    for media_name, text_list in article_dict.items():
+        if media_name not in article_map.name_to_dataset:
+            continue
+        media = article_map.name_to_dataset[media_name]
         text_list = list(set(text_list))
         random.shuffle(text_list)
         train_number = int(len(text_list)*0.7)
@@ -151,7 +156,7 @@ def article_collect(
                         end_index = text_t.rfind('.')
                         if end_index != -1:
                             text_t = text_t[:end_index+1]
-                        text_t.strip()
+                        text_t = text_t.strip()
                         fp.write(text_t+'\n')
                         if end_index != -1:
                             start_index += (end_index+1)

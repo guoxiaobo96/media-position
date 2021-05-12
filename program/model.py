@@ -238,7 +238,7 @@ class AdapterModel(DeepModel):
 
     def predict(self, sentence_list) -> Dict:
         self._model.eval()
-        fill_mask = pipeline(task="fill-mask", model= self._model, tokenizer= self.tokenizer,device=0,top_k=10)
+        fill_mask = pipeline(task="fill-mask", model= self._model, tokenizer= self.tokenizer, device=0, top_k=10)
         result_dict= dict()
         for sentence in sentence_list:
             results = fill_mask(sentence)
