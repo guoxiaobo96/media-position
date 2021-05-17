@@ -208,7 +208,7 @@ class AnalysisArguments:
 
 @dataclass
 class ArticleMap:
-    dataset_to_name: Dict = field(default_factory=lambda: {'Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN'})
+    dataset_to_name: Dict = field(default_factory=lambda: {'Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
     name_to_dataset: Dict = field(init=False)
     dataset_list: List[str] = field(init=False)
     left_dataset_list: List[str] = field(default_factory=lambda:['Breitbart', 'Fox', 'sean','rushlimbaugh.com'])
@@ -216,7 +216,6 @@ class ArticleMap:
     def __post_init__(self):
         self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
         self.dataset_list = [k for k,v in self.dataset_to_name.items()]
-
 
 @dataclass
 class TwitterMap:

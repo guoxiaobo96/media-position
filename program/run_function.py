@@ -308,18 +308,19 @@ def label_score_analysis(
     model_list = dict()
     analysis_data = dict()
     sentence_position_data = dict()
+
+    print("Load data")
+
     analysis_data_temp = get_label_data(analysis_args, data_args)
-    
     index = 0
-    for k, item in analysis_data_temp.items():
-        for postion, v in item.items():
-            sentence_position_data[index] = {'sentence':k, 'position':postion}
+    for k, item in tqdm(analysis_data_temp.items()):
+        for position, v in item.items():
+            sentence_position_data[index] = {'sentence':k, 'position':position, 'word':k.split(' ')[int(position)]}
             analysis_data[index] = dict()
             for dataset in data_map.dataset_list:
                 analysis_data[index][dataset] = v[dataset]
             index += 1
-
-    analysis_data['average'] = dict()
+    analysis_data['media_average'] = dict()
 
     # analysis_data['concatenate'] = dict()
     # for k, v in analysis_data.items():
@@ -332,41 +333,30 @@ def label_score_analysis(
     #             else:
     #                 analysis_data['concatenate'][media][w] = float(analysis_data['concatenate'][media][w]) + float(c)
 
+    print("Build cluster")
     method = str()
     if analysis_args.analysis_compare_method == 'cluster':
         method = analysis_args.analysis_cluster_method
+        analysis_model = ClusterAnalysis(misc_args, model_args, data_args, training_args, analysis_args)
     elif analysis_args.analysis_compare_method == 'distance':
         method = analysis_args.analysis_distance_method
-    for k, v in analysis_data.items():
-        if k == 'average' or k == 'concatenate':
+        analysis_model = DistanceAnalysis(misc_args, model_args, data_args, training_args, analysis_args)
+    for k, v in tqdm(analysis_data.items()):
+        if k == 'media_average' or k == 'concatenate':
             continue
-        if analysis_args.analysis_compare_method == 'cluster':
-            analysis_model = ClusterAnalysis(misc_args, model_args, data_args, training_args, analysis_args)
-        elif analysis_args.analysis_compare_method == 'distance':
-            analysis_model = DistanceAnalysis(misc_args, model_args, data_args, training_args, analysis_args)      
-        model, cluster_result, dataset_list, encoded_list = analysis_model.analyze(v, str(k), analysis_args, keep_result=False)
-        analysis_result[k] = cluster_result
-        model_list[k] = model
-        for i, encoded_data in enumerate(encoded_list):
-            if dataset_list[i] not in analysis_data['average']:
-                analysis_data['average'][dataset_list[i]] = list()
-            analysis_data['average'][dataset_list[i]].append(encoded_data)
+        try:
+            model, cluster_result, dataset_list, encoded_list = analysis_model.analyze(v, str(k), analysis_args, keep_result=False)
+            analysis_result[k] = cluster_result
+            model_list[k] = model
+            for i, encoded_data in enumerate(encoded_list):
+                if dataset_list[i] not in analysis_data['media_average']:
+                    analysis_data['media_average'][dataset_list[i]] = list()
+                analysis_data['media_average'][dataset_list[i]].append(encoded_data)
+        except ValueError:
+            continue
     average_distance_matrix = np.zeros((len(data_map.dataset_list), len(data_map.dataset_list)))
 
-    for i, dataset_name_a in enumerate(data_map.dataset_list):
-        for j, dataset_name_b in enumerate(data_map.dataset_list):
-            if i == j :
-                continue
-            average_distance = 0
-            encoded_a = analysis_data['average'][dataset_name_a]
-            encoded_b = analysis_data['average'][dataset_name_b]
-            for k in range(len(analysis_data) - 2):
-                average_distance += euclidean_distances(encoded_a[k].reshape(1,-1), encoded_b[k].reshape(1,-1))[0][0]
-            average_distance_matrix[i][j] = average_distance
-    analysis_data['average'] = average_distance_matrix
-    model, cluster_result, _, _ = analysis_model.analyze(analysis_data['average'], 'average', analysis_args, keep_result=False, encode=False, dataset_list=list(data_map.dataset_list))
-    model_list['average'] = model
-    analysis_result['average'] = cluster_result
+
     conclusion = dict()
     # for k, v in analysis_result.items():
     #     analysis_file = os.path.join(analysis_args.analysis_result_dir, k.split('.')[0])
@@ -376,6 +366,8 @@ def label_score_analysis(
     #         if country not in conclusion:
     #             conclusion[country] = dict()
     #         conclusion[country][k] = distance
+
+    print("Compare distance")
     if analysis_args.analysis_compare_method == 'distance':
         for k, v in analysis_result.items():
             label_list, data = v
@@ -401,26 +393,72 @@ def label_score_analysis(
         base_model = joblib.load('log/baseline/model/baseline_source_'+data_args.data_type+'.c')
         model_list['distance_base'] = base_model
         cluster_compare = ClusterCompare(misc_args, analysis_args)
+        analysis_result = cluster_compare.compare(model_list)
 
-        label_list = []
-        for name in data_map.dataset_list:
-            if name in data_map.left_dataset_list:
-                label_list.append(1)
-            else:
-                label_list.append(0)
+        print("Combine cluster")
+        for i, dataset_name_a in enumerate(tqdm(data_map.dataset_list)):
+            for j, dataset_name_b in enumerate(data_map.dataset_list):
+                if i == j or average_distance_matrix[i][j] != 0:
+                    continue
+                average_distance = 0
+                encoded_a = analysis_data['media_average'][dataset_name_a]
+                encoded_b = analysis_data['media_average'][dataset_name_b]
+                for k in range(len(encoded_a)):
+                    if k not in analysis_result or analysis_result[k] >= 1:
+                        continue
+                    average_distance += euclidean_distances(encoded_a[k].reshape(1,-1), encoded_b[k].reshape(1,-1))[0][0]
+                average_distance_matrix[i][j] = average_distance / len(encoded_a)
+                average_distance_matrix[j][i] = average_distance / len(encoded_a)
+        analysis_data['media_average'] = average_distance_matrix
+        print("Combine cluster analyze")
+        model, cluster_result, _, _ = analysis_model.analyze(analysis_data['media_average'], 'media_average', analysis_args, encode=False, dataset_list=list(data_map.dataset_list))
+        model_list['media_average'] = model
+
+        cluster_average = list()
+        for _, v in analysis_result.items():
+            if v < 1.0:
+                cluster_average.append(v)
 
         analysis_result = cluster_compare.compare(model_list)
+        analysis_result['cluster_average'] = np.mean(cluster_average)
         analysis_result = sorted(analysis_result.items(), key=lambda x: x[1])
-        analysis_result = {k:v for k,v in analysis_result}
+        sentence_position_data['media_average'] = {'sentence':'media_average','position':'-1','word':'sentence_average'}
+        sentence_position_data['cluster_average'] = {'sentence':'cluster_average','position':'-1','word':'sentence_average'}
+        sentence_position_data['distance_base'] = {'sentence':'distance_base','position':'-1','word':'distance_base'}
+
+        result = dict()
+        average_distance = dict()
+        for k, v in tqdm(analysis_result):
+            sentence = sentence_position_data[k]['sentence']
+            position = sentence_position_data[k]['position']
+            word = sentence_position_data[k]['word']
+            if sentence not in result:
+                average_distance[sentence] = list()
+                result[sentence] = dict()
+            result[sentence][position] = (v, word)
+            average_distance[sentence].append(v)
+        
+        for sentence, average_distance in average_distance.items():
+            result[sentence]['-1'] = (np.mean(average_distance),'sentence_average')
+
+        sentence_list = list(result.keys())
+        analysis_result = {k:{'score':v, 'sentence':sentence_list.index(sentence_position_data[k]['sentence'])+1, 'position':sentence_position_data[k]['position'],'word':sentence_position_data[k]['word']} for k,v in analysis_result}
 
         result_path = os.path.join(analysis_args.analysis_result_dir, analysis_args.graph_distance)
         if not os.path.exists(result_path):
             os.makedirs(result_path)
-        result_file = os.path.join(result_path,analysis_args.analysis_encode_method+'_'+method+'_'+analysis_args.graph_kernel+'.txt')
+        result_file = os.path.join(result_path,analysis_args.analysis_encode_method+'_'+method+'_'+analysis_args.graph_kernel+'_sort.json')
         with open(result_file, mode='w',encoding='utf8') as fp:
             for k, v in analysis_result.items():
+                fp.write(json.dumps(v,ensure_ascii=False)+'\n')
+
+        result_file = os.path.join(result_path,analysis_args.analysis_encode_method+'_'+method+'_'+analysis_args.graph_kernel+'_sentence.json')
+        with open(result_file, mode='w',encoding='utf8') as fp:
+            for k, v in result.items():
                 fp.write(k+' : '+str(v)+'\n')
+    print("Analysis finish")
     return analysis_result
+
 
 
 def _draw_heatmap(data, x_list, y_list):

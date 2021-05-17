@@ -14,6 +14,7 @@ from sklearn import cluster
 import joblib
 from grakel import Graph, graph
 from grakel.graph_kernels import *
+from copy import deepcopy
 
 from sklearn.cluster import (
     KMeans,
@@ -152,7 +153,7 @@ class ClusterAnalysis(BaseAnalysis):
             encoded_list = data
 
 
-        clusters = self._analyser.fit(encoded_list)
+        clusters = deepcopy(self._analyser.fit(encoded_list))
         labels = clusters.labels_
         for i, label in enumerate(labels.tolist()):
             if label not in cluster_result:
