@@ -454,11 +454,13 @@ def label_score_analysis(
         result_file = os.path.join(result_path,analysis_args.analysis_encode_method+'_'+method+'_'+analysis_args.graph_kernel+'_sentence.json')
         with open(result_file, mode='w',encoding='utf8') as fp:
             for k, v in result.items():
-                fp.write(k+' : '+str(v)+'\n')
+                v['sentence'] = k
+                fp.write(json.dumps(v,ensure_ascii=False)+'\n')
     print("Analysis finish")
     return analysis_result
 
-
+def train_mask_score_model():
+    pass
 
 def _draw_heatmap(data, x_list, y_list):
     fig, ax = plt.subplots()

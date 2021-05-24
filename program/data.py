@@ -125,6 +125,13 @@ def get_label_data(
 
     return row_data
 
+def get_mask_model_data(
+    args: AnalysisArguments,
+    data_args: DataArguments
+):
+    pass
+
+
 def main():
     misc_args, model_args, data_args, training_args, adapter_args, analysis_args = get_config()
     prepare_dirs_and_logger(misc_args, model_args,
