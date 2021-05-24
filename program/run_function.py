@@ -423,9 +423,9 @@ def label_score_analysis(
         analysis_result = cluster_compare.compare(model_list)
         analysis_result['cluster_average'] = np.mean(cluster_average)
         analysis_result = sorted(analysis_result.items(), key=lambda x: x[1])
-        sentence_position_data['media_average'] = {'sentence':'media_average','position':'-1','word':'media_average'}
-        sentence_position_data['cluster_average'] = {'sentence':'cluster_average','position':'-1','word':'cluster_average'}
-        sentence_position_data['distance_base'] = {'sentence':'distance_base','position':'-1','word':'distance_base'}
+        sentence_position_data['media_average'] = {'sentence':'media_average','position':-1,'word':'media_average'}
+        sentence_position_data['cluster_average'] = {'sentence':'cluster_average','position':-1,'word':'cluster_average'}
+        sentence_position_data['distance_base'] = {'sentence':'distance_base','position':-1,'word':'distance_base'}
 
         result = dict()
         average_distance = dict()

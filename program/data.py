@@ -113,15 +113,15 @@ def get_label_data(
     for file in data_map.dataset_list:
         analysis_data_file = os.path.join(args.analysis_data_dir, file+'.json')
         with open(analysis_data_file) as fp:
-            for line in fp.readlines():
+            for line in fp.readlines()[:1000]:
                 item = json.loads(line.strip())
                 sentence = item['sentence']
                 if sentence not in row_data:
                     row_data[sentence] = dict()
                 for index, prob in item['word'].items():
-                    if index not in row_data[sentence]:
-                        row_data[sentence][index] = dict()
-                    row_data[sentence][index][file] = prob
+                    if int(index) not in row_data[sentence]:
+                        row_data[sentence][int(index)] = dict()
+                    row_data[sentence][int(index)][file] = prob
 
     return row_data
 

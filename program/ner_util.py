@@ -20,9 +20,11 @@ class NerBertDataset:
         # Tokenize the text into subwords in a label-preserving way
         with open(data_path, mode='r',encoding='utf8') as fp:
             for line in fp:
-                item  = line.strip()
-                sentence, text_scores = item.split(' : ')
-                text_scores = json.loads(text_scores)
+                item  = json.loads(line.strip())
+                sentence = item.pop('sentence')
+                text_scores = item
+                if sentence in ['media_average','distance_base','cluster_average']:
+                    continue
                 tokenized_texts.append(tokenize_and_preserve_labels(sentence,text_scores, tokenizer))
 
         self.sentences = [text[0] for text in tokenized_texts]
@@ -39,23 +41,23 @@ class NerBertDataset:
         )
 
         # Convert tags to IDs
-        self.tags = pad_sequences(
+        self.scores = pad_sequences(
             [score for score in self.scores],
             maxlen=max_len,
             value=1,
             padding="post",
-            dtype="long",
+            dtype="float",
             truncating="post",
         )
 
         # Swaps out the final token-label pair for ([SEP], O)
         # for any sequences that reach the MAX_LEN
-        for voc_ids, tag_ids in zip(self.input_ids, self.tags):
+        for voc_ids, scores_ids in zip(self.input_ids, self.scores):
             if voc_ids[-1] == pad_tok:
                 continue
             else:
                 voc_ids[-1] = sep_tok
-                tag_ids[-1] = 1
+                scores_ids[-1] = 1
 
         # Place a mask (zero) over the padding tokens
         self.attn_masks = [[float(i > 0) for i in ii] for ii in self.input_ids]
@@ -74,9 +76,12 @@ def tokenize_and_preserve_labels(sentence:str, text_scores:Dict, tokenizer:BertT
     tokenized_sentence = []
     scores = []
     
+    ordered_sentence = [[] for _ in range(len(text_scores)-1)]
     for position, info in text_scores.items():
         if position == '-1':
             continue
+        ordered_sentence[int(position)] = info
+    for info in ordered_sentence:
         score, word = info
         tokenized_word = tokenizer.tokenize(word)
         n_subwords = len(tokenized_word)
@@ -89,7 +94,7 @@ def tokenize_and_preserve_labels(sentence:str, text_scores:Dict, tokenizer:BertT
 def main():
 
     tokenizer = BertTokenizer.from_pretrained('bert-base-cased', do_lower_case=False)
-    ner_bert_dataset = NerBertDataset('/home/xiaobo/media-position/analysis/article_threshold/cluster/dataset_threshold/count/term_AgglomerativeClustering_cluster_sentence.json', tokenizer, 512)
+    ner_bert_dataset = NerBertDataset('/home/xiaobo/media-position/analysis/article/cluster/dataset/count/term_AgglomerativeClustering_cluster_sentence.json', tokenizer, 512)
     print('test')
 
 if __name__ == '__main__':
