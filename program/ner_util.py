@@ -1,101 +1,85 @@
 import argparse
+from scipy.sparse.construct import random
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from transformers import BertTokenizer
 import numpy as np
 import json
 from typing import Optional, List, Dict, Tuple, Any, NewType
+import torch
+from transformers.tokenization_bert_fast import BertTokenizerFast
 
 
-class NerBertDataset:
-    def __init__(self, data_path:str, tokenizer:BertTokenizer, max_len):
-
-        """
-        Takes care of the tokenization and ID-conversion steps
-        for prepping data for BERT.
-        """
-
-        pad_tok = tokenizer.vocab["[PAD]"]
-        sep_tok = tokenizer.vocab["[SEP]"]
-        tokenized_texts = list()
-        # Tokenize the text into subwords in a label-preserving way
-        with open(data_path, mode='r',encoding='utf8') as fp:
-            for line in fp:
-                item  = json.loads(line.strip())
-                sentence = item.pop('sentence')
-                text_scores = item
-                if sentence in ['media_average','distance_base','cluster_average']:
-                    continue
-                tokenized_texts.append(tokenize_and_preserve_labels(sentence,text_scores, tokenizer))
-
-        self.sentences = [text[0] for text in tokenized_texts]
-        self.tokens = [["[CLS]"] + text[1] for text in tokenized_texts]
-        self.scores = [[1] + text[2] for text in tokenized_texts]
-
-        # Convert tokens to IDs
-        self.input_ids = pad_sequences(
-            [tokenizer.convert_tokens_to_ids(txt) for txt in self.tokens],
-            maxlen=max_len,
-            dtype="long",
-            truncating="post",
-            padding="post",
-        )
-
-        # Convert tags to IDs
-        self.scores = pad_sequences(
-            [score for score in self.scores],
-            maxlen=max_len,
-            value=1,
-            padding="post",
-            dtype="float",
-            truncating="post",
-        )
-
-        # Swaps out the final token-label pair for ([SEP], O)
-        # for any sequences that reach the MAX_LEN
-        for voc_ids, scores_ids in zip(self.input_ids, self.scores):
-            if voc_ids[-1] == pad_tok:
-                continue
-            else:
-                voc_ids[-1] = sep_tok
-                scores_ids[-1] = 1
-
-        # Place a mask (zero) over the padding tokens
-        self.attn_masks = [[float(i > 0) for i in ii] for ii in self.input_ids]
-
-
-def tokenize_and_preserve_labels(sentence:str, text_scores:Dict, tokenizer:BertTokenizer):
-
-    """
-    Word piece tokenization makes it difficult to match word labels
-    back up with individual word pieces. This function tokenizes each
-    word one at a time so that it is easier to preserve the correct
-    label for each subword. It is, of course, a bit slower in processing
-    time, but it will help our model achieve higher accuracy.
-    """
-
-    tokenized_sentence = []
-    scores = []
+class NERDataset(torch.utils.data.Dataset):
+    def __init__(self, encodings, labels):
+        self.encodings = encodings
+        self.labels = labels
     
-    ordered_sentence = [[] for _ in range(len(text_scores)-1)]
-    for position, info in text_scores.items():
-        if position == '-1':
-            continue
-        ordered_sentence[int(position)] = info
-    for info in ordered_sentence:
-        score, word = info
-        tokenized_word = tokenizer.tokenize(word)
-        n_subwords = len(tokenized_word)
-        tokenized_sentence.extend(tokenized_word)
-        scores.extend([score] * n_subwords)
+    def __getitem__(self, idx):
+        item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+        item['labels'] = torch.tensor(self.labels[idx])
+        return item
 
-    return sentence, tokenized_sentence, scores
+    def __len__(self):
+        return len(self.labels)
+
+
+def encode_scores(scores, encodings):
+    scores = [[score for score in doc] for doc in scores]
+    encoded_scores = []
+    input_ids = list()
+    token_type_ids = list()
+    attention_mask = list()
+
+    for (doc_scores, doc_offset) in zip(scores, encodings.offset_mapping):
+        # create an empty array of -100
+        doc_enc_scores = np.ones(len(doc_offset),dtype=float) * -100
+        arr_offset = np.array(doc_offset)
+
+        # set labels whose first offset position is 0 and the second is not 0
+        doc_enc_scores[(arr_offset[:,0] == 0) & (arr_offset[:,1] != 0)] = doc_scores
+        encoded_scores.append(doc_enc_scores.tolist())
+
+
+    return encoded_scores
 
 
 def main():
+    from sklearn.model_selection import train_test_split
+    tokenizer = BertTokenizerFast.from_pretrained('bert-base-cased', do_lower_case=False)
+    data_path = '/home/xiaobo/media-position/analysis/article/cluster/dataset/count/term_AgglomerativeClustering_cluster_sentence.json'
+    tokenized_texts = list()
+    # Tokenize the text into subwords in a label-preserving way
+    raw_text = list()
+    raw_score = list()
+    with open(data_path, mode='r',encoding='utf8') as fp:
+        for line in fp:
+            item  = json.loads(line.strip())
+            sentence = item.pop('sentence')
+            text_scores = item
+            if sentence in ['media_average','distance_base','cluster_average']:
+                continue
 
-    tokenizer = BertTokenizer.from_pretrained('bert-base-cased', do_lower_case=False)
-    ner_bert_dataset = NerBertDataset('/home/xiaobo/media-position/analysis/article/cluster/dataset/count/term_AgglomerativeClustering_cluster_sentence.json', tokenizer, 512)
-    print('test')
+            scores = [0 for _ in range(len(text_scores) - 1)]
+            texts = [0 for _ in range(len(text_scores) - 1)]
+            for position, item in text_scores.items():
+                if int(position) >= 0:
+                    scores[int(position)] = item[0]
+                    texts[int(position)] = item[1]
+            raw_score.append(scores)
+            raw_text.append(texts)
+    
+    train_texts, val_texts, train_scores, val_scores = train_test_split(raw_text, raw_score, test_size=.2, random_state=0)
+    train_encodings = tokenizer(train_texts, is_split_into_words=True, return_offsets_mapping=True, padding=True, truncation=True)
+    val_encodings = tokenizer(val_texts, is_split_into_words=True, return_offsets_mapping=True, padding=True, truncation=True)
+    train_scores = encode_scores(train_scores, train_encodings)
+    val_scores = encode_scores(val_scores, val_encodings)
+    train_encodings.pop("offset_mapping")
+    val_encodings.pop("offset_mapping")
+    train_dataset = NERDataset(train_encodings, train_scores)
+    val_dataset = NERDataset(val_encodings, val_scores)
+
+
+
 
 if __name__ == '__main__':
     main()

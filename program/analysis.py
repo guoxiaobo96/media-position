@@ -40,7 +40,7 @@ from tokenizers import EncodeInput, Tokenizer, models
 
 
 from .config import AnalysisArguments, MiscArgument, ModelArguments, DataArguments, TrainingArguments
-from .model import BertModel, encode_bert
+from .model import BertSimpleModel, encode_bert
 
 
 class BaseAnalysis(ABC):
@@ -317,7 +317,7 @@ class LiwcEncoder(object):
 
 class BertEncoder(object):
     def __init__(self, model_args, data_args, training_args) -> None:
-        self._model = BertModel(model_args, data_args, training_args)
+        self._model = BertSimpleModel(model_args, data_args, training_args)
 
     def encode(
         self,

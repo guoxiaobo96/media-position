@@ -13,9 +13,10 @@ from tqdm import tqdm
 
 
 from .config import DataArguments, MiscArgument, ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap
-from .model import AdapterModel
-from .data import get_dataset, get_analysis_data, get_label_data
+from .model import LmAdapterModel, NERModel
+from .data import get_dataset, get_analysis_data, get_label_data, get_mask_score_data
 from .analysis import ClusterAnalysis,DistanceAnalysis,ClusterCompare
+from .ner_util import NERDataset
 
 
 def train_adapter(
@@ -24,7 +25,7 @@ def train_adapter(
     training_args: TrainingArguments,
     adapter_args: AdapterArguments
 ) -> Dict:
-    model = AdapterModel(model_args, data_args, training_args, adapter_args)
+    model = LmAdapterModel(model_args, data_args, training_args, adapter_args)
     train_dataset = (
         get_dataset(data_args, tokenizer=model.tokenizer,
                     cache_dir=model_args.cache_dir) if training_args.do_train else None
@@ -59,7 +60,7 @@ def predict_adapter(
     if dataset in ['vanilla']:
         data_type = ['dataset', 'position']
         
-    model = AdapterModel(model_args, data_args, training_args, adapter_args)
+    model = LmAdapterModel(model_args, data_args, training_args, adapter_args)
     masked_sentence_file: str = './masked_sentence'
     masked_sentence_list: List = list()
     log_dir = os.path.join(misc_args.log_dir, data_args.data_type)
@@ -250,7 +251,7 @@ def label_score_predict(
 
     masked_sentence_list: List = list()
     masked_sentence_file_list: List = [os.path.join(os.path.join(os.path.join(data_args.data_dir,file_path),'article'),'en.valid') for file_path in os.listdir(data_args.data_dir)]
-    model = AdapterModel(model_args, data_args, training_args, adapter_args)
+    model = LmAdapterModel(model_args, data_args, training_args, adapter_args)
     word_set = set()
 
     log_dir = os.path.join(misc_args.log_dir, data_args.data_type)
@@ -461,8 +462,16 @@ def label_score_analysis(
     print("Analysis finish")
     return analysis_result
 
-def train_mask_score_model():
-    pass
+def train_mask_score_model(model_args: ModelArguments,
+    data_args: DataArguments,
+    training_args: TrainingArguments,
+    analysis_args: AnalysisArguments,
+    adapter_args: AdapterArguments) -> None:
+
+    model = NERModel(model_args, data_args, training_args, adapter_args)
+
+    train_dataset, eval_dataset = get_mask_score_data(analysis_args,data_args,model.tokenizer)
+    model.train(train_dataset, eval_dataset)
 
 def _draw_heatmap(data, x_list, y_list):
     fig, ax = plt.subplots()

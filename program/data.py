@@ -1,8 +1,6 @@
 from multiprocessing.pool import ApplyResult
 from transformers import PreTrainedTokenizer, LineByLineWithRefDataset, LineByLineTextDataset, TextDataset
 from torch.utils.data import ConcatDataset, dataset
-from .util import prepare_dirs_and_logger
-from .config import AnalysisArguments, DataArguments, MiscArgument, SourceMap, TrustMap, get_config, ArticleMap, TwitterMap
 import os
 from os import path
 import warnings
@@ -13,8 +11,15 @@ from multiprocessing import Pool
 import random
 from typing import Any, List, Optional, Union, Dict, Set, List
 from glob import glob
+from sklearn.model_selection import train_test_split
+
+from transformers.tokenization_bert import BertTokenizer
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 warnings.filterwarnings('ignore')
+
+from .util import prepare_dirs_and_logger
+from .config import AnalysisArguments, DataArguments, MiscArgument, SourceMap, TrustMap, get_config, ArticleMap, TwitterMap
+from .ner_util import NERDataset, encode_scores
 
 def extract_data():
     pass
@@ -125,11 +130,51 @@ def get_label_data(
 
     return row_data
 
-def get_mask_model_data(
-    args: AnalysisArguments,
-    data_args: DataArguments
+def get_mask_score_data(
+    analysis_args: AnalysisArguments,
+    data_args: DataArguments,
+    tokenizer: BertTokenizer
 ):
-    pass
+    file = analysis_args.analysis_encode_method+'_'+analysis_args.analysis_cluster_method+'_'+analysis_args.analysis_compare_method+'_sentence.json'
+    data_path = os.path.join(os.path.join(analysis_args.analysis_result_dir,analysis_args.graph_distance),file)
+    data_path = '/home/xiaobo/media-position/analysis/article/cluster/dataset/count/term_AgglomerativeClustering_cluster_sentence.json'
+    tokenized_texts = list()
+    # Tokenize the text into subwords in a label-preserving way
+    raw_text = list()
+    raw_score = list()
+    with open(data_path, mode='r',encoding='utf8') as fp:
+        for line in fp:
+            item  = json.loads(line.strip())
+            sentence = item.pop('sentence')
+            text_scores = item
+            if sentence in ['media_average','distance_base','cluster_average']:
+                continue
+            scores = [0 for _ in range(len(text_scores) - 1)]
+            texts = [0 for _ in range(len(text_scores) - 1)]
+            for position, item in text_scores.items():
+                if int(position) >= 0:
+                    scores[int(position)] = item[0]
+                    texts[int(position)] = item[1]
+            raw_score.append(scores)
+            raw_text.append(texts)
+    
+    train_texts, val_texts, train_scores, val_scores = train_test_split(raw_text, raw_score, test_size=.2)
+    train_encodings = tokenizer(train_texts, is_split_into_words=True, return_offsets_mapping=True, padding=True, truncation=True)
+    val_encodings = tokenizer(val_texts, is_split_into_words=True, return_offsets_mapping=True, padding=True, truncation=True)
+    train_scores = encode_scores(train_scores, train_encodings)
+    val_scores = encode_scores(val_scores, val_encodings)
+    train_encodings.pop("offset_mapping")
+    val_encodings.pop("offset_mapping")
+    train_dataset = NERDataset(train_encodings, train_scores)
+    val_dataset = NERDataset(val_encodings, val_scores)
+
+    return train_dataset, val_dataset
+
+
+
+
+
+
 
 
 def main():
