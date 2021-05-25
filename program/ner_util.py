@@ -7,6 +7,7 @@ import json
 from typing import Optional, List, Dict, Tuple, Any, NewType
 import torch
 from transformers.tokenization_bert_fast import BertTokenizerFast
+from transformers import BatchEncoding
 
 
 class NERDataset(torch.utils.data.Dataset):
@@ -23,24 +24,36 @@ class NERDataset(torch.utils.data.Dataset):
         return len(self.labels)
 
 
-def encode_scores(scores, encodings):
+def encode_scores(scores, encodings:BatchEncoding):
     scores = [[score for score in doc] for doc in scores]
     encoded_scores = []
     input_ids = list()
     token_type_ids = list()
     attention_mask = list()
+    encoding_list = list()
+    error_count = 0
 
-    for (doc_scores, doc_offset) in zip(scores, encodings.offset_mapping):
+    for (doc_scores, doc_input_ids, doc_attemtion_mask, doc_token_type_ids, doc_offset, doc_encoding) in zip(scores, encodings.input_ids, encodings.attention_mask, encodings.token_type_ids, encodings.offset_mapping, encodings._encodings):
         # create an empty array of -100
-        doc_enc_scores = np.ones(len(doc_offset),dtype=float) * -100
-        arr_offset = np.array(doc_offset)
+        try:
+            doc_enc_scores = np.ones(len(doc_offset),dtype=float) * -100
+            arr_offset = np.array(doc_offset)
 
-        # set labels whose first offset position is 0 and the second is not 0
-        doc_enc_scores[(arr_offset[:,0] == 0) & (arr_offset[:,1] != 0)] = doc_scores
-        encoded_scores.append(doc_enc_scores.tolist())
+            # set labels whose first offset position is 0 and the second is not 0
+            doc_enc_scores[(arr_offset[:,0] == 0) & (arr_offset[:,1] != 0)] = doc_scores
+            encoded_scores.append(doc_enc_scores.tolist())
+            input_ids.append(doc_input_ids)
+            token_type_ids.append(doc_token_type_ids)
+            attention_mask.append(doc_attemtion_mask)
+            encoding_list.append(doc_encoding)
+        except:
+            error_count += 1
+
+    data = {'input_ids':input_ids,'token_type_ids':token_type_ids, 'attention_mask':attention_mask}
+    encodings = BatchEncoding(data, encoding_list)
 
 
-    return encoded_scores
+    return encoded_scores, encodings
 
 
 def main():
@@ -71,10 +84,8 @@ def main():
     train_texts, val_texts, train_scores, val_scores = train_test_split(raw_text, raw_score, test_size=.2, random_state=0)
     train_encodings = tokenizer(train_texts, is_split_into_words=True, return_offsets_mapping=True, padding=True, truncation=True)
     val_encodings = tokenizer(val_texts, is_split_into_words=True, return_offsets_mapping=True, padding=True, truncation=True)
-    train_scores = encode_scores(train_scores, train_encodings)
-    val_scores = encode_scores(val_scores, val_encodings)
-    train_encodings.pop("offset_mapping")
-    val_encodings.pop("offset_mapping")
+    train_scores = encode_scores(train_scores, train_encodings, tokenizer)
+    val_scores = encode_scores(val_scores, val_encodings, tokenizer)
     train_dataset = NERDataset(train_encodings, train_scores)
     val_dataset = NERDataset(val_encodings, val_scores)
 

@@ -161,10 +161,8 @@ def get_mask_score_data(
     train_texts, val_texts, train_scores, val_scores = train_test_split(raw_text, raw_score, test_size=.2)
     train_encodings = tokenizer(train_texts, is_split_into_words=True, return_offsets_mapping=True, padding=True, truncation=True)
     val_encodings = tokenizer(val_texts, is_split_into_words=True, return_offsets_mapping=True, padding=True, truncation=True)
-    train_scores = encode_scores(train_scores, train_encodings)
-    val_scores = encode_scores(val_scores, val_encodings)
-    train_encodings.pop("offset_mapping")
-    val_encodings.pop("offset_mapping")
+    train_scores, train_encodings = encode_scores(train_scores, train_encodings)
+    val_scores, val_encodings = encode_scores(val_scores, val_encodings)
     train_dataset = NERDataset(train_encodings, train_scores)
     val_dataset = NERDataset(val_encodings, val_scores)
 
