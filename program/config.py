@@ -195,7 +195,7 @@ class AnalysisArguments:
         default="", metadata={"help": "The kernel used for calculating difference"}
     )
     analysis_threshold: int = field(
-        default=2,
+        default=-1,
         metadata={
             "help": "The threshold for average distance , the default value is 2 which means all results will be combined. The model will only combine the sentence whose distance is smaller than the threshold"
         },

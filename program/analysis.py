@@ -15,6 +15,7 @@ import joblib
 from grakel import Graph, graph
 from grakel.graph_kernels import *
 from copy import deepcopy
+from zss import simple_distance, Node
 
 from sklearn.cluster import (
     KMeans,
@@ -34,6 +35,7 @@ from scipy.sparse.csgraph import shortest_path
 
 import numpy as np
 from numpy import ndarray
+from tqdm import tqdm
 
 
 from tokenizers import EncodeInput, Tokenizer, models
@@ -398,7 +400,7 @@ class ClusterCompare(object):
 
         return dist_matrix
 
-    def _tree_to_graph(self, model:AgglomerativeClustering, label_list: List[int] = None):
+    def _graph_generate(self, model:AgglomerativeClustering, label_list: List[int] = None):
         edges = list()
         edge_labels = dict()
         node_labels = dict()
@@ -449,6 +451,22 @@ class ClusterCompare(object):
         cluster_list = list(cluster_dict.values())
         return cluster_list
 
+    def _tree_generate(self, model:AgglomerativeClustering, label_list: List[int] = None):
+        cluster_dict = dict()
+        n_samples = len(model.labels_)
+        if label_list is None:
+            label_list = [i for i in range(n_samples)]
+
+        node_list = [0 for _ in range(n_samples*2 - 1)]
+        for i in range(n_samples):
+            node_list[i] = Node(str(i),[])
+        for i, merge in enumerate(model.children_):
+            child_list = list()
+            for child_idx in merge:
+                child_list.append(node_list[child_idx])
+            node_list[i+n_samples] = Node('-1',child_list)
+        return node_list[-1]
+
 
     def _build_graph(self, model, label_list=None) -> None:
         if self._analysis_args.graph_kernel == 'cluster':
@@ -456,12 +474,14 @@ class ClusterCompare(object):
                 return self._calculate_leaf_distance(model)
             else:
                 return self._cluster_generate(model)
+        elif self._analysis_args.graph_kernel == 'tree':
+            return self._tree_generate(model)
         else:
-            return self._tree_to_graph(model, label_list)
+            return self._graph_generate(model, label_list)
 
     def _calculate_distance(self, graph_list, name_list) -> None:
         result_dict = dict()
-        if self._analysis_args.graph_kernel != 'cluster':
+        if self._analysis_args.graph_kernel not in ['cluster', 'tree']:
             if self._analysis_args.graph_kernel == 'WeisfeilerLehman':
                 gk = WeisfeilerLehman()
             elif self._analysis_args.graph_kernel == 'GraphletSampling':
@@ -509,16 +529,19 @@ class ClusterCompare(object):
             
             graph_list = gk.fit_transform(graph_list)
         base_index = name_list.index('base')
-        for i, name in enumerate(name_list):
+        for i, name in enumerate(tqdm(name_list)):
             if i != base_index:
-                if self._analysis_args.graph_distance != 'count':
-                    distance = np.linalg.norm(graph_list[i]-graph_list[base_index])
-                else:
+                if self._analysis_args.graph_distance == 'count' :
                     count = 0
                     for cluster in graph_list[i]:
                         if cluster not in graph_list[base_index]:
                             count += 1
                     distance = count / (len(graph_list[base_index]) - 1)
+                elif self._analysis_args.graph_distance == 'edit':
+                    distance = simple_distance(graph_list[base_index], graph_list[i])
+                else:
+                    distance = np.linalg.norm(graph_list[i]-graph_list[base_index])
+
                 result_dict[name] = distance
         return result_dict        
 
