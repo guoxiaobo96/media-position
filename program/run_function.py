@@ -407,7 +407,7 @@ def label_score_analysis(
                 encoded_a = analysis_data['media_average'][dataset_name_a]
                 encoded_b = analysis_data['media_average'][dataset_name_b]
                 for k in range(len(encoded_a)):
-                    if k in analysis_result and analysis_result[k] < analysis_args.analysis_threshold:
+                    if k in analysis_result and (analysis_result[k] < analysis_args.analysis_threshold or analysis_args.analysis_threshold == -1):
                         average_distance += euclidean_distances(encoded_a[k].reshape(1,-1), encoded_b[k].reshape(1,-1))[0][0]
                 average_distance_matrix[i][j] = average_distance / len(encoded_a)
                 average_distance_matrix[j][i] = average_distance / len(encoded_a)
@@ -418,7 +418,7 @@ def label_score_analysis(
 
         cluster_average = list()
         for _, v in analysis_result.items():
-            if v < analysis_args.analysis_threshold:
+            if v < analysis_args.analysis_threshold or analysis_args.analysis_threshold == -1:
                 cluster_average.append(v)
 
         analysis_result = cluster_compare.compare(model_list)
