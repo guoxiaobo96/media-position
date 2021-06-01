@@ -59,7 +59,6 @@ def twitter_collect(
     for lang, tweet_list in cleaned_tweet_dict.items():
         if len(tweet_list) < 1000:
             continue
-        random.seed(123)
         random.shuffle(tweet_list)
         train_number = int(len(tweet_list)*0.7)
         train_file = os.path.join(data_args.data_path, lang+'.train')
@@ -132,7 +131,6 @@ def article_collect(
                 article_dict[media] = list()
             article_dict[media].extend(text_list)
 
-    random.seed(123)
     for media_name, text_list in article_dict.items():
         if media_name not in article_map.name_to_dataset:
             continue

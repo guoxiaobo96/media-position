@@ -34,7 +34,6 @@ from transformers import (
     TextDataset,
     Trainer,
     TrainingArguments,
-    set_seed,
     pipeline,
     AutoModel,
     BertPreTrainedModel,
@@ -461,22 +460,35 @@ class BertForScoreLabel(ModelWithHeadsAdaptersMixin, BertPreTrainedModel):
         sequence_output = self.dropout(sequence_output)
         logits = self.classifier(sequence_output)
 
+        # loss = None
+        # if labels is not None:
+        #     loss_fct = CrossEntropyLoss()
+        #     # Only keep active parts of the loss
+        #     if attention_mask is not None:
+        #         active_loss = attention_mask.view(-1) == 1
+        #         active_logits = logits.view(-1, self.num_labels)
+        #         active_labels = torch.where(
+        #             active_loss, labels.view(-1), torch.tensor(loss_fct.ignore_index).type_as(labels)
+        #         )
+        #         loss = loss_fct(active_logits, active_labels)
+        #     else:
+        #         loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+
+
         loss = None
         if labels is not None:
             loss_fct = MSELoss()
             # Only keep active parts of the loss
             if attention_mask is not None:
-                active_loss = attention_mask.view(-1) == 1
+                active_loss = labels.view(-1)!=-100
                 active_logits = logits.view(-1, self.num_labels)
                 active_labels = torch.where(
-                    active_loss, labels.view(-1), torch.tensor(-100).type_as(labels)
+                    active_loss, labels.view(-1), active_logits.view(-1)
                 )
                 loss = loss_fct(active_logits, active_labels)
             else:
                 loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-
-            # loss_fct = MSELoss()
-            # loss = loss_fct(logits.squeeze(), labels.squeeze())
+            loss = loss * labels.view(-1).size()[0] / int(active_loss.sum())
 
         if not return_dict:
             output = (logits,) + outputs[2:]
@@ -536,7 +548,6 @@ def main():
     from .config import get_config
     from .util import prepare_dirs_and_logger
     misc_args, model_args, data_args, training_args, adapter_args, analysis_args = get_config()
-    set_seed(training_args.seed)
     prepare_dirs_and_logger(misc_args, model_args,
                             data_args, training_args, adapter_args, analysis_args)
     encode_bert(model_args, data_args, training_args, adapter_args)
