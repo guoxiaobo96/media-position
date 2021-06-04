@@ -134,6 +134,7 @@ class LmAdapterModel(DeepModel):
         super().__init__(model_args, data_args, training_args)
         self._adapter_args: AdapterArguments = adapter_args
         self._language: str = ''
+        self._fill_mask = None
         self._prepare_model()
 
     def _load_adapter(self) -> None:
@@ -273,13 +274,17 @@ class LmAdapterModel(DeepModel):
         return results
 
     def predict(self, sentence_list) -> Dict:
-        self._model.eval()
-        fill_mask = pipeline(task="fill-mask", model=self._model,
-                             tokenizer=self.tokenizer, device=0, top_k=10)
+        if self._fill_mask is None:
+            self._model.eval()
+            self._fill_mask = pipeline(task="fill-mask", model=self._model,
+                                tokenizer=self.tokenizer, device=0, top_k=10)
         result_dict = dict()
-        for sentence in sentence_list:
-            results = fill_mask(sentence)
-            result_dict[sentence] = results
+        results = self._fill_mask(sentence_list)
+        # for sentence in sentence_list:
+        #     results = self._fill_mask(sentence)
+        #     result_dict[sentence] = results
+        for i, sentence in enumerate(sentence_list):
+            result_dict[sentence] = results[i]
         return result_dict
 
 

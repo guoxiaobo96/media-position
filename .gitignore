@@ -7,3 +7,4 @@ temp.py
 log/article/json/*.json
 log/article/dict/*
 log/article_*/*
+~/*
