@@ -59,10 +59,10 @@ def get_dataset(
 
     
     if args.block_size <= 0:
-        args.block_size = tokenizer.max_len
+        args.block_size = tokenizer.model_max_length
         # Our input block size will be the max possible for the model
     else:
-        args.block_size = min(args.block_size, tokenizer.max_len)
+        args.block_size = min(args.block_size, tokenizer.model_max_length)
         
     if evaluate:
         return _dataset(args.eval_data_file, args.eval_ref_file)

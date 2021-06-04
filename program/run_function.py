@@ -38,6 +38,23 @@ def train_adapter(
     )
     model.train(train_dataset, eval_dataset)
 
+def eval_adapter(
+    model_args: ModelArguments,
+    data_args: DataArguments,
+    training_args: TrainingArguments,
+    adapter_args: AdapterArguments
+) -> Dict:
+    model = LmAdapterModel(model_args, data_args, training_args, adapter_args)
+    eval_dataset = (
+        get_dataset(data_args, tokenizer=model.tokenizer,
+                    evaluate=True, cache_dir=model_args.cache_dir)
+        if training_args.do_eval
+        else None
+    )
+    record_file = data_args.data_dir.split('_')[-1].split('/')[0]+'_'+data_args.dataset+'_'
+    model.eval(eval_dataset, record_file)
+
+
 def predict_adapter(
     misc_args: MiscArgument,
     model_args: ModelArguments,
@@ -254,7 +271,7 @@ def label_score_predict(
     model = LmAdapterModel(model_args, data_args, training_args, adapter_args)
     word_set = set()
 
-    log_dir = os.path.join(misc_args.log_dir, data_args.data_type)
+    log_dir = os.path.join(misc_args.log_dir, data_args.data_type)+'_'+data_args.data_dir.split('_')[1].split('/')[0]
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     log_path = os.path.join(os.path.join(log_dir, 'json'))

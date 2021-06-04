@@ -95,6 +95,18 @@ def article_collect(
     data_path_dir_list_temp = []
     data_path_dir_list = []
     file_path_list = []
+    
+    train_topic_list = ['abortion', 'marijuana', 'drug policy', 'gay marriage']
+    eval_topic_list = ['corporate tax']
+    test_topic_list = ['climate change', 'obamacare']
+
+    topic_dict = {'train':train_topic_list, 'eval':eval_topic_list, 'test':test_topic_list}
+
+    if data_args.dataset in topic_dict:
+        topic_list = topic_dict[data_args.dataset]
+    else:
+        topic_list = [data_args.dataset]
+    data_args.data_dir = data_args.data_dir + '_' + data_args.dataset
 
     year_list = os.listdir(data_args.original_data_dir)
     for year in year_list:
@@ -103,7 +115,6 @@ def article_collect(
 
     for data_path_year in data_path_dir_list_temp:
         # topic_list = os.listdir(data_path_year)
-        topic_list = ['obamacare']
         for topic in topic_list:
             data_path_dir = os.path.join(data_path_year, topic)
             data_path_dir_list.append(data_path_dir)

@@ -20,6 +20,7 @@ MODEL_CONFIG_CLASSES = list(MODEL_WITH_LM_HEAD_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 logging.set_verbosity_error()
 
+
 @dataclass
 class MiscArgument:
     """
@@ -49,6 +50,7 @@ class MiscArgument:
         default=False, metadata={"help": "Whether the program is in debug mode"}
     )
 
+
 @dataclass
 class DataArguments:
     """
@@ -57,7 +59,7 @@ class DataArguments:
     original_data_dir: str = field(
         default="/data/xiaobo/media-position/data_original", metadata={"help": "The dir of original data"}
     )
-    
+
     data_dir: str = field(
         default="/data/xiaobo/media-position/data", metadata={"help": "The dir of processed data"}
     )
@@ -138,6 +140,7 @@ class DataArguments:
         default=False, metadata={"help": "Overwrite the cached training and evaluation sets"}
     )
 
+
 @dataclass
 class ModelArguments:
     """
@@ -145,6 +148,12 @@ class ModelArguments:
     """
 
     model_name_or_path: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "The model checkpoint for weights initialization. Leave None if you want to train a model from scratch."
+        },
+    )
+    load_model_dir: Optional[str] = field(
         default=None,
         metadata={
             "help": "The model checkpoint for weights initialization. Leave None if you want to train a model from scratch."
@@ -164,6 +173,7 @@ class ModelArguments:
     cache_dir: Optional[str] = field(
         default=None, metadata={"help": "Where do you want to store the pretrained models downloaded from s3"}
     )
+
 
 @dataclass
 class AnalysisArguments:
@@ -199,7 +209,7 @@ class AnalysisArguments:
         metadata={
             "help": "The threshold for average distance , the default value is 2 which means all results will be combined. The model will only combine the sentence whose distance is smaller than the threshold"
         },
-    )    
+    )
 
 # @dataclass
 # class ArticleMap:
@@ -212,16 +222,19 @@ class AnalysisArguments:
 #         self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
 #         self.dataset_list = [k for k,v in self.dataset_to_name.items()]
 
+
 @dataclass
 class ArticleMap:
-    dataset_to_name: Dict = field(default_factory=lambda: {'Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
+    dataset_to_name: Dict = field(default_factory=lambda: {'Breitbart': 'Breitbart', 'CBS': 'CBS News', 'CNN': 'CNN', 'Fox': 'Fox News', 'HuffPost': 'HuffPost',
+                                                           'NPR': 'NPR', 'NYtimes': 'New York Times', 'usatoday': 'USA Today', 'wallstreet': 'Wall Street Journal', 'washington': 'Washington Post'})
     name_to_dataset: Dict = field(init=False)
     dataset_list: List[str] = field(init=False)
-    left_dataset_list: List[str] = field(default_factory=lambda:['Breitbart', 'Fox', 'sean','rushlimbaugh.com'])
+    left_dataset_list: List[str] = field(
+        default_factory=lambda: ['Breitbart', 'Fox', 'sean', 'rushlimbaugh.com'])
 
     def __post_init__(self):
         self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
-        self.dataset_list = [k for k,v in self.dataset_to_name.items()]
+        self.dataset_list = [k for k, v in self.dataset_to_name.items()]
 
 # @dataclass
 # class ArticleMap:
@@ -237,14 +250,17 @@ class ArticleMap:
 
 @dataclass
 class TwitterMap:
-    dataset_to_name: Dict = field(default_factory=lambda: {'BreitbartNews':'Breitbart','CNN':'CNN','FoxNews':'Fox News','nytimes':'New York Times','seanhannity':'Sean Hannity Show (radio)','washingtonpost':'Washington Post'})
+    dataset_to_name: Dict = field(default_factory=lambda: {'BreitbartNews': 'Breitbart', 'CNN': 'CNN', 'FoxNews': 'Fox News',
+                                                           'nytimes': 'New York Times', 'seanhannity': 'Sean Hannity Show (radio)', 'washingtonpost': 'Washington Post'})
     name_to_dataset: Dict = field(init=False)
     dataset_list: List[str] = field(init=False)
-    left_dataset_list: List[str] = field(default_factory=lambda:['BreitbartNews', 'FoxNews', 'seanhannity'])
+    left_dataset_list: List[str] = field(
+        default_factory=lambda: ['BreitbartNews', 'FoxNews', 'seanhannity'])
 
     def __post_init__(self):
         self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
-        self.dataset_list = [k for k,v in self.dataset_to_name.items()]
+        self.dataset_list = [k for k, v in self.dataset_to_name.items()]
+
 
 @dataclass
 class SourceMap:
@@ -270,6 +286,7 @@ class SourceMap:
 
         self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
 
+
 @dataclass
 class TrustMap:
     republican_datasets_list: List[str] = field(
@@ -278,7 +295,7 @@ class TrustMap:
         default_factory=lambda: ['CNN', 'New York Times', 'Washington Post', 'MSNBC', 'NBC NEWS', 'NPR'])
 
     dataset_to_name: Dict = field(default_factory=lambda: {
-                                  'FoxNews': 'Fox News', 'seanhannity': 'Sean Hannity Show (radio)', 'BreitbartNews': 'Breitbart', 'CNN': 'CNN', 'nytimes': 'New York Times', 'washingtonpost': 'Washington Post','MSNBC':'MSNBC','NBCNews':'NBC NEWS','NPR':'NPR'})
+                                  'FoxNews': 'Fox News', 'seanhannity': 'Sean Hannity Show (radio)', 'BreitbartNews': 'Breitbart', 'CNN': 'CNN', 'nytimes': 'New York Times', 'washingtonpost': 'Washington Post', 'MSNBC': 'MSNBC', 'NBCNews': 'NBC NEWS', 'NPR': 'NPR'})
 
     name_to_dataset: Dict = field(init=False)
     position_to_name: Dict = field(init=False)
@@ -295,7 +312,6 @@ class TrustMap:
         self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
 
 
-
 def get_config() -> Tuple:
 
     def _get_config(
@@ -306,13 +322,12 @@ def get_config() -> Tuple:
         adapter_args: AdapterArguments,
         analysis_args: AnalysisArguments
     ) -> None:
-    
+
         data_args.original_data_dir = os.path.join(
             data_args.original_data_dir, data_args.data_type)
         data_args.data_path = os.path.join(
             data_args.data_dir, os.path.join(data_args.dataset, data_args.data_type))
-        training_args.output_dir = os.path.join(
-            training_args.output_dir, os.path.join(data_args.dataset, data_args.data_type))
+        training_args.output_dir = os.path.join(training_args.output_dir, data_args.data_type)
         if training_args.do_train:
             data_args.train_data_file = os.path.join(
                 data_args.data_path, adapter_args.language+'.train')
@@ -321,8 +336,10 @@ def get_config() -> Tuple:
                 data_args.data_path, adapter_args.language+'.valid')
         if misc_args.load_model:
             if adapter_args.load_adapter == '':
+                model_args.load_model_dir = os.path.join(
+                    model_args.load_model_dir, data_args.data_type)
                 adapter_args.load_adapter = os.path.join(
-                    training_args.output_dir, adapter_args.language)
+                    model_args.load_model_dir, adapter_args.language)
             adapter_args.adapter_config = os.path.join(
                 adapter_args.load_adapter, 'adapter_config.json')
 
@@ -330,8 +347,8 @@ def get_config() -> Tuple:
             analysis_args.analysis_data_dir, data_args.data_type), 'json')
         analysis_args.analysis_result_dir = os.path.join(os.path.join(os.path.join(
             analysis_args.analysis_result_dir, data_args.data_type), analysis_args.analysis_compare_method), analysis_args.analysis_data_type)
-        
-        training_args.disable_tqdm=False
+
+        training_args.disable_tqdm = False
 
     parser = HfArgumentParser((MiscArgument, DataArguments,
                                ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments))
@@ -342,5 +359,6 @@ def get_config() -> Tuple:
     set_seed(training_args.seed)
     return misc_args, model_args, data_args, training_args, adapter_args, analysis_args
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     get_config()

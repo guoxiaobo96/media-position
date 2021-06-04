@@ -49,6 +49,7 @@ import torch
 import torch.utils.checkpoint
 from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
+from transformers.utils.dummy_pt_objects import ElectraForMaskedLM
 
 
 
@@ -141,7 +142,7 @@ class LmAdapterModel(DeepModel):
             raise ValueError(
                 "--language flag must be set when training an adapter")
         # check if language adapter already exists, otherwise add it
-        if self._language not in self._model.config.adapters.adapter_list(AdapterType.text_lang):
+        if self._language not in self._model.config.adapters:
             # resolve the adapter config
             adapter_config = AdapterConfig.load(
                 self._adapter_args.adapter_config,
@@ -152,14 +153,13 @@ class LmAdapterModel(DeepModel):
             if self._adapter_args.load_adapter:
                 self._model.load_adapter(
                     self._adapter_args.load_adapter,
-                    AdapterType.text_lang,
                     config=adapter_config,
                     load_as=self._language,
                 )
             # otherwise, add a fresh adapter
             else:
                 self._model.add_adapter(
-                    self._language, AdapterType.text_lang, config=adapter_config)
+                    self._language, config=adapter_config)
         # Freeze all model weights except of those of this adapter & use this adapter in every forward pass
         self._model.train_adapter([self._language])
 
@@ -206,7 +206,7 @@ class LmAdapterModel(DeepModel):
         self,
         train_dataset: Union[LineByLineWithRefDataset,
                              LineByLineTextDataset, TextDataset, ConcatDataset],
-        eval_dataset=Union[LineByLineWithRefDataset,
+        eval_dataset: Union[LineByLineWithRefDataset,
                            LineByLineTextDataset, TextDataset, ConcatDataset]
     ) -> None:
         self._model.train()
@@ -216,18 +216,34 @@ class LmAdapterModel(DeepModel):
             data_collator=self._data_collator,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
-            prediction_loss_only=True,
             do_save_full_model=not self._adapter_args.train_adapter,
             do_save_adapters=self._adapter_args.train_adapter,
         )
-        self._trainer.train(model_path=self._model_path)
-        self._trainer.save_model()
-        if self._trainer.is_world_master():
-            self.tokenizer.save_pretrained(self._training_args.output_dir)
+        if self._training_args.do_train:
+            self._trainer.train(model_path=self._model_path)
+            self._trainer.save_model()
+            if self._trainer.is_world_process_zero():
+                self.tokenizer.save_pretrained(self._training_args.output_dir)
         if self._training_args.do_eval:
             self._eval()
 
-    def _eval(self) -> Dict:
+    def eval(
+        self,
+        eval_dataset: Union[LineByLineWithRefDataset,
+                           LineByLineTextDataset, TextDataset, ConcatDataset],
+        record_file: str = None
+    ) -> None:
+        self._trainer = Trainer(
+            model=self._model,
+            args=self._training_args,
+            data_collator=self._data_collator,
+            eval_dataset=eval_dataset,
+            do_save_full_model=not self._adapter_args.train_adapter,
+            do_save_adapters=self._adapter_args.train_adapter,
+        )
+        self._eval(record_file)
+
+    def _eval(self, record_file = None) -> Dict:
         results = {}
         self._logger.info("*** Evaluate ***")
 
@@ -235,19 +251,22 @@ class LmAdapterModel(DeepModel):
 
         perplexity = math.exp(eval_output["eval_loss"])
         result = {"perplexity": perplexity}
+        self._logger.info("***** Eval results *****")
+        for key in sorted(result.keys()):
+            self._logger.info("  %s = %s", key, str(result[key]))
 
-        output_eval_file = os.path.join(
-            self._training_args.output_dir, self._adapter_args.language)
+        output_eval_file = os.path.join(self._training_args.output_dir, self._adapter_args.language)
+
         if not os.path.exists(output_eval_file):
             os.makedirs(output_eval_file)
-        output_eval_file = os.path.join(
-            output_eval_file, "eval_results_lm.txt")
-        if self._trainer.is_world_master():
-            with open(output_eval_file, "w") as writer:
-                self._logger.info("***** Eval results *****")
-                for key in sorted(result.keys()):
-                    self._logger.info("  %s = %s", key, str(result[key]))
-                    writer.write("%s = %s\n" % (key, str(result[key])))
+        if record_file is None:
+            output_eval_file = os.path.join(output_eval_file, "eval_results_lm.txt")
+        else:
+            output_eval_file = os.path.join(output_eval_file, record_file+"eval_results_lm.txt")
+
+        with open(output_eval_file, "w") as writer:
+            for key in sorted(result.keys()):
+                writer.write("%s = %s\n" % (key, str(result[key])))
 
         results.update(result)
 

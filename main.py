@@ -1,7 +1,7 @@
 from program.config import AnalysisArguments, get_config, DataArguments, MiscArgument, ModelArguments, AdapterArguments, TrainingArguments
 from program.data import extract_data
 from program.util import prepare_dirs_and_logger, save_config
-from program.run_function import train_adapter, predict_adapter, analysis, label_score_predict, label_score_analysis, train_mask_score_model
+from program.run_function import train_adapter, predict_adapter, analysis, label_score_predict, label_score_analysis, train_mask_score_model, eval_adapter
 from program.data_collect import twitter_collect, article_collect
 
 
@@ -17,6 +17,9 @@ def main(
         extract_data(misc_args, data_args)
     elif misc_args.task == 'train_adapter':
         train_adapter(model_args, data_args, training_args, adapter_args)
+    elif misc_args.task == 'eval_adapter':
+        eval_adapter(model_args, data_args, training_args, adapter_args)
+
     elif misc_args.task == 'predict_adapter':
         predict_adapter(misc_args, model_args, data_args,
                         training_args, adapter_args)
