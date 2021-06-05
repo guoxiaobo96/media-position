@@ -324,15 +324,18 @@ def label_score_predict(
     record_dict = dict()
 
     for sentence, items in results.items():
-        original_sentence = filter_origianl_sentence_list[masked_sentence_dict[sentence]]
-        if original_sentence not in record_dict:
-            record_dict[original_sentence] = {'sentence':original_sentence,'word':dict()}
+        try:
+            original_sentence = filter_origianl_sentence_list[masked_sentence_dict[sentence]]
+            if original_sentence not in record_dict:
+                record_dict[original_sentence] = {'sentence':original_sentence,'word':dict()}
 
-        masked_index = sentence.split(' ').index('[MASK]')
-        record_dict[original_sentence]['word'][masked_index] = dict()
-        for item in items:
-            record_dict[original_sentence]['word'][masked_index][item["token_str"]] = str(round(item["score"], 3))
-            word_set.add(item["token_str"])
+            masked_index = sentence.split(' ').index('[MASK]')
+            record_dict[original_sentence]['word'][masked_index] = dict()
+            for item in items:
+                record_dict[original_sentence]['word'][masked_index][item["token_str"]] = str(round(item["score"], 3))
+                word_set.add(item["token_str"])
+        except:
+            continue
 
     with open(log_file, mode='a', encoding='utf8') as fp:
         for _, item in record_dict.items():
