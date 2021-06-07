@@ -211,6 +211,135 @@ def _article_collect(data_path_dir, global_debug):
         article_dict[media].append(_clean_text(text))
     return article_dict
 
+
+
+
+def origianl_collect(
+    misc_args: MiscArgument,
+    data_args: DataArguments
+) -> None:  
+    article_map = ArticleMap()
+
+    article_dict = dict()
+    data_path_dir_list_temp = []
+    data_path_dir_list = []
+    
+    train_topic_list = ['abortion', 'marijuana', 'drug policy', 'gay marriage']
+    eval_topic_list = ['corporate tax']
+    test_topic_list = ['climate change', 'obamacare']
+
+    topic_dict = {'train':train_topic_list, 'eval':eval_topic_list, 'test':test_topic_list}
+
+    if data_args.dataset in topic_dict:
+        topic_list = topic_dict[data_args.dataset]
+    else:
+        topic_list = [data_args.dataset]
+    data_args.data_dir = data_args.data_dir + '_' + data_args.dataset
+
+    year_list = os.listdir(data_args.original_data_dir)
+    for year in year_list:
+        data_path_dir = os.path.join(data_args.original_data_dir, year)
+        data_path_dir_list_temp.append(data_path_dir)
+
+    for data_path_year in data_path_dir_list_temp:
+        # topic_list = os.listdir(data_path_year)
+        for topic in topic_list:
+            data_path_dir = os.path.join(data_path_year, topic)
+            data_path_dir_list.append(data_path_dir)
+    
+    result_list = []
+    if misc_args.global_debug:
+        for data_path_dir in data_path_dir_list:
+            article_dict_temp = _original_collect(data_path_dir, misc_args.global_debug)
+            result_list.append(article_dict_temp)
+    else:
+        with Pool(processes=10) as pool:
+            for data_path_dir in data_path_dir_list:
+                article_dict_temp = pool.apply_async(func=_original_collect, args=(data_path_dir, misc_args.global_debug,))
+                result_list.append(article_dict_temp)
+            pool.close()
+            pool.join()
+
+    for result in result_list:
+        if misc_args.global_debug:
+            result = result
+        else:
+            result = result.get()
+        for media, text_list in result.items():
+            if media not in article_dict:
+                article_dict[media] = list()
+            article_dict[media].extend(text_list)
+
+    for media_name, text_list in article_dict.items():
+        if media_name not in article_map.name_to_dataset:
+            continue
+        media = article_map.name_to_dataset[media_name]
+        text_list = list(set(text_list))
+        random.shuffle(text_list)
+        train_number = int(len(text_list)*0.7)
+        data_path = os.path.join(os.path.join(data_args.data_dir, media),data_args.data_type)
+        if not os.path.exists(data_path):
+            os.makedirs(data_path)
+        train_file = os.path.join(data_path, 'en.train')
+        with open(train_file, mode='w', encoding='utf8') as fp:
+            for text in text_list[:train_number]:
+                if len(text)<5:
+                    continue
+                if len(text) > 512:
+                    start_index = 0
+                    end_index = 0
+                    while start_index < len(text):
+                        text_t = text[start_index:start_index+512]
+                        end_index = text_t.rfind('.')
+                        if end_index != -1:
+                            text_t = text_t[:end_index+1]
+                        text_t = text_t.strip()
+                        fp.write(text_t+'\n')
+                        if end_index != -1:
+                            start_index += (end_index+1)
+                        else:
+                            start_index +=512
+                else:
+                    fp.write(text+'\n')
+        eval_file = os.path.join(data_path, 'en.valid')
+        with open(eval_file, mode='w', encoding='utf8') as fp:
+            for text in text_list[train_number:]:
+                if len(text)<5:
+                    continue
+                if len(text) > 512:
+                    start_index = 0
+                    end_index = 0
+                    while start_index < len(text):
+                        text_t = text[start_index:start_index+512]
+                        end_index = text_t.rfind('.')
+                        if end_index != -1:
+                            text_t = text_t[:end_index+1]
+                        text_t.strip()
+                        fp.write(text_t+'\n')
+                        if end_index != -1:
+                            start_index += (end_index+1)
+                        else:
+                            start_index +=512
+                else:
+                    fp.write(text+'\n')
+
+def _original_collect(data_path_dir, global_debug):
+    article_dict = dict()
+    file_path_list = os.listdir(data_path_dir)
+    if global_debug:
+        file_path_list = file_path_list[:30]
+    for file in file_path_list:
+        file_path = os.path.join(data_path_dir, file)
+        with open(file_path, mode='r',encoding='utf8') as fp:
+            item = json.load(fp)
+            text = item['text']
+            media = item['media']
+        if media not in article_dict:
+            article_dict[media] = list()
+        article_dict[media].append(_clean_text(text))
+    return article_dict
+
+
 def main():
     misc_args, model_args, data_args, training_args, adapter_args, analysis_args = get_config()
     prepare_dirs_and_logger(misc_args, model_args,

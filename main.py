@@ -2,7 +2,7 @@ from program.config import AnalysisArguments, get_config, DataArguments, MiscArg
 from program.data import extract_data
 from program.util import prepare_dirs_and_logger, save_config
 from program.run_function import train_adapter, predict_adapter, analysis, label_score_predict, label_score_analysis, train_mask_score_model, eval_adapter
-from program.data_collect import twitter_collect, article_collect
+from program.data_collect import twitter_collect, article_collect, origianl_collect
 
 
 def main(
@@ -40,6 +40,8 @@ def main(
             twitter_collect(misc_args, data_args)
         elif data_args.data_type == 'article':
             article_collect(misc_args, data_args)
+        elif data_args.data_type == 'original':
+            origianl_collect(misc_args, data_args)
 
 
 if __name__ == '__main__':
