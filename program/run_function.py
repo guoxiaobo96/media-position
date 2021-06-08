@@ -15,19 +15,19 @@ from tqdm import tqdm
 
 
 from .config import DataArguments, MiscArgument, ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap
-from .model import LmAdapterModel, NERModel
+from .model import MLMAdapterModel, SentenceReplacementAdapterModel, NERModel
 from .data import get_dataset, get_analysis_data, get_label_data, get_mask_score_data
 from .analysis import ClusterAnalysis,DistanceAnalysis,ClusterCompare
 from .ner_util import NERDataset
 
 
-def train_adapter(
+def mlm_train(
     model_args: ModelArguments,
     data_args: DataArguments,
     training_args: TrainingArguments,
     adapter_args: AdapterArguments
 ) -> Dict:
-    model = LmAdapterModel(model_args, data_args, training_args, adapter_args)
+    model = MLMAdapterModel(model_args, data_args, training_args, adapter_args)
     train_dataset = (
         get_dataset(data_args, tokenizer=model.tokenizer,
                     cache_dir=model_args.cache_dir) if training_args.do_train else None
@@ -40,13 +40,13 @@ def train_adapter(
     )
     model.train(train_dataset, eval_dataset)
 
-def eval_adapter(
+def mlm_eval(
     model_args: ModelArguments,
     data_args: DataArguments,
     training_args: TrainingArguments,
     adapter_args: AdapterArguments
 ) -> Dict:
-    model = LmAdapterModel(model_args, data_args, training_args, adapter_args)
+    model = MLMAdapterModel(model_args, data_args, training_args, adapter_args)
     eval_dataset = (
         get_dataset(data_args, tokenizer=model.tokenizer,
                     evaluate=True, cache_dir=model_args.cache_dir)
@@ -56,80 +56,15 @@ def eval_adapter(
     record_file = data_args.data_dir.split('_')[-1].split('/')[0]+'_'+data_args.dataset+'_'
     model.eval(eval_dataset, record_file)
 
-
-def predict_adapter(
-    misc_args: MiscArgument,
+def sentence_replacement_train(
     model_args: ModelArguments,
     data_args: DataArguments,
     training_args: TrainingArguments,
-    adapter_args: AdapterArguments,
+    adapter_args: AdapterArguments
 ) -> Dict:
-    # dataset_map = (
-    #     SourceMap() if misc_args.target=='source' else TrustMap()
-    # )
-    dataset_map = TrustMap()
-    
-    data_type = list()
-    dataset = data_args.dataset
-    # if dataset in dataset_map.dataset_to_name:
-    #     data_type.append('dataset')
-    if dataset in dataset_map.position_list:
-        data_type.append('position')
-    data_type.append('dataset')
-    if dataset in ['vanilla']:
-        data_type = ['dataset', 'position']
-        
-    model = LmAdapterModel(model_args, data_args, training_args, adapter_args)
-    masked_sentence_file: str = './masked_sentence'
-    masked_sentence_list: List = list()
-    log_dir = os.path.join(misc_args.log_dir, data_args.data_type)
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-    with open(masked_sentence_file, mode='r', encoding='utf8') as fp:
-        for line in fp.readlines():
-            masked_sentence_list.append(line.strip())
-    result_dict = model.predict(masked_sentence_list)
-    dict_set = set()
-    dict_file = os.path.join(os.path.join(log_dir, 'dict'), 'word_set.txt')
-    if not os.path.exists(os.path.join(log_dir, 'dict')):
-        os.makedirs(os.path.join(log_dir, 'dict'))
-    if os.path.exists(dict_file):
-        with open(dict_file,mode='r',encoding='utf8') as fp:
-            for line in fp.readlines():
-                dict_set.add(line.strip())
-
-    for file_format in ['json', 'csv']:
-        if not os.path.exists(os.path.join(log_dir, file_format)):
-            os.makedirs(os.path.join(log_dir, file_format))
-        for i, sentence in enumerate(masked_sentence_list):
-            log_file = os.path.join(os.path.join(log_dir, file_format), str(i+1)+'.'+file_format)
-            if not os.path.exists(log_file):
-                with open(log_file, mode='w', encoding='utf8') as fp:
-                    fp.write(json.dumps({"sentence": sentence},
-                                        ensure_ascii=False) + '\n')
-            if file_format == "json":
-                record = {"dataset": dataset, "data_type":data_type, "words": {}}
-
-                with open(log_file, mode='a', encoding='utf8') as fp:
-                    results = result_dict[sentence]
-                    for result in results:
-                        record["words"][result["token_str"]] = str(
-                            round(result["score"], 3))
-                    fp.write(json.dumps(record, ensure_ascii=False)+'\n')
-            elif file_format == "csv":
-                tokens = dataset+','
-                scores = dataset+','
-
-                with open(log_file, mode='a',encoding='utf8') as fp:
-                    results = result_dict[sentence]
-                    for result in results:
-                        tokens = tokens + result["token_str"]+","
-                        scores = scores + str(round(result["score"],3))+","
-                        dict_set.add(result["token_str"])
-                    fp.write(tokens+'\n'+scores+'\n')
-    with open(dict_file, mode='w',encoding='utf8') as fp:
-        for token in dict_set:
-            fp.write(token+'\n')
+    model = SentenceReplacementAdapterModel(model_args, data_args, training_args, adapter_args)
+    train_dataset, eval_dataset, number_label = get_dataset(data_args, model.tokenizer)
+    model.train(train_dataset, eval_dataset, number_label)
 
 def analysis(
     misc_args: MiscArgument,
@@ -303,7 +238,7 @@ def label_score_predict(
         index += batch_size
 
 
-    model = LmAdapterModel(model_args, data_args, training_args, adapter_args)
+    model = MLMAdapterModel(model_args, data_args, training_args, adapter_args)
     word_set = set()
 
     log_dir = os.path.join(misc_args.log_dir, data_args.data_type)+'_'+data_args.data_dir.split('_')[1].split('/')[0]

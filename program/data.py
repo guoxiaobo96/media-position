@@ -17,21 +17,34 @@ from transformers.tokenization_bert import BertTokenizer
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 warnings.filterwarnings('ignore')
 
-from .util import prepare_dirs_and_logger
-from .config import AnalysisArguments, DataArguments, MiscArgument, SourceMap, TrustMap, get_config, ArticleMap, TwitterMap
 from .ner_util import NERDataset, encode_scores
+from .config import AnalysisArguments, DataArguments, MiscArgument, SourceMap, TrustMap, get_config, ArticleMap, TwitterMap
+from .util import prepare_dirs_and_logger
+from .fine_tune_util import SentenceReplacementDataset
 
 def extract_data():
     pass
 
 
 def get_dataset(
+    data_args: DataArguments,
+    tokenizer: PreTrainedTokenizer,
+    evaluate: bool = False,
+    cache_dir: Optional[str] = None,
+) -> Union[LineByLineWithRefDataset, LineByLineTextDataset, TextDataset, ConcatDataset]:
+    if data_args.data_type == 'mlm':
+        return mlm_get_dataset(data_args, tokenizer, evaluate, cache_dir)
+    elif data_args.data_type in ['sentence_random_replacement','sentence_chosen_replacement']:
+        return sentence_replacement_get_data(data_args, tokenizer)
+
+
+def mlm_get_dataset(
     args: DataArguments,
     tokenizer: PreTrainedTokenizer,
     evaluate: bool = False,
     cache_dir: Optional[str] = None,
 ) -> Union[LineByLineWithRefDataset, LineByLineTextDataset, TextDataset, ConcatDataset]:
-    def _dataset(
+    def _mlm_dataset(
         file_path: str,
         ref_path: str = None
     ) -> Union[LineByLineWithRefDataset, LineByLineTextDataset, TextDataset]:
@@ -57,19 +70,49 @@ def get_dataset(
                 cache_dir=cache_dir,
             )
 
-    
     if args.block_size <= 0:
         args.block_size = tokenizer.model_max_length
         # Our input block size will be the max possible for the model
     else:
         args.block_size = min(args.block_size, tokenizer.model_max_length)
-        
+
     if evaluate:
-        return _dataset(args.eval_data_file, args.eval_ref_file)
+        return _mlm_dataset(args.eval_data_file, args.eval_ref_file)
     elif args.train_data_files:
-        return ConcatDataset([_dataset(f) for f in glob(args.train_data_files)])
+        return ConcatDataset([_mlm_dataset(f) for f in glob(args.train_data_files)])
     else:
-        return _dataset(args.train_data_file, args.train_ref_file)
+        return _mlm_dataset(args.train_data_file, args.train_ref_file)
+
+
+def sentence_replacement_get_data(
+    data_args: DataArguments,
+    tokenizer: BertTokenizer
+):
+    train_file = os.path.join(data_args.data_path, 'en.train')
+    eval_file = os.path.join(data_args.data_path, 'en.valid')
+    train_data = {'sentence':list(),'label':list()}
+    eval_data = {'sentence':list(),'label':list()}
+
+    with open(train_file,mode='r', encoding='utf8') as fp:
+        for line in fp.readlines():
+            item = json.loads(line.strip())
+            train_data['sentence'].append(item['sentence'])
+            train_data['label'].append(item['label'])
+    with open(eval_file,mode='r', encoding='utf8') as fp:
+        for line in fp.readlines():
+            item = json.loads(line.strip())
+            eval_data['sentence'].append(item['sentence'])
+            eval_data['label'].append(item['label'])
+
+    number_label = max(len(set(train_data['label'])),len(set(eval_data['label'])))
+
+    train_encodings = tokenizer(train_data['sentence'], padding=True, truncation=True)
+    val_encodings = tokenizer(eval_data['sentence'],  padding=True, truncation=True)
+
+    train_dataset = SentenceReplacementDataset(train_encodings, train_data['label'])
+    val_dataset = SentenceReplacementDataset(val_encodings, eval_data['label'])
+
+    return train_dataset, val_dataset, number_label
 
 
 def get_analysis_data(
@@ -86,7 +129,7 @@ def get_analysis_data(
                 item = json.loads(line.strip())
                 if "sentence" in item:
                     continue
-                elif args.analysis_data_type!='full' and args.analysis_data_type not in item['data_type']:
+                elif args.analysis_data_type != 'full' and args.analysis_data_type not in item['data_type']:
                     continue
                 else:
                     row_data[file][item["dataset"]] = item["words"]
@@ -96,14 +139,14 @@ def get_analysis_data(
     #         dataset = trust_map.name_to_dataset[name]
     #         if dataset in file_data:
     #             data[file][dataset] = row_data[file][dataset]
-                
+
     #     dataset = 'vanilla'
     #     data[file][dataset] = row_data[file][dataset]
 
     #     for name in trust_map.democrat_datasets_list:
     #         dataset = trust_map.name_to_dataset[name]
     #         if dataset in file_data:
-    #             data[file][dataset] = row_data[file][dataset]        
+    #             data[file][dataset] = row_data[file][dataset]
     # return data
 
     return row_data
@@ -136,24 +179,26 @@ def get_label_data(
 
     return row_data
 
+
 def get_mask_score_data(
     analysis_args: AnalysisArguments,
     data_args: DataArguments,
     tokenizer: BertTokenizer
 ):
-    file = analysis_args.analysis_encode_method+'_'+analysis_args.analysis_cluster_method+'_'+analysis_args.analysis_compare_method+'_sentence.json'
-    data_path = os.path.join(os.path.join(analysis_args.analysis_result_dir,analysis_args.graph_distance),file)
+    file = analysis_args.analysis_encode_method+'_'+analysis_args.analysis_cluster_method + \
+        '_'+analysis_args.analysis_compare_method+'_sentence.json'
+    data_path = os.path.join(os.path.join(
+        analysis_args.analysis_result_dir, analysis_args.graph_distance), file)
     data_path = '/home/xiaobo/media-position/analysis/article/cluster/dataset/count/term_AgglomerativeClustering_cluster_sentence.json'
-    tokenized_texts = list()
     # Tokenize the text into subwords in a label-preserving way
     raw_text = list()
     raw_score = list()
-    with open(data_path, mode='r',encoding='utf8') as fp:
+    with open(data_path, mode='r', encoding='utf8') as fp:
         for line in fp:
-            item  = json.loads(line.strip())
+            item = json.loads(line.strip())
             sentence = item.pop('sentence')
             text_scores = item
-            if sentence in ['media_average','distance_base','cluster_average']:
+            if sentence in ['media_average', 'distance_base', 'cluster_average']:
                 continue
             scores = [0 for _ in range(len(text_scores) - 1)]
             texts = [0 for _ in range(len(text_scores) - 1)]
@@ -163,11 +208,15 @@ def get_mask_score_data(
                     texts[int(position)] = item[1]
             raw_score.append(scores)
             raw_text.append(texts)
-    
-    train_texts, val_texts, train_scores, val_scores = train_test_split(raw_text, raw_score, test_size=.2)
-    train_encodings = tokenizer(train_texts, is_split_into_words=True, return_offsets_mapping=True, padding=True, truncation=True)
-    val_encodings = tokenizer(val_texts, is_split_into_words=True, return_offsets_mapping=True, padding=True, truncation=True)
-    train_scores, train_encodings = encode_scores(train_scores, train_encodings)
+
+    train_texts, val_texts, train_scores, val_scores = train_test_split(
+        raw_text, raw_score, test_size=.2)
+    train_encodings = tokenizer(train_texts, is_split_into_words=True,
+                                return_offsets_mapping=True, padding=True, truncation=True)
+    val_encodings = tokenizer(val_texts, is_split_into_words=True,
+                              return_offsets_mapping=True, padding=True, truncation=True)
+    train_scores, train_encodings = encode_scores(
+        train_scores, train_encodings)
     val_scores, val_encodings = encode_scores(val_scores, val_encodings)
     train_dataset = NERDataset(train_encodings, train_scores)
     val_dataset = NERDataset(val_encodings, val_scores)
@@ -175,16 +224,10 @@ def get_mask_score_data(
     return train_dataset, val_dataset
 
 
-
-
-
-
-
-
 def main():
     misc_args, model_args, data_args, training_args, adapter_args, analysis_args = get_config()
     prepare_dirs_and_logger(misc_args, model_args,
-                            data_args, training_args, adapter_args,analysis_args)
+                            data_args, training_args, adapter_args, analysis_args)
     # extract_data(misc_args, data_args)
     get_analysis_data(analysis_args)
 

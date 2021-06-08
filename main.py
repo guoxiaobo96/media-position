@@ -1,8 +1,8 @@
 from program.config import AnalysisArguments, get_config, DataArguments, MiscArgument, ModelArguments, AdapterArguments, TrainingArguments
 from program.data import extract_data
 from program.util import prepare_dirs_and_logger, save_config
-from program.run_function import train_adapter, predict_adapter, analysis, label_score_predict, label_score_analysis, train_mask_score_model, eval_adapter
-from program.data_collect import twitter_collect, article_collect, origianl_collect
+from program.run_function import mlm_train, analysis, label_score_predict, label_score_analysis, train_mask_score_model, mlm_eval, sentence_replacement_train
+from program.data_collect import twitter_collect, article_collect, data_collect
 
 
 def main(
@@ -16,13 +16,12 @@ def main(
     if misc_args.task == 'extract_data':
         extract_data(misc_args, data_args)
     elif misc_args.task == 'train_adapter':
-        train_adapter(model_args, data_args, training_args, adapter_args)
+        mlm_train(model_args, data_args, training_args, adapter_args)
     elif misc_args.task == 'eval_adapter':
-        eval_adapter(model_args, data_args, training_args, adapter_args)
-
-    elif misc_args.task == 'predict_adapter':
-        predict_adapter(misc_args, model_args, data_args,
-                        training_args, adapter_args)
+        mlm_eval(model_args, data_args, training_args, adapter_args)
+    elif misc_args.task == 'train_sentence_replacement':
+        sentence_replacement_train(
+            model_args, data_args, training_args, adapter_args)
     elif misc_args.task == 'train_mask_score_model':
         train_mask_score_model(model_args, data_args,
                                training_args, analysis_args, adapter_args)
@@ -40,8 +39,8 @@ def main(
             twitter_collect(misc_args, data_args)
         elif data_args.data_type == 'article':
             article_collect(misc_args, data_args)
-        elif data_args.data_type == 'original':
-            origianl_collect(misc_args, data_args)
+        else:
+            data_collect(misc_args, data_args)
 
 
 if __name__ == '__main__':
