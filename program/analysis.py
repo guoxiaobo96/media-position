@@ -42,7 +42,7 @@ from tokenizers import EncodeInput, Tokenizer, models
 
 
 from .config import AnalysisArguments, MiscArgument, ModelArguments, DataArguments, TrainingArguments
-from .model import BertSimpleModel, encode_bert
+from .model import BertSimpleModel
 
 
 class BaseAnalysis(ABC):

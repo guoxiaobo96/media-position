@@ -211,16 +211,16 @@ class AnalysisArguments:
         },
     )
 
-# @dataclass
-# class ArticleMap:
-#     dataset_to_name: Dict = field(default_factory=lambda: {'ABC.com':'ABC News','BBC':'BBC','Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','guardiannews.com':'Guardian','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','rushlimbaugh.com':'Rush Limbaugh Show (radio)','sean':'Sean Hannity Show (radio)','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
-#     name_to_dataset: Dict = field(init=False)
-#     dataset_list: List[str] = field(init=False)
-#     left_dataset_list: List[str] = field(default_factory=lambda:['Breitbart', 'Fox', 'sean','rushlimbaugh.com'])
+@dataclass
+class FullArticleMap:
+    dataset_to_name: Dict = field(default_factory=lambda: {'ABC.com':'ABC News','Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','guardiannews.com':'Guardian','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','rushlimbaugh.com':'Rush Limbaugh Show (radio)','sean':'Sean Hannity Show (radio)','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
+    name_to_dataset: Dict = field(init=False)
+    dataset_list: List[str] = field(init=False)
+    left_dataset_list: List[str] = field(default_factory=lambda:['Breitbart', 'Fox', 'sean','rushlimbaugh.com'])
 
-#     def __post_init__(self):
-#         self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
-#         self.dataset_list = [k for k,v in self.dataset_to_name.items()]
+    def __post_init__(self):
+        self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
+        self.dataset_list = [k for k,v in self.dataset_to_name.items()]
 
 
 @dataclass
@@ -323,8 +323,7 @@ def get_config() -> Tuple:
         analysis_args: AnalysisArguments
     ) -> None:
 
-        data_args.original_data_dir = os.path.join(
-            data_args.original_data_dir, data_args.data_type)
+        data_args.original_data_dir
         data_args.data_path = os.path.join(
             data_args.data_dir, os.path.join(data_args.dataset, data_args.data_type))
         training_args.output_dir = os.path.join(training_args.output_dir, data_args.data_type)
