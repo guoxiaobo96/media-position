@@ -376,23 +376,28 @@ def label_score_analysis(
     training_args: TrainingArguments,
     analysis_args: AnalysisArguments
 ) -> Dict:
-    data_map = ArticleMap () if data_args.data_type == 'article' else TwitterMap()
+    data_map = ArticleMap()
     analysis_result = dict()
     model_list = dict()
     analysis_data = dict()
     sentence_position_data = dict()
 
     print("Load data")
-
-    analysis_data_temp = get_label_data(analysis_args, data_args)
+    error_count = 0
+    analysis_data_temp = get_label_data(misc_args, analysis_args, data_args)
     index = 0
     for k, item in tqdm(analysis_data_temp.items()):
         for position, v in item.items():
-            sentence_position_data[index] = {'sentence':k, 'position':position, 'word':k.split(' ')[int(position)]}
-            analysis_data[index] = dict()
-            for dataset in data_map.dataset_list:
-                analysis_data[index][dataset] = v[dataset]
-            index += 1
+            try:
+                sentence_position_data[index] = {'sentence':k, 'position':position, 'word':k.split(' ')[int(position)]}
+                analysis_data[index] = dict()
+                for dataset in data_map.dataset_list:
+                    analysis_data[index][dataset] = v[dataset]
+                index += 1
+            except IndexError:
+                length = len(k.split(' '))
+                error_count += 1
+                continue
     analysis_data['media_average'] = dict()
 
     # analysis_data['concatenate'] = dict()
@@ -461,9 +466,9 @@ def label_score_analysis(
         #             record = record+str(distance_list[str(i+1)+'.json'])+','
         #         fp.write(record+'\n')
     else:
-        base_model = joblib.load('log/baseline/model/baseline_trust_'+data_args.data_type+'.c')
+        base_model = joblib.load('log/baseline/model/baseline_trust_article.c')
         model_list['base'] = base_model
-        base_model = joblib.load('log/baseline/model/baseline_source_'+data_args.data_type+'.c')
+        base_model = joblib.load('log/baseline/model/baseline_source_article.c')
         model_list['distance_base'] = base_model
         cluster_compare = ClusterCompare(misc_args, analysis_args)
         analysis_result = cluster_compare.compare(model_list)

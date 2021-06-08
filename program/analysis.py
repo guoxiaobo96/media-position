@@ -9,6 +9,7 @@ from gensim.models import Word2Vec, KeyedVectors
 from nltk.stem.porter import *
 from abc import ABC, abstractmethod
 from glob import glob
+from tqdm import tqdm
 from typing import Any, Dict, Optional, Set, Tuple, Union, List
 from sklearn import cluster
 import joblib

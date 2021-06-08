@@ -110,14 +110,16 @@ def get_analysis_data(
 
 
 def get_label_data(
-    args: AnalysisArguments,
+    misc_args: MiscArgument,
+    analysis_args: AnalysisArguments,
     data_args: DataArguments
 ) -> Dict[str, Dict[str, int]]:
-    data_map = ArticleMap () if data_args.data_type == 'article' else TwitterMap()
+    data_map = ArticleMap()
     row_data = dict()
     for file in data_map.dataset_list:
-        analysis_data_file = os.path.join(args.analysis_data_dir, file+'.json')
+        analysis_data_file = os.path.join(analysis_args.analysis_data_dir, file+'.json')
         with open(analysis_data_file) as fp:
+            count = 0
             for line in fp.readlines():
                 item = json.loads(line.strip())
                 sentence = item['sentence']
@@ -127,6 +129,10 @@ def get_label_data(
                     if int(index) not in row_data[sentence]:
                         row_data[sentence][int(index)] = dict()
                     row_data[sentence][int(index)][file] = prob
+                if misc_args.global_debug:
+                    count += 1
+                    if count == 100:
+                        break
 
     return row_data
 

@@ -4,7 +4,7 @@ runs/*
 .vscode/*
 shell/*
 temp.py
-log/article/json/*.json
-log/article/dict/*
-log/article_*/*
+log/*/json/*.json
+log/*/dict/*
+log/*/model/*
 ~/*
