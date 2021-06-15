@@ -8,3 +8,4 @@ log/*/json/*.json
 log/*/dict/*
 log/*/model/*
 ~/*
+analysis/*/*/*/*/*.json

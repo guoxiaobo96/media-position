@@ -203,41 +203,6 @@ def label_score_predict(
     if dataset in ['vanilla']:
         data_type = ['dataset', 'position']
 
-
-    masked_sentence_dict: Dict = dict()
-    masked_sentence_list: List = list()
-    origianl_sentence_list: List = list()
-    batched_masked_sentence_list: List = list()
-    filter_origianl_sentence_list: List = list()
-
-    masked_sentence_file_list: List = [os.path.join(os.path.join(os.path.join(data_args.data_dir,file_path),'article'),'en.valid') for file_path in os.listdir(data_args.data_dir)]
-    for masked_sentence_file in masked_sentence_file_list:
-        with open(masked_sentence_file, mode='r', encoding='utf8') as fp:
-            for line in fp.readlines():
-                origianl_sentence_list.append(line.strip())
-
-    for index, masked_sentence in enumerate(origianl_sentence_list):
-        sentence_list = list()
-        original_sentence = masked_sentence.split(' ')
-        for i, word in enumerate(original_sentence):
-            raw_word = word
-            original_sentence[i] = '[MASK]'
-            masked_setence = ' '.join(original_sentence)
-            sentence_list.append(masked_setence)
-            original_sentence[i] = raw_word
-        if len(sentence_list) > 1:
-            masked_sentence_list.extend(sentence_list)
-            filter_origianl_sentence_list.append(masked_sentence)
-            for sentence in sentence_list:
-                masked_sentence_dict[sentence] = index
-    
-    batch_size = 50
-    index = 0
-    while (index < len(masked_sentence_list)):
-        batched_masked_sentence_list.append(masked_sentence_list[index:index+batch_size])
-        index += batch_size
-
-
     model = MLMAdapterModel(model_args, data_args, training_args, adapter_args)
     word_set = set()
 
@@ -248,33 +213,65 @@ def label_score_predict(
     if not os.path.exists(log_path):
         os.makedirs(log_path)
     log_file = os.path.join(log_path, data_args.dataset+'.json')
+    batch_size = 50
 
-    results = dict()
-    for batch_sentence in tqdm(batched_masked_sentence_list):
-        result = model.predict(batch_sentence)
-        results.update(result)
+    masked_sentence_file_list: List = [os.path.join(os.path.join(os.path.join(data_args.data_dir,file_path),'article'),'en.valid') for file_path in os.listdir(data_args.data_dir)]
+    for masked_sentence_file in masked_sentence_file_list:
+        masked_sentence_dict: Dict = dict()
+        masked_sentence_list: List = list()
+        origianl_sentence_list: List = list()
+        batched_masked_sentence_list: List = list()
+        filter_origianl_sentence_list: List = list()
+        with open(masked_sentence_file, mode='r', encoding='utf8') as fp:
+            for line in fp.readlines():
+                origianl_sentence_list.append(line.strip())
+
+        for index, masked_sentence in enumerate(origianl_sentence_list):
+            sentence_list = list()
+            original_sentence = masked_sentence.split(' ')
+            for i, word in enumerate(original_sentence):
+                raw_word = word
+                original_sentence[i] = '[MASK]'
+                masked_setence = ' '.join(original_sentence)
+                sentence_list.append(masked_setence)
+                original_sentence[i] = raw_word
+            if len(sentence_list) > 1:
+                masked_sentence_list.extend(sentence_list)
+                filter_origianl_sentence_list.append(masked_sentence)
+                for sentence in sentence_list:
+                    masked_sentence_dict[sentence] = index
+        
+        index = 0
+        while (index < len(masked_sentence_list)):
+            batched_masked_sentence_list.append(masked_sentence_list[index:index+batch_size])
+            index += batch_size
+
+        results = dict()
+        for batch_sentence in tqdm(batched_masked_sentence_list):
+            result = model.predict(batch_sentence)
+            results.update(result)
 
 
 
-    record_dict = dict()
+        record_dict = dict()
 
-    for sentence, items in results.items():
-        try:
-            original_sentence = filter_origianl_sentence_list[masked_sentence_dict[sentence]]
-            if original_sentence not in record_dict:
-                record_dict[original_sentence] = {'sentence':original_sentence,'word':dict()}
+        for sentence, items in results.items():
+            try:
+                original_sentence = filter_origianl_sentence_list[masked_sentence_dict[sentence]]
+                if original_sentence not in record_dict:
+                    record_dict[original_sentence] = {'sentence':original_sentence,'word':dict()}
 
-            masked_index = sentence.split(' ').index('[MASK]')
-            record_dict[original_sentence]['word'][masked_index] = dict()
-            for item in items:
-                record_dict[original_sentence]['word'][masked_index][item["token_str"]] = str(round(item["score"], 3))
-                word_set.add(item["token_str"])
-        except:
-            continue
+                masked_index = sentence.split(' ').index('[MASK]')
+                record_dict[original_sentence]['word'][masked_index] = dict()
+                for item in items:
+                    record_dict[original_sentence]['word'][masked_index][item["token_str"]] = str(round(item["score"], 3))
+                    word_set.add(item["token_str"])
+            except:
+                continue
 
-    with open(log_file, mode='a', encoding='utf8') as fp:
-        for _, item in record_dict.items():
-            fp.write(json.dumps(item, ensure_ascii=False)+'\n')  
+        with open(log_file, mode='a', encoding='utf8') as fp:
+            for _, item in record_dict.items():
+                fp.write(json.dumps(item, ensure_ascii=False)+'\n')  
 
 
 
