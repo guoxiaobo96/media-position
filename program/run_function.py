@@ -5,8 +5,6 @@ import json
 import os
 import joblib
 import matplotlib
-from tensorflow.python.util.tf_decorator import make_decorator
-from transformers.file_utils import SENTENCEPIECE_IMPORT_ERROR
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 import numpy as np
