@@ -1,6 +1,5 @@
 import argparse
 from scipy.sparse.construct import random
-from tensorflow.keras.preprocessing.sequence import pad_sequences
 from transformers import BertTokenizer
 import numpy as np
 import json
