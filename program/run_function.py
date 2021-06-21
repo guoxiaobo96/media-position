@@ -51,8 +51,8 @@ def mlm_eval(
         if training_args.do_eval
         else None
     )
-    record_file = data_args.data_dir.split('_')[-1].split('/')[0]+'_'+data_args.dataset+'_'
-    model.eval(eval_dataset, record_file)
+    record_file = os.path.join(data_args.data_dir.split('_')[-1].split('/')[0],data_args.dataset)
+    model.eval(eval_dataset, record_file, verbose=False)
 
 def sentence_replacement_train(
     model_args: ModelArguments,

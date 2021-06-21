@@ -12,6 +12,7 @@ from torch.utils.data import ConcatDataset
 import torch
 import numpy as np
 
+import transformers
 from transformers import (
     CONFIG_MAPPING,
     MODEL_WITH_LM_HEAD_MAPPING,
@@ -234,8 +235,11 @@ class MLMAdapterModel(DeepModel):
         self,
         eval_dataset: Union[LineByLineWithRefDataset,
                            LineByLineTextDataset, TextDataset, ConcatDataset],
-        record_file: str = None
+        record_file: str = None,
+        verbose :bool = True,
     ) -> None:
+        if not verbose:
+            self._training_args.disable_tqdm = True
         self._trainer = Trainer(
             model=self._model,
             args=self._training_args,
@@ -244,28 +248,29 @@ class MLMAdapterModel(DeepModel):
             do_save_full_model=not self._adapter_args.train_adapter,
             do_save_adapters=self._adapter_args.train_adapter,
         )
-        self._eval(record_file)
+        self._eval(record_file, verbose)
 
-    def _eval(self, record_file = None) -> Dict:
+    def _eval(self, record_file = None, verbose=True) -> Dict:
         results = {}
-        self._logger.info("*** Evaluate ***")
+        if verbose:
+            self._logger.info("*** Evaluate ***")
 
         eval_output = self._trainer.evaluate()
 
         perplexity = math.exp(eval_output["eval_loss"])
         result = {"perplexity": perplexity}
-        self._logger.info("***** Eval results *****")
-        for key in sorted(result.keys()):
-            self._logger.info("  %s = %s", key, str(result[key]))
+
+        if verbose:
+            self._logger.info("***** Eval results *****")
+            for key in sorted(result.keys()):
+                self._logger.info("  %s = %s", key, str(result[key]))
 
         output_eval_file = os.path.join(self._training_args.output_dir, self._adapter_args.language)
-
+        if record_file is not None:
+            output_eval_file = os.path.join(output_eval_file, record_file)
         if not os.path.exists(output_eval_file):
             os.makedirs(output_eval_file)
-        if record_file is None:
-            output_eval_file = os.path.join(output_eval_file, "eval_results_lm.txt")
-        else:
-            output_eval_file = os.path.join(output_eval_file, record_file+"eval_results_lm.txt")
+        output_eval_file = os.path.join(output_eval_file, "eval_results_lm.txt")
 
         with open(output_eval_file, "w") as writer:
             for key in sorted(result.keys()):
