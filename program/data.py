@@ -163,7 +163,7 @@ def get_label_data(
         analysis_data_file = os.path.join(analysis_args.analysis_data_dir, file+'.json')
         with open(analysis_data_file) as fp:
             count = 0
-            for line in fp.readlines():
+            for line in fp:
                 item = json.loads(line.strip())
                 sentence = item['sentence']
                 if sentence not in row_data:
