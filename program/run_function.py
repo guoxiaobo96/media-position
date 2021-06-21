@@ -324,11 +324,12 @@ def label_score_analysis(
                 for dataset in data_map.dataset_list:
                     analysis_data[index][dataset] = v[dataset]
                 index += 1
-            except IndexError:
+            except (IndexError, KeyError):
                 length = len(k.split(' '))
                 error_count += 1
                 continue
     analysis_data['media_average'] = dict()
+    print("The total number is {}".format(index))
 
     # analysis_data['concatenate'] = dict()
     # for k, v in analysis_data.items():
