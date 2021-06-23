@@ -213,7 +213,7 @@ class AnalysisArguments:
 
 @dataclass
 class FullArticleMap:
-    dataset_to_name: Dict = field(default_factory=lambda: {'ABC.com':'ABC News','Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','guardiannews.com':'Guardian','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','rushlimbaugh.com':'Rush Limbaugh Show (radio)','sean':'Sean Hannity Show (radio)','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
+    dataset_to_name: Dict = field(default_factory=lambda: {'ABC.com':'ABC.com','Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','guardiannews.com':'guardiannews.com','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','rushlimbaugh.com':'rushlimbaugh.com','sean':'The Sean Hannity Show','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
     name_to_dataset: Dict = field(init=False)
     dataset_list: List[str] = field(init=False)
     left_dataset_list: List[str] = field(default_factory=lambda:['Breitbart', 'Fox', 'sean','rushlimbaugh.com'])
@@ -323,10 +323,12 @@ def get_config() -> Tuple:
         analysis_args: AnalysisArguments
     ) -> None:
 
-        data_args.original_data_dir
         data_args.data_path = os.path.join(
             data_args.data_dir, os.path.join(data_args.dataset, data_args.data_type))
-        training_args.output_dir = os.path.join(training_args.output_dir, data_args.data_type)
+        if adapter_args.train_adapter:
+            training_args.output_dir = os.path.join(training_args.output_dir, data_args.data_type)+'_adapter'
+        else:
+            training_args.output_dir = os.path.join(training_args.output_dir, data_args.data_type)
         if training_args.do_train:
             data_args.train_data_file = os.path.join(
                 data_args.data_path, adapter_args.language+'.train')
@@ -337,6 +339,8 @@ def get_config() -> Tuple:
             if adapter_args.load_adapter == '':
                 model_args.load_model_dir = os.path.join(
                     model_args.load_model_dir, data_args.data_type)
+                if adapter_args.train_adapter:
+                    model_args.load_model_dir = model_args.load_model_dir+'_adapter'
                 adapter_args.load_adapter = os.path.join(
                     model_args.load_model_dir, adapter_args.language)
             adapter_args.adapter_config = os.path.join(

@@ -1,6 +1,6 @@
 from platform import node
 from numpy.core import einsumfunc
-from torch import dist, mode
+from torch import chunk, dist, mode
 from .util import prepare_dirs_and_logger
 from .config import AnalysisArguments, DataArguments, MiscArgument, get_config, SourceMap, TrustMap, ArticleMap, FullArticleMap
 import tweepy
@@ -242,7 +242,7 @@ def origianl_collect(
     if data_args.dataset in topic_dict:
         topic_list = topic_dict[data_args.dataset]
     else:
-        topic_list = [data_args.dataset]
+        topic_list = [data_args.dataset.replace('-',' ')]
     data_args.data_dir = data_args.data_dir + '_' + data_args.dataset
 
     year_list = os.listdir(data_args.original_data_dir)
@@ -286,8 +286,10 @@ def origianl_collect(
             continue
         media = article_map.name_to_dataset[media_name]
         text_list = list(set(text_list))
+        if len(text_list) < 20:
+            continue
         random.shuffle(text_list)
-        train_number = int(len(text_list)*0.7)
+        train_number = int(len(text_list)*0.9)
         data_path = os.path.join(os.path.join(
             data_args.data_dir, media), data_args.data_type)
         if not os.path.exists(data_path):
@@ -319,7 +321,7 @@ def _original_collect(data_path_dir, global_debug):
             media = item['media']
         if media not in article_dict:
             article_dict[media] = list()
-        article_dict[media].append(_clean_text(text))
+        article_dict[media].append(text.strip().replace('\n','\\n'))
     return article_dict
 
 
@@ -401,6 +403,79 @@ def sentence_random_replacement_collect(
         random.shuffle(eval_data[media])
         with open(eval_file, mode='w', encoding='utf8') as fp:
             for item in eval_data[media]:
+                fp.write(json.dumps(item, ensure_ascii=False)+'\n')
+
+
+def paragraph_collect(
+    misc_args: MiscArgument,
+    data_args: DataArguments
+) -> None:
+    sequence_length = 256
+    article_map = FullArticleMap()
+    raw_data = dict()
+    train_data = dict()
+    eval_data = dict()
+
+    media_list = os.listdir(data_args.data_dir)
+    for media in media_list:
+        if media not in raw_data:
+            raw_data[media] = dict()
+        grouped_train_data = list()
+        grouped_eval_data = list()
+
+        train_file = os.path.join(os.path.join(os.path.join(
+            data_args.data_dir, media), 'original'), 'en.train')
+        eval_file = os.path.join(os.path.join(os.path.join(
+            data_args.data_dir, media), 'original'), 'en.valid')
+        with open(train_file, mode='r', encoding='utf8') as fp:
+            for line in fp:
+                paragraph_list = line.strip().split('\\n\\n')
+                for paragraph in paragraph_list:
+                    if len(paragraph.split(' '))<sequence_length and len(paragraph.split(' '))>5:
+                        grouped_train_data.append(paragraph)
+                    elif len(paragraph.split(' '))>=sequence_length:
+                        sentence_list =sent_tokenize(paragraph.strip())
+                        chunk_sentences = str()
+                        for sentence in sentence_list:
+                            if len(chunk_sentences.split(' ')) + len(sentence.split(' ')) < sequence_length:
+                                chunk_sentences = chunk_sentences +' '+ sentence
+                            else:
+                                grouped_train_data.append(chunk_sentences.strip())
+                                chunk_sentences = sentence
+                        grouped_train_data.append(chunk_sentences.strip())
+        with open(eval_file, mode='r', encoding='utf8') as fp:
+            for line in fp:
+                paragraph_list = line.strip().split('\\n\\n')
+                for paragraph in paragraph_list:
+                    if len(paragraph.split(' '))<sequence_length and len(paragraph.split(' '))>5:
+                        grouped_eval_data.append(paragraph)
+                    elif len(paragraph.split(' '))>=sequence_length:
+                        sentence_list =sent_tokenize(paragraph.strip())
+                        chunk_sentences = str()
+                        for sentence in sentence_list:
+                            if len(chunk_sentences.split(' ')) + len(sentence.split(' ')) < sequence_length:
+                                chunk_sentences = chunk_sentences +' '+ sentence
+                            else:
+                                grouped_eval_data.append(chunk_sentences.strip())
+                                chunk_sentences = sentence
+                        grouped_eval_data.append(chunk_sentences.strip())
+        raw_data[media] = {'train': grouped_train_data, 'eval': grouped_eval_data}
+
+
+    for media in media_list:
+        data_path = os.path.join(os.path.join(
+            data_args.data_dir, media), data_args.data_type)
+        if not os.path.exists(data_path):
+            os.makedirs(data_path)
+        train_file = os.path.join(data_path, 'en.train')
+        random.shuffle(raw_data[media]['train'])
+        with open(train_file, mode='w', encoding='utf8') as fp:
+            for item in raw_data[media]['train']:
+                fp.write(json.dumps(item, ensure_ascii=False)+'\n')
+        eval_file = os.path.join(data_path, 'en.valid')
+        random.shuffle(raw_data[media]['eval'])
+        with open(eval_file, mode='w', encoding='utf8') as fp:
+            for item in raw_data[media]['eval']:
                 fp.write(json.dumps(item, ensure_ascii=False)+'\n')
 
                 
@@ -490,6 +565,8 @@ def data_collect(
         origianl_collect(misc_args, data_args)
     elif data_args.data_type == 'sentence_random_replacement':
         sentence_random_replacement_collect(misc_args, data_args)
+    elif data_args.data_type in ['mlm', 'lm']:
+        paragraph_collect(misc_args, data_args)
 
 
 def main():

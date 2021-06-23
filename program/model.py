@@ -287,6 +287,8 @@ class MLMAdapterModel(DeepModel):
                                 tokenizer=self.tokenizer, device=0, top_k=10)
         result_dict = dict()
         results = self._fill_mask(sentence_list)
+        if len(sentence_list) == 1:
+            results = [results]
         # for sentence in sentence_list:
         #     results = self._fill_mask(sentence)
         #     result_dict[sentence] = results

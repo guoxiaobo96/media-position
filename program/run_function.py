@@ -12,7 +12,7 @@ from sklearn.metrics.pairwise import euclidean_distances
 from tqdm import tqdm
 
 
-from .config import DataArguments, MiscArgument, ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap
+from .config import DataArguments, FullArticleMap, MiscArgument, ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap
 from .model import MLMAdapterModel, SentenceReplacementAdapterModel, NERModel
 from .data import get_dataset, get_analysis_data, get_label_data, get_mask_score_data
 from .analysis import ClusterAnalysis,DistanceAnalysis,ClusterCompare
@@ -190,13 +190,13 @@ def label_score_predict(
     training_args: TrainingArguments,
     adapter_args: AdapterArguments,
 ) -> Dict:
-    dataset_map = TrustMap()
+    dataset_map = FullArticleMap()
     
     data_type = list()
     dataset = data_args.dataset
 
-    if dataset in dataset_map.position_list:
-        data_type.append('position')
+    # if dataset in dataset_map.position_list:
+    #     data_type.append('position')
     data_type.append('dataset')
     if dataset in ['vanilla']:
         data_type = ['dataset', 'position']
@@ -204,16 +204,19 @@ def label_score_predict(
     model = MLMAdapterModel(model_args, data_args, training_args, adapter_args)
     word_set = set()
 
-    log_dir = os.path.join(misc_args.log_dir, data_args.data_type)+'_'+data_args.data_dir.split('_')[1].split('/')[0]
+    if adapter_args.train_adapter:
+        log_dir = os.path.join(misc_args.log_dir, data_args.data_type)+'_adapter_'+data_args.data_dir.split('_')[1].split('/')[0]
+    else:
+        log_dir = os.path.join(misc_args.log_dir, data_args.data_type)+'_'+data_args.data_dir.split('_')[1].split('/')[0]
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     log_path = os.path.join(os.path.join(log_dir, 'json'))
     if not os.path.exists(log_path):
         os.makedirs(log_path)
     log_file = os.path.join(log_path, data_args.dataset+'.json')
-    batch_size = 50
+    batch_size = 64
 
-    masked_sentence_file_list: List = [os.path.join(os.path.join(os.path.join(data_args.data_dir,file_path),'article'),'en.valid') for file_path in os.listdir(data_args.data_dir)]
+    masked_sentence_file_list: List = [os.path.join(os.path.join(os.path.join(data_args.data_dir,file_path),data_args.data_type),'en.valid') for file_path in os.listdir(data_args.data_dir)]
     for masked_sentence_file in masked_sentence_file_list:
         masked_sentence_dict: Dict = dict()
         masked_sentence_list: List = list()
@@ -249,23 +252,25 @@ def label_score_predict(
             result = model.predict(batch_sentence)
             results.update(result)
 
+        # # batch_sentence = ["MULVANEY: I don\'t think any president of any party who is doing his or her job would be doing the job properly if they took anything off the table. So, I think the president of the United States is looking at this [MASK] time.", "MULVANEY: I don\'t think any president of any party who is doing his or her job would be doing the job properly if they took anything off the table. So, I think the president of the United States is looking at this extraordinarily [MASK]"]
+        # batch_sentence = ["MULVANEY: I don\'t think any president of any party who is doing his or her job would be doing the job properly if they took anything off the table. So, I think the president of the United States is looking at this extraordinarily [MASK]"]
+        # result = model.predict(batch_sentence)
+        # results.update(result)
+
 
 
         record_dict = dict()
 
         for sentence, items in results.items():
-            try:
-                original_sentence = filter_origianl_sentence_list[masked_sentence_dict[sentence]]
-                if original_sentence not in record_dict:
-                    record_dict[original_sentence] = {'sentence':original_sentence,'word':dict()}
+            original_sentence = filter_origianl_sentence_list[masked_sentence_dict[sentence]]
+            if original_sentence not in record_dict:
+                record_dict[original_sentence] = {'sentence':original_sentence,'word':dict()}
 
-                masked_index = sentence.split(' ').index('[MASK]')
-                record_dict[original_sentence]['word'][masked_index] = dict()
-                for item in items:
-                    record_dict[original_sentence]['word'][masked_index][item["token_str"]] = str(round(item["score"], 3))
-                    word_set.add(item["token_str"])
-            except:
-                continue
+            masked_index = sentence.split(' ').index('[MASK]')
+            record_dict[original_sentence]['word'][masked_index] = dict()
+            for item in items:
+                record_dict[original_sentence]['word'][masked_index][item["token_str"]] = str(round(item["score"], 3))
+                word_set.add(item["token_str"])
 
         with open(log_file, mode='a', encoding='utf8') as fp:
             for _, item in record_dict.items():

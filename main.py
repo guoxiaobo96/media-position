@@ -15,9 +15,9 @@ def main(
 ) -> None:
     if misc_args.task == 'extract_data':
         extract_data(misc_args, data_args)
-    elif misc_args.task == 'train_adapter':
+    elif misc_args.task == 'train_mlm':
         mlm_train(model_args, data_args, training_args, adapter_args)
-    elif misc_args.task == 'eval_adapter':
+    elif misc_args.task == 'eval_mlm':
         mlm_eval(model_args, data_args, training_args, adapter_args)
     elif misc_args.task == 'train_sentence_replacement':
         sentence_replacement_train(
@@ -35,12 +35,7 @@ def main(
         analysis(misc_args, model_args, data_args,
                  training_args, analysis_args)
     elif misc_args.task == "data_collect":
-        if data_args.data_type == 'tweet':
-            twitter_collect(misc_args, data_args)
-        elif data_args.data_type == 'article':
-            article_collect(misc_args, data_args)
-        else:
-            data_collect(misc_args, data_args)
+        data_collect(misc_args, data_args)
 
 
 if __name__ == '__main__':
