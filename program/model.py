@@ -281,31 +281,52 @@ class MLMAdapterModel(DeepModel):
         return results
 
     def predict(self, sentence_list, batch_size=64) -> Dict:
-        # if self._fill_mask is None:
-        #     self._model.eval()
-        #     self._fill_mask = pipeline(task="fill-mask", model=self._model,
-        #                         tokenizer=self.tokenizer, device=0, top_k=10)
-        # result_dict = dict()
-        # results = self._fill_mask(sentence_list)
-        # if len(sentence_list) == 1:
-        #     results = [results]
-        # # for sentence in sentence_list:
-        # #     results = self._fill_mask(sentence)
-        # #     result_dict[sentence] = results
-        # for i, sentence in enumerate(sentence_list):
-        #     result_dict[sentence] = results[i]
-        # return result_dict
-        self._model.eval()
-        index = 0
-        batched_sentence_list = list()
-        while (index < len(sentence_list)):
-            batched_sentence_list.append(sentence_list[index:index+batch_size])
-            index += batch_size
-        for batched_sentence in batched_sentence_list:
-            batched_encoded_sentence = self.tokenizer.batch_encode_plus(batched_sentence)
-            predictions = self._model(**batched_encoded_sentence)
+        if self._fill_mask is None:
+            self._model.eval()
+            self._fill_mask = pipeline(task="fill-mask", model=self._model,
+                                tokenizer=self.tokenizer, device=0, top_k=10)
+        result_dict = dict()
+        results = self._fill_mask(sentence_list)
+        if len(sentence_list) == 1:
+            results = [results]
+        for i, sentence in enumerate(sentence_list):
+            result_dict[sentence] = results[i]
+        return result_dict
 
+    # def predict(
+    #     self,
+    #     inputs,
+    #     original_sentence_list
+    # ) -> None:
+    #     if self._trainer is None:
+    #         self._trainer = Trainer(
+    #             model=self._model,
+    #             args=self._training_args,
+    #             data_collator=self._data_collator,
+    #             do_save_full_model=not self._adapter_args.train_adapter,
+    #             do_save_adapters=self._adapter_args.train_adapter,
+    #         )
 
+    #     results = dict()
+    #     outputs = torch.tensor(self._trainer.predict(inputs).predictions)
+
+    #     for i, original_sentence in enumerate(original_sentence_list):
+    #         input_ids = inputs[i]
+    #         result = []
+    #         masked_index = torch.nonzero(input_ids == self.tokenizer.mask_token_id, as_tuple=False)
+    #         logits = outputs[i, masked_index.item(), :]
+    #         probs = logits.softmax(dim=0)
+    #         values, predictions = probs.topk(10)
+    #         for v, p in zip(values.tolist(), predictions.tolist()):
+    #             result.append(
+    #                 {
+    #                     "score": v,
+    #                     "token": p,
+    #                     "token_str": self.tokenizer.decode(p),
+    #                 }
+    #             )
+    #         results[original_sentence] = result
+    #     return results
 
 
 class SentenceReplacementAdapterModel(DeepModel):
