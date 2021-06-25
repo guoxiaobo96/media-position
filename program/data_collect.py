@@ -286,7 +286,7 @@ def origianl_collect(
             continue
         media = article_map.name_to_dataset[media_name]
         text_list = list(set(text_list))
-        if len(text_list) < 20:
+        if len(text_list) < 50:
             continue
         random.shuffle(text_list)
         train_number = int(len(text_list)*0.9)
@@ -321,7 +321,7 @@ def _original_collect(data_path_dir, global_debug):
             media = item['media']
         if media not in article_dict:
             article_dict[media] = list()
-        article_dict[media].append(text.strip().replace('\n','\\n'))
+        article_dict[media].append(text.strip().replace('\n','\\n').replace('\"',''))
     return article_dict
 
 
@@ -471,12 +471,12 @@ def paragraph_collect(
         random.shuffle(raw_data[media]['train'])
         with open(train_file, mode='w', encoding='utf8') as fp:
             for item in raw_data[media]['train']:
-                fp.write(json.dumps(item, ensure_ascii=False)+'\n')
+                fp.write(item+'\n')
         eval_file = os.path.join(data_path, 'en.valid')
         random.shuffle(raw_data[media]['eval'])
         with open(eval_file, mode='w', encoding='utf8') as fp:
             for item in raw_data[media]['eval']:
-                fp.write(json.dumps(item, ensure_ascii=False)+'\n')
+                fp.write(item+'\n')
 
                 
 def _calcualte_score(data_type, label_type, media_list):
