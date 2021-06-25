@@ -12,7 +12,7 @@ from sklearn.metrics.pairwise import euclidean_distances
 from tqdm import tqdm
 
 
-from .config import DataArguments, FullArticleMap, MiscArgument, ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap
+from .config import DataArguments, FullArticleMap, MiscArgument, ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap, BaselineArticleMap
 from .model import MLMAdapterModel, SentenceReplacementAdapterModel, NERModel
 from .data import get_dataset, get_analysis_data, get_label_data, get_mask_score_data
 from .analysis import ClusterAnalysis,DistanceAnalysis,ClusterCompare
@@ -314,7 +314,7 @@ def label_score_analysis(
     training_args: TrainingArguments,
     analysis_args: AnalysisArguments
 ) -> Dict:
-    data_map = ArticleMap()
+    data_map = BaselineArticleMap()
     analysis_result = dict()
     model_list = dict()
     analysis_data = dict()

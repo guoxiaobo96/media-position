@@ -18,7 +18,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 warnings.filterwarnings('ignore')
 
 from .ner_util import NERDataset, encode_scores
-from .config import AnalysisArguments, DataArguments, MiscArgument, SourceMap, TrustMap, get_config, ArticleMap, TwitterMap
+from .config import AnalysisArguments, DataArguments, FullArticleMap, MiscArgument, SourceMap, TrustMap, get_config, ArticleMap, TwitterMap, BaselineArticleMap
 from .util import prepare_dirs_and_logger
 from .fine_tune_util import SentenceReplacementDataset
 
@@ -157,7 +157,7 @@ def get_label_data(
     analysis_args: AnalysisArguments,
     data_args: DataArguments
 ) -> Dict[str, Dict[str, int]]:
-    data_map = ArticleMap()
+    data_map = BaselineArticleMap()
     row_data = dict()
     for file in data_map.dataset_list:
         analysis_data_file = os.path.join(analysis_args.analysis_data_dir, file+'.json')
