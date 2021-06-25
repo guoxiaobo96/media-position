@@ -10,7 +10,7 @@ import seaborn as sns
 import pandas as pd
 import joblib
 
-from program.config import ArticleMap, TwitterMap
+from program.config import ArticleMap, TwitterMap, FullArticleMap, BaselineArticleMap
 
 
 def plot_dendrogram(model, **kwargs):
@@ -35,7 +35,7 @@ def plot_dendrogram(model, **kwargs):
     dendrogram(linkage_matrix, **kwargs)
 
 def build_baseline(data_type, label_type):
-    data_map = ArticleMap () if data_type=='article' else TwitterMap()
+    data_map = BaselineArticleMap() if data_type=='article' else TwitterMap()
     label_list = list(data_map.name_to_dataset.keys())
 
     data = list()
@@ -46,7 +46,10 @@ def build_baseline(data_type, label_type):
         for row in reader:
             data_temp[row[0]] = [float(x.strip()) for x in row[1:]]
     for k, _ in data_map.name_to_dataset.items():
-        data.append(data_temp[k])
+        try:
+            data.append(data_temp[k])
+        except:
+            print(k)
     analyzer = AgglomerativeClustering(
         n_clusters=2, compute_distances=True, affinity='cosine', linkage='single')
     cluster_result = dict()
@@ -76,7 +79,7 @@ def build_baseline(data_type, label_type):
     # plt.close()
 
 def main():
-    for data_type in ['article','twitter']:
+    for data_type in ['article']:
         for label_type in ['source', 'trust']:
             build_baseline(data_type, label_type)
 if __name__ == '__main__':

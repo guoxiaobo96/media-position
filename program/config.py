@@ -213,7 +213,18 @@ class AnalysisArguments:
 
 @dataclass
 class FullArticleMap:
-    dataset_to_name: Dict = field(default_factory=lambda: {'ABC.com':'ABC.com','Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','guardiannews.com':'guardiannews.com','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','rushlimbaugh.com':'rushlimbaugh.com','sean':'The Sean Hannity Show','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
+    dataset_to_name: Dict = field(default_factory=lambda: {'ABC.com':'ABC News','Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','guardiannews.com':'Guardian','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','rushlimbaugh.com':'rushlimbaugh.com','sean':'The Sean Hannity Show','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
+    name_to_dataset: Dict = field(init=False)
+    dataset_list: List[str] = field(init=False)
+    left_dataset_list: List[str] = field(default_factory=lambda:['Breitbart', 'Fox', 'sean','rushlimbaugh.com'])
+
+    def __post_init__(self):
+        self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
+        self.dataset_list = [k for k,v in self.dataset_to_name.items()]
+
+@dataclass
+class BaselineArticleMap:
+    dataset_to_name: Dict = field(default_factory=lambda: {'Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','sean':'The Sean Hannity Show','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
     name_to_dataset: Dict = field(init=False)
     dataset_list: List[str] = field(init=False)
     left_dataset_list: List[str] = field(default_factory=lambda:['Breitbart', 'Fox', 'sean','rushlimbaugh.com'])
@@ -341,8 +352,11 @@ def get_config() -> Tuple:
                     model_args.load_model_dir, data_args.data_type)
                 if adapter_args.train_adapter:
                     model_args.load_model_dir = model_args.load_model_dir+'_adapter'
-                adapter_args.load_adapter = os.path.join(
-                    model_args.load_model_dir, adapter_args.language)
+                    adapter_args.load_adapter = os.path.join(
+                        model_args.load_model_dir, adapter_args.language)
+                else:
+                    model_args.model_name_or_path = model_args.load_model_dir
+                    
             adapter_args.adapter_config = os.path.join(
                 adapter_args.load_adapter, 'adapter_config.json')
 
