@@ -220,37 +220,38 @@ def label_score_predict(
     for masked_sentence_file in masked_sentence_file_list:
         masked_sentence_dict: Dict = dict()
         masked_sentence_list: List = list()
-        origianl_sentence_list: List = list()
+        original_sentence_list: List = list()
         batched_masked_sentence_list: List = list()
         filter_origianl_sentence_list: List = list()
         with open(masked_sentence_file, mode='r', encoding='utf8') as fp:
             for line in fp.readlines():
-                origianl_sentence_list.append(line.strip())
+                original_sentence_list.append(line.strip())
 
-        for index, masked_sentence in enumerate(origianl_sentence_list):
-            sentence_list = list()
-            original_sentence = masked_sentence.split(' ')
-            for i, word in enumerate(original_sentence):
-                raw_word = word
-                original_sentence[i] = '[MASK]'
-                masked_setence = ' '.join(original_sentence)
-                sentence_list.append(masked_setence)
-                original_sentence[i] = raw_word
-            if len(sentence_list) > 1:
-                masked_sentence_list.extend(sentence_list)
-                filter_origianl_sentence_list.append(masked_sentence)
-                for sentence in sentence_list:
-                    masked_sentence_dict[sentence] = index
+        # for index, masked_sentence in enumerate(origianl_sentence_list):
+        #     sentence_list = list()
+        #     original_sentence = masked_sentence.split(' ')
+        #     for i, word in enumerate(original_sentence):
+        #         raw_word = word
+        #         original_sentence[i] = '[MASK]'
+        #         masked_setence = ' '.join(original_sentence)
+        #         sentence_list.append(masked_setence)
+        #         original_sentence[i] = raw_word
+        #     if len(sentence_list) > 1:
+        #         masked_sentence_list.extend(sentence_list)
+        #         filter_origianl_sentence_list.append(masked_sentence)
+        #         for sentence in sentence_list:
+        #             masked_sentence_dict[sentence] = index
         
-        index = 0
-        while (index < len(masked_sentence_list)):
-            batched_masked_sentence_list.append(masked_sentence_list[index:index+batch_size])
-            index += batch_size
+        # index = 0
+        # while (index < len(masked_sentence_list)):
+        #     batched_masked_sentence_list.append(masked_sentence_list[index:index+batch_size])
+        #     index += batch_size
 
-        results = dict()
-        for batch_sentence in tqdm(batched_masked_sentence_list):
-            result = model.predict(batch_sentence)
-            results.update(result)
+        # results = dict()
+        # for batch_sentence in tqdm(batched_masked_sentence_list):
+        #     result = model.predict(batch_sentence)
+        #     results.update(result)
+        result = model.predict(original_sentence_list, batch_size=64)
 
         # # batch_sentence = ["MULVANEY: I don\'t think any president of any party who is doing his or her job would be doing the job properly if they took anything off the table. So, I think the president of the United States is looking at this [MASK] time.", "MULVANEY: I don\'t think any president of any party who is doing his or her job would be doing the job properly if they took anything off the table. So, I think the president of the United States is looking at this extraordinarily [MASK]"]
         # batch_sentence = ["MULVANEY: I don\'t think any president of any party who is doing his or her job would be doing the job properly if they took anything off the table. So, I think the president of the United States is looking at this extraordinarily [MASK]"]
