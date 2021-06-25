@@ -324,6 +324,8 @@ def label_score_analysis(
     index = 0
     for k, item in tqdm(analysis_data_temp.items()):
         for position, v in item.items():
+            if len(v) != len(data_map.dataset_list):
+                continue
             try:
                 sentence_position_data[index] = {'sentence':k, 'position':position, 'word':k.split(' ')[int(position)]}
                 analysis_data[index] = dict()
