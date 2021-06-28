@@ -224,7 +224,7 @@ class FullArticleMap:
 
 @dataclass
 class BaselineArticleMap:
-    dataset_to_name: Dict = field(default_factory=lambda: {'Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','sean':'The Sean Hannity Show','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
+    dataset_to_name: Dict = field(default_factory=lambda: {'Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
     name_to_dataset: Dict = field(init=False)
     dataset_list: List[str] = field(init=False)
     left_dataset_list: List[str] = field(default_factory=lambda:['Breitbart', 'Fox', 'sean','rushlimbaugh.com'])

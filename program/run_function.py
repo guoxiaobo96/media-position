@@ -185,6 +185,7 @@ def analysis(
     return analysis_result
 
 def label_score_predict(
+
     misc_args: MiscArgument,
     model_args: ModelArguments,
     data_args: DataArguments,
@@ -440,9 +441,9 @@ def label_score_analysis(
         analysis_result = cluster_compare.compare(model_list)
         analysis_result['cluster_average'] = np.mean(cluster_average)
         analysis_result = sorted(analysis_result.items(), key=lambda x: x[1])
-        sentence_position_data['media_average'] = {'sentence':'media_average','position':-1,'word':'media_average'}
-        sentence_position_data['cluster_average'] = {'sentence':'cluster_average','position':-1,'word':'cluster_average'}
-        sentence_position_data['distance_base'] = {'sentence':'distance_base','position':-1,'word':'distance_base'}
+        sentence_position_data['media_average'] = {'sentence':'media_average','position':-2,'word':'media_average'}
+        sentence_position_data['cluster_average'] = {'sentence':'cluster_average','position':-2,'word':'cluster_average'}
+        sentence_position_data['distance_base'] = {'sentence':'distance_base','position':-2,'word':'distance_base'}
 
         result = dict()
         average_distance = dict()
@@ -457,7 +458,7 @@ def label_score_analysis(
             average_distance[sentence].append(v)
         
         for sentence, average_distance in average_distance.items():
-            result[sentence]['-1'] = (np.mean(average_distance),'sentence_average')
+            result[sentence][-1] = (np.mean(average_distance),'sentence_average')
 
         sentence_list = list(result.keys())
         analysis_result = {k:{'score':v, 'sentence':sentence_list.index(sentence_position_data[k]['sentence'])+1, 'position':sentence_position_data[k]['position'],'word':sentence_position_data[k]['word']} for k,v in analysis_result}
@@ -475,6 +476,11 @@ def label_score_analysis(
             for k, v in result.items():
                 v['sentence'] = k
                 fp.write(json.dumps(v,ensure_ascii=False)+'\n')
+
+    print("The basic distance is {}".format(result['distance_base'][-2][0]))          
+    print("The cluster average performance is {}".format(result['cluster_average'][-2][0]))
+    print("The media average performance is {}".format(result['media_average'][-2][0]))
+
     print("Analysis finish")
     return analysis_result
 

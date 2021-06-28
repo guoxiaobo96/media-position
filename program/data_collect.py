@@ -251,7 +251,6 @@ def origianl_collect(
         data_path_dir_list_temp.append(data_path_dir)
 
     for data_path_year in data_path_dir_list_temp:
-        # topic_list = os.listdir(data_path_year)
         for topic in topic_list:
             data_path_dir = os.path.join(data_path_year, topic)
             data_path_dir_list.append(data_path_dir)
@@ -321,7 +320,9 @@ def _original_collect(data_path_dir, global_debug):
             media = item['media']
         if media not in article_dict:
             article_dict[media] = list()
-        article_dict[media].append(text.strip().replace('\n','\\n').replace('\"',''))
+        text = text.strip().replace('\n','\\n').replace('\"','')
+        text = text.lower()
+        article_dict[media].append(text)
     return article_dict
 
 
