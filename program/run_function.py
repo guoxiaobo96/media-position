@@ -18,6 +18,7 @@ from .data import get_dataset, get_analysis_data, get_label_data, get_mask_score
 from .analysis import ClusterAnalysis,DistanceAnalysis,ClusterCompare
 from .ner_util import NERDataset
 from .predict_util import MaksedPredictionDataset
+from .data_augment_util import SelfDataAugmentor
 
 
 def mlm_train(
@@ -483,6 +484,15 @@ def label_score_analysis(
 
     print("Analysis finish")
     return analysis_result
+
+
+def data_augemnt(
+    misc_args:MiscArgument,
+    data_args:DataArguments,
+):
+    self_data_augmentor = SelfDataAugmentor(misc_args, data_args)
+    self_data_augmentor.data_augment(data_args.data_type)
+    self_data_augmentor.save()
 
 def train_mask_score_model(model_args: ModelArguments,
     data_args: DataArguments,

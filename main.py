@@ -1,7 +1,7 @@
 from program.config import AnalysisArguments, get_config, DataArguments, MiscArgument, ModelArguments, AdapterArguments, TrainingArguments
 from program.data import extract_data
 from program.util import prepare_dirs_and_logger, save_config
-from program.run_function import mlm_train, analysis, label_score_predict, label_score_analysis, train_mask_score_model, mlm_eval, sentence_replacement_train
+from program.run_function import mlm_train, analysis, label_score_predict, label_score_analysis, data_augemnt, train_mask_score_model, mlm_eval, sentence_replacement_train
 from program.data_collect import twitter_collect, article_collect, data_collect
 
 
@@ -35,8 +35,10 @@ def main(
         analysis(misc_args, model_args, data_args,
                  training_args, analysis_args)
     elif misc_args.task == "data_collect":
-        data_collect(misc_args, data_args)
-
+        if data_args.data_type == 'original':
+            data_collect(misc_args, data_args)
+        else:
+            data_augemnt(misc_args, data_args)
 
 if __name__ == '__main__':
     misc_args, model_args, data_args, training_args, adapter_args, analysis_args = get_config()
