@@ -406,6 +406,88 @@ def sentence_random_replacement_collect(
                 fp.write(json.dumps(item, ensure_ascii=False)+'\n')
 
 
+
+def sentence_random_replacement_collect(
+    misc_args: MiscArgument,
+    data_args: DataArguments
+) -> None:
+    article_map = FullArticleMap()
+    raw_data = dict()
+    train_data = dict()
+    eval_data = dict()
+
+    media_list = os.listdir(data_args.data_dir)
+    distance_dict = _calcualte_score('article', 'trust', media_list)
+    for media in media_list:
+        if media not in raw_data:
+            raw_data[media] = dict()
+        splited_train_data = list()
+        splited_eval_data = list()
+        train_sentences_list = list()
+        eval_sentences_list = list()
+
+        train_file = os.path.join(os.path.join(os.path.join(
+            data_args.data_dir, media), 'original'), 'en.train')
+        eval_file = os.path.join(os.path.join(os.path.join(
+            data_args.data_dir, media), 'original'), 'en.valid')
+        with open(train_file, mode='r', encoding='utf8') as fp:
+            for line in fp.readlines():
+                sentences_list = sent_tokenize(line.strip())
+                train_sentences_list.extend(sentences_list)
+                grouped_sentences = list()
+                for i in range(len(sentences_list) - 2):
+                    grouped_sentences.append(
+                        [sentences_list[i], sentences_list[i+1], sentences_list[i+2]])
+                splited_train_data.extend(grouped_sentences)
+        with open(eval_file, mode='r', encoding='utf8') as fp:
+            for line in fp.readlines():
+                sentences_list = sent_tokenize(line.strip())
+                eval_sentences_list.extend(sentences_list)
+                grouped_sentences = list()
+                for i in range(len(sentences_list) - 2):
+                    grouped_sentences.append(
+                        [sentences_list[i], sentences_list[i+1], sentences_list[i+2]])
+                splited_eval_data.extend(grouped_sentences)
+        raw_data[media] = {'train_sentences_list': train_sentences_list, 'eval_sentences_list': eval_sentences_list,
+                           'split_train_data': splited_train_data, 'split_eval_data': splited_eval_data}
+
+    for media in media_list:
+        if media not in train_data:
+            train_data[media] = list()
+        if media not in eval_data:
+            eval_data[media] = list()
+
+        for sentence_list in raw_data[media]['split_train_data']:
+            for replace_media in media_list:
+                replaced_sentence = random.choice(raw_data[replace_media]['train_sentences_list'])
+                while sentence_list[1] == replaced_sentence:
+                    replaced_sentence = random.choice(raw_data[replace_media]['train_sentences_list'])
+                sentence = sentence_list[0] + replaced_sentence + sentence_list[2]
+                train_data[media].append({'sentence':sentence,'label':distance_dict[media][replace_media]})
+        for sentence_list in raw_data[media]['split_eval_data']:
+            for replace_media in media_list:
+                replaced_sentence = random.choice(raw_data[replace_media]['eval_sentences_list'])
+                while sentence_list[1] == replaced_sentence:
+                    replaced_sentence = random.choice(raw_data[replace_media]['eval_sentences_list'])
+                sentence = sentence_list[0] + replaced_sentence + sentence_list[2]
+                eval_data[media].append({'sentence':sentence,'label':distance_dict[media][replace_media]})
+    for media in media_list:
+        data_path = os.path.join(os.path.join(
+            data_args.data_dir, media), data_args.data_type)
+        if not os.path.exists(data_path):
+            os.makedirs(data_path)
+        train_file = os.path.join(data_path, 'en.train')
+        random.shuffle(train_data[media])
+        with open(train_file, mode='w', encoding='utf8') as fp:
+            for item in train_data[media]:
+                fp.write(json.dumps(item, ensure_ascii=False)+'\n')
+        eval_file = os.path.join(data_path, 'en.valid')
+        random.shuffle(eval_data[media])
+        with open(eval_file, mode='w', encoding='utf8') as fp:
+            for item in eval_data[media]:
+                fp.write(json.dumps(item, ensure_ascii=False)+'\n')
+
+
 def paragraph_collect(
     misc_args: MiscArgument,
     data_args: DataArguments
