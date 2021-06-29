@@ -14,9 +14,8 @@ from .util import prepare_dirs_and_logger
 from .config import AnalysisArguments, DataArguments, MiscArgument, get_config, SourceMap, TrustMap, ArticleMap, FullArticleMap
 
 
-
 class SelfDataAugmentor(object):
-    def __init__(self, misc_args:MiscArgument, data_args:DataArguments) -> None:
+    def __init__(self, misc_args: MiscArgument, data_args: DataArguments) -> None:
         super().__init__()
         self._misc_args = misc_args
         self._data_args = data_args
@@ -44,41 +43,48 @@ class SelfDataAugmentor(object):
                 for line in fp:
                     paragraph_list = line.strip().split('\\n\\n')
                     for paragraph in paragraph_list:
-                        if len(paragraph.split(' '))<self._sequence_length and len(paragraph.split(' '))>5:
+                        if len(paragraph.split(' ')) < self._sequence_length and len(paragraph.split(' ')) > 5:
                             grouped_train_data.append(paragraph)
-                        elif len(paragraph.split(' '))>=self._sequence_length:
-                            sentence_list =sent_tokenize(paragraph.strip())
+                        elif len(paragraph.split(' ')) >= self._sequence_length:
+                            sentence_list = sent_tokenize(paragraph.strip())
                             chunk_sentences = str()
                             for sentence in sentence_list:
                                 if len(chunk_sentences.split(' ')) + len(sentence.split(' ')) < self._sequence_length:
-                                    chunk_sentences = chunk_sentences +' '+ sentence
+                                    chunk_sentences = chunk_sentences + ' ' + sentence
                                 else:
-                                    grouped_train_data.append(chunk_sentences.strip())
+                                    grouped_train_data.append(
+                                        chunk_sentences.strip())
                                     chunk_sentences = sentence
                             grouped_train_data.append(chunk_sentences.strip())
             with open(eval_file, mode='r', encoding='utf8') as fp:
                 for line in fp:
                     paragraph_list = line.strip().split('\\n\\n')
                     for paragraph in paragraph_list:
-                        if len(paragraph.split(' '))<self._sequence_length and len(paragraph.split(' '))>5:
+                        if len(paragraph.split(' ')) < self._sequence_length and len(paragraph.split(' ')) > 5:
                             grouped_eval_data.append(paragraph)
-                        elif len(paragraph.split(' '))>=self._sequence_length:
-                            sentence_list =sent_tokenize(paragraph.strip())
+                        elif len(paragraph.split(' ')) >= self._sequence_length:
+                            sentence_list = sent_tokenize(paragraph.strip())
                             chunk_sentences = str()
                             for sentence in sentence_list:
                                 if len(chunk_sentences.split(' ')) + len(sentence.split(' ')) < self._sequence_length:
-                                    chunk_sentences = chunk_sentences +' '+ sentence
+                                    chunk_sentences = chunk_sentences + ' ' + sentence
                                 else:
-                                    grouped_eval_data.append(chunk_sentences.strip())
+                                    grouped_eval_data.append(
+                                        chunk_sentences.strip())
                                     chunk_sentences = sentence
                             grouped_eval_data.append(chunk_sentences.strip())
-            self._raw_data[media] = {'train': grouped_train_data, 'eval': grouped_eval_data}
+            self._raw_data[media] = {
+                'train': grouped_train_data, 'eval': grouped_eval_data}
 
     def data_augment(self, data_type):
         if data_type == 'sentence_order_replacement':
             self._sentence_order_replacement()
         elif data_type == 'back_translation':
             self._back_translation()
+        elif data_type == 'duplicate':
+            self._duplicate()
+        elif data_type == 'paragraph':
+            self._paragraph()
 
     def _sentence_order_replacement(self):
         for media, media_data in self._raw_data.items():
@@ -91,7 +97,7 @@ class SelfDataAugmentor(object):
             augmented_eval_data = list()
 
             for paragraph in train_data:
-                sentence_list = sent_tokenize(paragraph.replace(';','.'))
+                sentence_list = sent_tokenize(paragraph.replace(';', '.'))
                 random.shuffle(sentence_list)
                 augmented_sentence_list = deepcopy(sentence_list)
                 augmented_train_data.append(' '.join(augmented_sentence_list))
@@ -99,15 +105,17 @@ class SelfDataAugmentor(object):
                     random.shuffle(sentence_list)
                     augmented_sentence_list = deepcopy(augmented_sentence_list)
                     augmented_train_data.append(' '.join(sentence_list))
-            
+
             augmented_eval_data = eval_data
 
             self._augmented_data[media]['train'] = augmented_train_data
             self._augmented_data[media]['eval'] = augmented_eval_data
-    
+
     def _back_translation(self):
-        en2de = torch.hub.load('pytorch/fairseq', 'transformer.wmt19.en-de.single_model', tokenizer='moses', bpe='fastbpe')
-        de2en = torch.hub.load('pytorch/fairseq', 'transformer.wmt19.de-en.single_model', tokenizer='moses', bpe='fastbpe')
+        en2de = torch.hub.load(
+            'pytorch/fairseq', 'transformer.wmt19.en-de.single_model', tokenizer='moses', bpe='fastbpe')
+        de2en = torch.hub.load(
+            'pytorch/fairseq', 'transformer.wmt19.de-en.single_model', tokenizer='moses', bpe='fastbpe')
 
         en2de.cuda()
         de2en.cuda()
@@ -130,6 +138,39 @@ class SelfDataAugmentor(object):
             self._augmented_data[media]['train'] = augmented_train_data
             self._augmented_data[media]['eval'] = augmented_eval_data
 
+    def _duplicate(self):
+        for media, media_data in self._raw_data.items():
+            if media not in self._augmented_data:
+                self._augmented_data[media] = dict()
+            train_data = media_data['train']
+            eval_data = media_data['eval']
+
+            augmented_train_data = list()
+            augmented_eval_data = list()
+
+            augmented_train_data.extend(train_data)
+            augmented_train_data.extend(train_data)
+
+            augmented_eval_data = eval_data
+
+            self._augmented_data[media]['train'] = augmented_train_data
+            self._augmented_data[media]['eval'] = augmented_eval_data
+
+    def _paragraph(self):
+        for media, media_data in self._raw_data.items():
+            if media not in self._augmented_data:
+                self._augmented_data[media] = dict()
+            train_data = media_data['train']
+            eval_data = media_data['eval']
+
+            augmented_train_data = list()
+            augmented_eval_data = list()
+
+            augmented_train_data = train_data
+            augmented_eval_data = eval_data
+
+            self._augmented_data[media]['train'] = augmented_train_data
+            self._augmented_data[media]['eval'] = augmented_eval_data
 
     def save(self):
         for media in list(self._augmented_data.keys()):

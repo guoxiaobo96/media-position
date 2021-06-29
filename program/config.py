@@ -343,7 +343,7 @@ def get_config() -> Tuple:
             data_args.data_dir, os.path.join(data_args.dataset, data_args.data_type))
         if model_args.loss_type=='mlm':
             data_args.mlm = True
-        training_args.output_dir = os.path.join(training_args.output_dir, data_args.data_type)+'_'+model_args.loss_type
+        training_args.output_dir = os.path.join(training_args.output_dir, data_args.data_type)+'-'+model_args.loss_type
         
         if training_args.do_train:
             data_args.train_data_file = os.path.join(
@@ -354,21 +354,21 @@ def get_config() -> Tuple:
         if misc_args.load_model:
             if adapter_args.load_adapter == '':
                 model_args.load_model_dir = os.path.join(
-                    model_args.load_model_dir, data_args.data_type)
+                    model_args.load_model_dir, data_args.data_type+'-'+model_args.loss_type)
                 if adapter_args.train_adapter:
                     model_args.load_model_dir = model_args.load_model_dir+'_adapter'
                     adapter_args.load_adapter = os.path.join(
                         model_args.load_model_dir, adapter_args.language)
+                    adapter_args.adapter_config = os.path.join(
+                        adapter_args.load_adapter, 'adapter_config.json')
                 else:
                     model_args.model_name_or_path = model_args.load_model_dir
-                    
-            adapter_args.adapter_config = os.path.join(
-                adapter_args.load_adapter, 'adapter_config.json')
+                
 
         analysis_args.analysis_data_dir = os.path.join(os.path.join(
-            analysis_args.analysis_data_dir, data_args.data_type), 'json')
+            analysis_args.analysis_data_dir, data_args.data_type+'-'+model_args.loss_type), 'json')
         analysis_args.analysis_result_dir = os.path.join(os.path.join(os.path.join(
-            analysis_args.analysis_result_dir, data_args.data_type), analysis_args.analysis_compare_method), analysis_args.analysis_data_type)
+            analysis_args.analysis_result_dir, data_args.data_type+'-'+model_args.loss_type), analysis_args.analysis_compare_method), analysis_args.analysis_data_type)
 
         training_args.disable_tqdm = False
 

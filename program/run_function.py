@@ -207,10 +207,15 @@ def label_score_predict(
     model = MLMAdapterModel(model_args, data_args, training_args, adapter_args)
     word_set = set()
 
+    log_dir = os.path.join(misc_args.log_dir, data_args.data_dir.split('_')[1].split('/')[0])
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
     if adapter_args.train_adapter:
-        log_dir = os.path.join(misc_args.log_dir, data_args.data_type)+'_adapter_'+data_args.data_dir.split('_')[1].split('/')[0]
+        log_dir = os.path.join(log_dir, data_args.data_type+'-'+model_args.loss_type)+'_adapter'
     else:
-        log_dir = os.path.join(misc_args.log_dir, data_args.data_type)+'_'+data_args.data_dir.split('_')[1].split('/')[0]
+        log_dir = os.path.join(log_dir, data_args.data_type+'-'+model_args.loss_type)
+
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     log_path = os.path.join(os.path.join(log_dir, 'json'))
@@ -249,6 +254,9 @@ def label_score_predict(
                 filter_origianl_sentence_list.append(masked_sentence)
                 for sentence in sentence_list:
                     masked_sentence_dict[sentence] = index
+            if misc_args.global_debug:
+                if index > 10:
+                    break
 
 
         index = 0
