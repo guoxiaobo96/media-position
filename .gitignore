@@ -9,3 +9,6 @@ log/*/dict/*
 log/*/model/*
 ~/*
 analysis/*/*/*/*/*.json
+log/*/*/json/*.json
+log/*/*/dict/*
+log/*/*/model/*

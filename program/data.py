@@ -32,7 +32,7 @@ def get_dataset(
     evaluate: bool = False,
     cache_dir: Optional[str] = None,
 ) -> Union[LineByLineWithRefDataset, LineByLineTextDataset, TextDataset, ConcatDataset]:
-    if data_args.data_type in ['paragraph', 'duplicate', 'sentence_order_replacement']:
+    if data_args.data_type in ['paragraph', 'duplicate', 'sentence_order_replacement', 'back_translation', 'word_order_replacement']:
         return mlm_get_dataset(data_args, tokenizer, evaluate, cache_dir)
     elif data_args.data_type in ['sentence_random_replacement','sentence_chosen_replacement']:
         return sentence_replacement_get_data(data_args, tokenizer)

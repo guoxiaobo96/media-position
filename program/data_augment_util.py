@@ -6,7 +6,7 @@ import json
 from multiprocessing import Pool
 from nltk.tokenize import sent_tokenize
 from sklearn.cluster import AgglomerativeClustering
-from copy import deepcopy
+from copy import copy, deepcopy
 import torch
 import tqdm
 
@@ -85,6 +85,8 @@ class SelfDataAugmentor(object):
             self._duplicate()
         elif data_type == 'paragraph':
             self._paragraph()
+        elif data_type == 'word_order_replacement':
+            self._word_order_replacement()
 
     def _sentence_order_replacement(self):
         for media, media_data in self._raw_data.items():
@@ -96,15 +98,13 @@ class SelfDataAugmentor(object):
             augmented_train_data = list()
             augmented_eval_data = list()
 
+            augmented_train_data.extend(train_data)
             for paragraph in train_data:
                 sentence_list = sent_tokenize(paragraph.replace(';', '.'))
                 random.shuffle(sentence_list)
                 augmented_sentence_list = deepcopy(sentence_list)
                 augmented_train_data.append(' '.join(augmented_sentence_list))
-                if len(sentence_list) > 1:
-                    random.shuffle(sentence_list)
-                    augmented_sentence_list = deepcopy(augmented_sentence_list)
-                    augmented_train_data.append(' '.join(sentence_list))
+
 
             augmented_eval_data = eval_data
 
@@ -129,7 +129,7 @@ class SelfDataAugmentor(object):
             augmented_train_data = list()
             augmented_eval_data = list()
 
-            augmented_train_data.extend(augmented_train_data)
+            augmented_train_data.extend(train_data)
             augmented_data = de2en.translate(en2de.translate(train_data))
             augmented_train_data.extend(augmented_data)
 
@@ -171,6 +171,40 @@ class SelfDataAugmentor(object):
 
             self._augmented_data[media]['train'] = augmented_train_data
             self._augmented_data[media]['eval'] = augmented_eval_data
+
+    def _word_order_replacement(self):
+        for media, media_data in self._raw_data.items():
+            if media not in self._augmented_data:
+                self._augmented_data[media] = dict()
+            train_data = media_data['train']
+            eval_data = media_data['eval']
+
+            augmented_train_data = list()
+            augmented_eval_data = list()
+
+            augmented_train_data.extend(train_data)
+            for paragraph in train_data:
+                splited_paragraph = paragraph.split(' ')
+                length = len(splited_paragraph)
+                n_swap = max(1, int(0.1*length))
+
+                for _ in range(n_swap):
+                    random_idx_1 = random.randint(0, length-1)
+                    random_idx_2 = random_idx_1
+                    counter = 0
+                    while random_idx_2 == random_idx_1:
+                        random_idx_2 = random.randint(0, length-1)
+                        counter += 1
+                        if counter >3:
+                            break
+                    splited_paragraph[random_idx_1], splited_paragraph[random_idx_2] = splited_paragraph[random_idx_2], splited_paragraph[random_idx_1] 
+                augmented_train_data.append(' '.join(splited_paragraph))
+
+
+            augmented_eval_data = eval_data
+
+            self._augmented_data[media]['train'] = augmented_train_data
+            self._augmented_data[media]['eval'] = augmented_eval_data        
 
     def save(self):
         for media in list(self._augmented_data.keys()):
