@@ -21,7 +21,7 @@ from .predict_util import MaksedPredictionDataset
 from .data_augment_util import SelfDataAugmentor
 
 
-def mlm_train(
+def train_lm(
     model_args: ModelArguments,
     data_args: DataArguments,
     training_args: TrainingArguments,
@@ -40,7 +40,7 @@ def mlm_train(
     )
     model.train(train_dataset, eval_dataset)
 
-def mlm_eval(
+def eval_lm(
     model_args: ModelArguments,
     data_args: DataArguments,
     training_args: TrainingArguments,

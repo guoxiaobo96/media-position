@@ -164,6 +164,11 @@ class ModelArguments:
         metadata={
             "help": "If training from scratch, pass a model type from the list: " + ", ".join(MODEL_TYPES)},
     )
+    loss_type: Optional[str] = field(
+        default="mlm",
+        metadata={
+            "help": "The loss function used for the language model"},
+    )
     config_name: Optional[str] = field(
         default=None, metadata={"help": "Pretrained config name or path if not the same as model_name"}
     )
@@ -336,10 +341,10 @@ def get_config() -> Tuple:
 
         data_args.data_path = os.path.join(
             data_args.data_dir, os.path.join(data_args.dataset, data_args.data_type))
-        if adapter_args.train_adapter:
-            training_args.output_dir = os.path.join(training_args.output_dir, data_args.data_type)+'_adapter'
-        else:
-            training_args.output_dir = os.path.join(training_args.output_dir, data_args.data_type)
+        if model_args.loss_type=='mlm':
+            data_args.mlm = True
+        training_args.output_dir = os.path.join(training_args.output_dir, data_args.data_type)+'_'+model_args.loss_type
+        
         if training_args.do_train:
             data_args.train_data_file = os.path.join(
                 data_args.data_path, adapter_args.language+'.train')

@@ -1,7 +1,7 @@
 from program.config import AnalysisArguments, get_config, DataArguments, MiscArgument, ModelArguments, AdapterArguments, TrainingArguments
 from program.data import extract_data
 from program.util import prepare_dirs_and_logger, save_config
-from program.run_function import mlm_train, analysis, label_score_predict, label_score_analysis, data_augemnt, train_mask_score_model, mlm_eval, sentence_replacement_train
+from program.run_function import train_lm, analysis, label_score_predict, label_score_analysis, data_augemnt, train_mask_score_model, eval_lm, sentence_replacement_train
 from program.data_collect import twitter_collect, article_collect, data_collect
 
 
@@ -15,10 +15,10 @@ def main(
 ) -> None:
     if misc_args.task == 'extract_data':
         extract_data(misc_args, data_args)
-    elif misc_args.task == 'train_mlm':
-        mlm_train(model_args, data_args, training_args, adapter_args)
-    elif misc_args.task == 'eval_mlm':
-        mlm_eval(model_args, data_args, training_args, adapter_args)
+    elif misc_args.task == 'train_lm':
+        train_lm(model_args, data_args, training_args, adapter_args)
+    elif misc_args.task == 'eval_lm':
+        eval_lm(model_args, data_args, training_args, adapter_args)
     elif misc_args.task == 'train_sentence_replacement':
         sentence_replacement_train(
             model_args, data_args, training_args, adapter_args)
