@@ -24,8 +24,8 @@ def prepare_dirs_and_logger(
     if not os.path.exists(misc_args.log_dir):
         os.makedirs(misc_args.log_dir)
     
-    if not os.path.exists(analysis_args.analysis_result_dir):
-        os.makedirs(analysis_args.analysis_result_dir)
+    # if not os.path.exists(analysis_args.analysis_result_dir):
+    #     os.makedirs(analysis_args.analysis_result_dir)
 
 
     formatter = logging.Formatter("%(asctime)s:%(levelname)s::%(message)s")

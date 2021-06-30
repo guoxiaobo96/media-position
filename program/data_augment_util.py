@@ -239,6 +239,7 @@ class SelfDataAugmentor(object):
             augmented_train_data.extend(train_data)
             augmented_train_data.extend(train_data)
             augmented_train_data.extend(train_data)
+            augmented_train_data.extend(train_data)
 
             augmented_eval_data = eval_data
 
