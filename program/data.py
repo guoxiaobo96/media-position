@@ -18,7 +18,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 warnings.filterwarnings('ignore')
 
 from .ner_util import NERDataset, encode_scores
-from .config import AnalysisArguments, DataArguments, FullArticleMap, MiscArgument, SourceMap, TrustMap, get_config, ArticleMap, TwitterMap, BaselineArticleMap
+from .config import AnalysisArguments, DataArguments, FullArticleMap, MiscArgument, ModelArguments, SourceMap, TrustMap, get_config, ArticleMap, TwitterMap, BaselineArticleMap
 from .util import prepare_dirs_and_logger
 from .fine_tune_util import SentenceReplacementDataset
 
@@ -28,11 +28,12 @@ def extract_data():
 
 def get_dataset(
     data_args: DataArguments,
+    model_args: ModelArguments,
     tokenizer: PreTrainedTokenizer,
     evaluate: bool = False,
     cache_dir: Optional[str] = None,
 ) -> Union[LineByLineWithRefDataset, LineByLineTextDataset, TextDataset, ConcatDataset]:
-    if data_args.data_type in ['paragraph', 'duplicate', 'sentence_order_replacement', 'back_translation', 'word_order_replacement']:
+    if model_args.loss_type == 'mlm':
         return mlm_get_dataset(data_args, tokenizer, evaluate, cache_dir)
     elif data_args.data_type in ['sentence_random_replacement','sentence_chosen_replacement']:
         return sentence_replacement_get_data(data_args, tokenizer)

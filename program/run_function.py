@@ -29,11 +29,11 @@ def train_lm(
 ) -> Dict:
     model = MLMAdapterModel(model_args, data_args, training_args, adapter_args)
     train_dataset = (
-        get_dataset(data_args, tokenizer=model.tokenizer,
+        get_dataset(data_args, model_args, tokenizer=model.tokenizer,
                     cache_dir=model_args.cache_dir) if training_args.do_train else None
     )
     eval_dataset = (
-        get_dataset(data_args, tokenizer=model.tokenizer,
+        get_dataset(data_args, model_args, tokenizer=model.tokenizer,
                     evaluate=True, cache_dir=model_args.cache_dir)
         if training_args.do_eval
         else None

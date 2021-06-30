@@ -83,6 +83,14 @@ class SelfDataAugmentor(object):
             self._back_translation()
         elif data_type == 'duplicate':
             self._duplicate()
+        elif data_type == 'triple':
+            self._triple()
+        elif data_type == 'quadruple':
+            self._quadruple()
+        elif data_type == 'fivefold':
+            self._fivefold()
+        elif data_type == 'sixfold':
+            self._sixfold()
         elif data_type == 'paragraph':
             self._paragraph()
         elif data_type == 'word_order_replacement':
@@ -148,6 +156,87 @@ class SelfDataAugmentor(object):
             augmented_train_data = list()
             augmented_eval_data = list()
 
+            augmented_train_data.extend(train_data)
+            augmented_train_data.extend(train_data)
+
+            augmented_eval_data = eval_data
+
+            self._augmented_data[media]['train'] = augmented_train_data
+            self._augmented_data[media]['eval'] = augmented_eval_data
+
+    def _triple(self):
+        for media, media_data in self._raw_data.items():
+            if media not in self._augmented_data:
+                self._augmented_data[media] = dict()
+            train_data = media_data['train']
+            eval_data = media_data['eval']
+
+            augmented_train_data = list()
+            augmented_eval_data = list()
+
+            augmented_train_data.extend(train_data)
+            augmented_train_data.extend(train_data)
+            augmented_train_data.extend(train_data)
+
+            augmented_eval_data = eval_data
+
+            self._augmented_data[media]['train'] = augmented_train_data
+            self._augmented_data[media]['eval'] = augmented_eval_data
+
+    def _quadruple(self):
+        for media, media_data in self._raw_data.items():
+            if media not in self._augmented_data:
+                self._augmented_data[media] = dict()
+            train_data = media_data['train']
+            eval_data = media_data['eval']
+
+            augmented_train_data = list()
+            augmented_eval_data = list()
+
+            augmented_train_data.extend(train_data)
+            augmented_train_data.extend(train_data)
+            augmented_train_data.extend(train_data)
+            augmented_train_data.extend(train_data)
+
+            augmented_eval_data = eval_data
+
+            self._augmented_data[media]['train'] = augmented_train_data
+            self._augmented_data[media]['eval'] = augmented_eval_data
+
+    def _fivefold(self):
+        for media, media_data in self._raw_data.items():
+            if media not in self._augmented_data:
+                self._augmented_data[media] = dict()
+            train_data = media_data['train']
+            eval_data = media_data['eval']
+
+            augmented_train_data = list()
+            augmented_eval_data = list()
+
+            augmented_train_data.extend(train_data)
+            augmented_train_data.extend(train_data)
+            augmented_train_data.extend(train_data)
+            augmented_train_data.extend(train_data)
+            augmented_train_data.extend(train_data)
+
+            augmented_eval_data = eval_data
+
+            self._augmented_data[media]['train'] = augmented_train_data
+            self._augmented_data[media]['eval'] = augmented_eval_data
+
+    def _sixfold(self):
+        for media, media_data in self._raw_data.items():
+            if media not in self._augmented_data:
+                self._augmented_data[media] = dict()
+            train_data = media_data['train']
+            eval_data = media_data['eval']
+
+            augmented_train_data = list()
+            augmented_eval_data = list()
+
+            augmented_train_data.extend(train_data)
+            augmented_train_data.extend(train_data)
+            augmented_train_data.extend(train_data)
             augmented_train_data.extend(train_data)
             augmented_train_data.extend(train_data)
 
