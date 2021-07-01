@@ -95,6 +95,8 @@ class SelfDataAugmentor(object):
             self._paragraph()
         elif data_type == 'word_order_replacement':
             self._word_order_replacement()
+        elif data_type == 'span_cutoff':
+            self._span_cutoff()
 
     def _sentence_order_replacement(self):
         for media, media_data in self._raw_data.items():
@@ -295,6 +297,34 @@ class SelfDataAugmentor(object):
 
             self._augmented_data[media]['train'] = augmented_train_data
             self._augmented_data[media]['eval'] = augmented_eval_data        
+
+    def _span_cutoff(self):
+        for media, media_data in self._raw_data.items():
+            if media not in self._augmented_data:
+                self._augmented_data[media] = dict()
+            train_data = media_data['train']
+            eval_data = media_data['eval']
+
+            augmented_train_data = list()
+            augmented_eval_data = list()
+
+            augmented_train_data.extend(train_data)
+            for paragraph in train_data:
+                splited_paragraph = paragraph.split(' ')
+                length = len(splited_paragraph)
+                n_span = max(1, int(0.1*length))
+
+                for _ in range(3):
+                    start_index = random.randint(0, length-n_span)
+                    cutoff_paragraph = splited_paragraph[:start_index]+splited_paragraph[start_index+n_span:]
+                    cutoff_paragraph = ' '.join(cutoff_paragraph)
+                    if cutoff_paragraph not in augmented_train_data:
+                        augmented_train_data.append(cutoff_paragraph)
+
+            augmented_eval_data = eval_data
+
+            self._augmented_data[media]['train'] = augmented_train_data
+            self._augmented_data[media]['eval'] = augmented_eval_data              
 
     def save(self):
         for media in list(self._augmented_data.keys()):

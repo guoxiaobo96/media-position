@@ -366,9 +366,9 @@ def get_config() -> Tuple:
                 
 
         analysis_args.analysis_data_dir = os.path.join(os.path.join(
-            analysis_args.analysis_data_dir, data_args.data_type+'-'+model_args.loss_type), 'json')
+            os.path.join(analysis_args.analysis_data_dir,data_args.dataset), data_args.data_type+'-'+model_args.loss_type), 'json')
         analysis_args.analysis_result_dir = os.path.join(os.path.join(os.path.join(
-            analysis_args.analysis_result_dir, data_args.data_type+'-'+model_args.loss_type), analysis_args.analysis_compare_method), analysis_args.analysis_data_type)
+            analysis_args.analysis_result_dir,data_args.dataset), data_args.data_type+'-'+model_args.loss_type), analysis_args.analysis_compare_method)
 
         training_args.disable_tqdm = False
 

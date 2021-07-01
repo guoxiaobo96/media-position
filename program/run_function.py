@@ -330,6 +330,9 @@ def label_score_analysis(
     analysis_data = dict()
     sentence_position_data = dict()
 
+    if not os.path.exists(analysis_args.analysis_result_dir):
+        os.makedirs(analysis_args.analysis_result_dir)
+
     print("Load data")
     error_count = 0
     analysis_data_temp = get_label_data(misc_args, analysis_args, data_args)
