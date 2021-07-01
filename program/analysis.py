@@ -61,6 +61,7 @@ class BaseAnalysis(ABC):
         self._analyser = None
         self._misc_args = misc_args
         self._data_args = data_args
+        self._model_args = model_args
 
         self._load_encoder(self._config.analysis_encode_method, misc_args,
                            model_args, data_args, training_args)
@@ -166,7 +167,7 @@ class ClusterAnalysis(BaseAnalysis):
             plt.title('Hierarchical Clustering Dendrogram')
             plot_dendrogram(self._analyser, orientation='right', labels=dataset_list)
             plt_file = os.path.join(analysis_args.analysis_result_dir,analysis_args.analysis_encode_method+'_'+analysis_args.analysis_cluster_method+'_'+sentence_number+'.png')
-            model_path = os.path.join(os.path.join(os.path.join(self._misc_args.log_dir, self._data_args.data_type),'model'),analysis_args.analysis_data_type)
+            model_path = os.path.join(os.path.join(os.path.join(self._misc_args.log_dir, self._data_args.dataset), self._data_args.data_type+'-'+self._model_args.loss_type),'model')
             if not os.path.exists(model_path):
                 os.makedirs(model_path)
             model_file = os.path.join(model_path,analysis_args.analysis_encode_method+'_'+analysis_args.analysis_cluster_method+'_'+sentence_number+'.c')
