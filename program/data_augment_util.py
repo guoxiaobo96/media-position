@@ -9,6 +9,8 @@ from sklearn.cluster import AgglomerativeClustering
 from copy import copy, deepcopy
 import torch
 import tqdm
+from gensim.models import Word2Vec
+from nltk.corpus import stopwords
 
 from .util import prepare_dirs_and_logger
 from .config import AnalysisArguments, DataArguments, MiscArgument, get_config, SourceMap, TrustMap, ArticleMap, FullArticleMap
@@ -97,6 +99,8 @@ class SelfDataAugmentor(object):
             self._word_order_replacement()
         elif data_type == 'span_cutoff':
             self._span_cutoff()
+        elif data_type == 'word_replacement':
+            self._word_replacement()
 
     def _sentence_order_replacement(self):
         for media, media_data in self._raw_data.items():
@@ -325,6 +329,40 @@ class SelfDataAugmentor(object):
 
             self._augmented_data[media]['train'] = augmented_train_data
             self._augmented_data[media]['eval'] = augmented_eval_data              
+
+    def _word_replacement(self):
+        for media, media_data in self._raw_data.items():
+            if media not in self._augmented_data:
+                self._augmented_data[media] = dict()
+            train_data = media_data['train']
+            eval_data = media_data['eval']
+            sentence_list = [s.split(' ') for s in train_data]
+
+            augmented_train_data = list()
+            augmented_eval_data = list()
+            model = Word2Vec(sentences=sentence_list, window=5, min_count=1, workers=4)
+
+            for paragraph in train_data:
+                original_splited_paragraph = paragraph.split(' ')
+                length = len(original_splited_paragraph)
+                num_replacement = max(1, int(0.1*length))
+
+                for _ in range(4):
+                    for _ in range(num_replacement):
+                        splited_paragraph = deepcopy(original_splited_paragraph)
+                        replace_position = random.randint(0, length-1)
+                        replaced_word = splited_paragraph[replace_position]
+                        while replaced_word in stopwords.words('english'):
+                            replace_position = random.randint(0, length-1)
+                            replaced_word = splited_paragraph[replace_position]                        
+                        splited_paragraph[replace_position] = model.wv.most_similar(replaced_word, topn=1)[0][0]
+                    augmented_train_data.append(' '.join(splited_paragraph))
+            augmented_train_data.extend(train_data)
+
+            augmented_eval_data = eval_data
+
+            self._augmented_data[media]['train'] = augmented_train_data
+            self._augmented_data[media]['eval'] = augmented_eval_data            
 
     def save(self):
         for media in list(self._augmented_data.keys()):
