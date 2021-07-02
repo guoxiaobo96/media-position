@@ -13,15 +13,17 @@ from gensim.models import Word2Vec
 from nltk.corpus import stopwords
 
 from .util import prepare_dirs_and_logger
-from .config import AnalysisArguments, DataArguments, MiscArgument, get_config, SourceMap, TrustMap, ArticleMap, FullArticleMap
+from .config import AnalysisArguments, DataArguments, MiscArgument, get_config, SourceMap, TrustMap, ArticleMap, FullArticleMap, DataAugArguments
 
 
 class SelfDataAugmentor(object):
-    def __init__(self, misc_args: MiscArgument, data_args: DataArguments) -> None:
+    def __init__(self, misc_args: MiscArgument, data_args: DataArguments, aug_args:DataAugArguments) -> None:
         super().__init__()
         self._misc_args = misc_args
         self._data_args = data_args
+        self._aug_args = aug_args
         self._sequence_length = 256
+        self._data_augmentor = DataAugmentor()
         self._raw_data = dict()
         self._augmented_data = dict()
         self._article_map = FullArticleMap()
@@ -74,32 +76,25 @@ class SelfDataAugmentor(object):
                                     grouped_eval_data.append(
                                         chunk_sentences.strip())
                                     chunk_sentences = sentence
+                            
                             grouped_eval_data.append(chunk_sentences.strip())
             self._raw_data[media] = {
                 'train': grouped_train_data, 'eval': grouped_eval_data}
 
-    def data_augment(self, data_type):
-        if data_type == 'sentence_order_replacement':
+    def data_augment(self, augment_type):
+        if augment_type == 'sentence_order_replacement':
             self._sentence_order_replacement()
-        elif data_type == 'back_translation':
+        elif augment_type == 'back_translation':
             self._back_translation()
-        elif data_type == 'duplicate':
+        elif augment_type == 'duplicate':
             self._duplicate()
-        elif data_type == 'triple':
-            self._triple()
-        elif data_type == 'quadruple':
-            self._quadruple()
-        elif data_type == 'fivefold':
-            self._fivefold()
-        elif data_type == 'sixfold':
-            self._sixfold()
-        elif data_type == 'paragraph':
+        elif augment_type == 'original':
             self._paragraph()
-        elif data_type == 'word_order_replacement':
+        elif augment_type == 'word_order_replacement':
             self._word_order_replacement()
-        elif data_type == 'span_cutoff':
+        elif augment_type == 'span_cutoff':
             self._span_cutoff()
-        elif data_type == 'word_replacement':
+        elif augment_type == 'word_replacement':
             self._word_replacement()
 
     def _sentence_order_replacement(self):
@@ -113,11 +108,17 @@ class SelfDataAugmentor(object):
             augmented_eval_data = list()
 
             augmented_train_data.extend(train_data)
+
             for paragraph in train_data:
-                sentence_list = sent_tokenize(paragraph.replace(';', '.'))
-                random.shuffle(sentence_list)
-                augmented_sentence_list = deepcopy(sentence_list)
-                augmented_train_data.append(' '.join(augmented_sentence_list))
+                for _ in range(self._aug_args.multiple_number - 1):
+                    augmented_sentence = self._data_augmentor.sentence_order_replacement(paragraph)
+                    count = 0
+                    while augmented_sentence in augmented_train_data:
+                        count += 1
+                        augmented_sentence = self._data_augmentor.sentence_order_replacement(paragraph)
+                        if count > 3 :
+                            break
+                    augmented_train_data.append(augmented_sentence)
 
 
             augmented_eval_data = eval_data
@@ -162,90 +163,8 @@ class SelfDataAugmentor(object):
             augmented_train_data = list()
             augmented_eval_data = list()
 
-            augmented_train_data.extend(train_data)
-            augmented_train_data.extend(train_data)
-
-            augmented_eval_data = eval_data
-
-            self._augmented_data[media]['train'] = augmented_train_data
-            self._augmented_data[media]['eval'] = augmented_eval_data
-
-    def _triple(self):
-        for media, media_data in self._raw_data.items():
-            if media not in self._augmented_data:
-                self._augmented_data[media] = dict()
-            train_data = media_data['train']
-            eval_data = media_data['eval']
-
-            augmented_train_data = list()
-            augmented_eval_data = list()
-
-            augmented_train_data.extend(train_data)
-            augmented_train_data.extend(train_data)
-            augmented_train_data.extend(train_data)
-
-            augmented_eval_data = eval_data
-
-            self._augmented_data[media]['train'] = augmented_train_data
-            self._augmented_data[media]['eval'] = augmented_eval_data
-
-    def _quadruple(self):
-        for media, media_data in self._raw_data.items():
-            if media not in self._augmented_data:
-                self._augmented_data[media] = dict()
-            train_data = media_data['train']
-            eval_data = media_data['eval']
-
-            augmented_train_data = list()
-            augmented_eval_data = list()
-
-            augmented_train_data.extend(train_data)
-            augmented_train_data.extend(train_data)
-            augmented_train_data.extend(train_data)
-            augmented_train_data.extend(train_data)
-
-            augmented_eval_data = eval_data
-
-            self._augmented_data[media]['train'] = augmented_train_data
-            self._augmented_data[media]['eval'] = augmented_eval_data
-
-    def _fivefold(self):
-        for media, media_data in self._raw_data.items():
-            if media not in self._augmented_data:
-                self._augmented_data[media] = dict()
-            train_data = media_data['train']
-            eval_data = media_data['eval']
-
-            augmented_train_data = list()
-            augmented_eval_data = list()
-
-            augmented_train_data.extend(train_data)
-            augmented_train_data.extend(train_data)
-            augmented_train_data.extend(train_data)
-            augmented_train_data.extend(train_data)
-            augmented_train_data.extend(train_data)
-
-            augmented_eval_data = eval_data
-
-            self._augmented_data[media]['train'] = augmented_train_data
-            self._augmented_data[media]['eval'] = augmented_eval_data
-
-    def _sixfold(self):
-        for media, media_data in self._raw_data.items():
-            if media not in self._augmented_data:
-                self._augmented_data[media] = dict()
-            train_data = media_data['train']
-            eval_data = media_data['eval']
-
-            augmented_train_data = list()
-            augmented_eval_data = list()
-
-            augmented_train_data.extend(train_data)
-            augmented_train_data.extend(train_data)
-            augmented_train_data.extend(train_data)
-            augmented_train_data.extend(train_data)
-            augmented_train_data.extend(train_data)
-            augmented_train_data.extend(train_data)
+            for _ in range(self._aug_args.multiple_number):
+                augmented_train_data.extend(train_data)
 
             augmented_eval_data = eval_data
 
@@ -280,21 +199,18 @@ class SelfDataAugmentor(object):
 
             augmented_train_data.extend(train_data)
             for paragraph in train_data:
-                splited_paragraph = paragraph.split(' ')
-                length = len(splited_paragraph)
-                n_swap = max(1, int(0.1*length))
+                length = len(paragraph.split(' '))
+                num_swap = max(1, int(0.1*length))
 
-                for _ in range(n_swap):
-                    random_idx_1 = random.randint(0, length-1)
-                    random_idx_2 = random_idx_1
-                    counter = 0
-                    while random_idx_2 == random_idx_1:
-                        random_idx_2 = random.randint(0, length-1)
-                        counter += 1
-                        if counter >3:
+                for _ in range(self._aug_args.multiple_number - 1):
+                    augmented_sentence = self._data_augmentor.word_order_replacement(paragraph, num_swap)
+                    count = 0
+                    while augmented_sentence in augmented_train_data:
+                        count += 1
+                        augmented_sentence = self._data_augmentor.word_order_replacement(paragraph, num_swap)
+                        if count > 3:
                             break
-                    splited_paragraph[random_idx_1], splited_paragraph[random_idx_2] = splited_paragraph[random_idx_2], splited_paragraph[random_idx_1] 
-                augmented_train_data.append(' '.join(splited_paragraph))
+                    augmented_train_data.append(augmented_sentence)
 
 
             augmented_eval_data = eval_data
@@ -313,17 +229,21 @@ class SelfDataAugmentor(object):
             augmented_eval_data = list()
 
             augmented_train_data.extend(train_data)
+
             for paragraph in train_data:
                 splited_paragraph = paragraph.split(' ')
                 length = len(splited_paragraph)
-                n_span = max(1, int(0.1*length))
+                num_span = max(1, int(0.1*length))
 
-                for _ in range(3):
-                    start_index = random.randint(0, length-n_span)
-                    cutoff_paragraph = splited_paragraph[:start_index]+splited_paragraph[start_index+n_span:]
-                    cutoff_paragraph = ' '.join(cutoff_paragraph)
-                    if cutoff_paragraph not in augmented_train_data:
-                        augmented_train_data.append(cutoff_paragraph)
+                for _ in range(self._aug_args.multiple_number - 1):
+                    augmented_sentence = self._data_augmentor.span_cutoff(paragraph,num_span)
+                    count = 0
+                    while augmented_sentence in augmented_train_data:
+                        count += 1
+                        augmented_sentence = self._data_augmentor.span_cutoff(paragraph,num_span)
+                        if count > 3:
+                            break
+                    augmented_train_data.append(augmented_sentence)
 
             augmented_eval_data = eval_data
 
@@ -341,23 +261,22 @@ class SelfDataAugmentor(object):
             augmented_train_data = list()
             augmented_eval_data = list()
             model = Word2Vec(sentences=sentence_list, window=5, min_count=1, workers=4)
+            augmented_train_data.extend(train_data)
 
             for paragraph in train_data:
                 original_splited_paragraph = paragraph.split(' ')
                 length = len(original_splited_paragraph)
                 num_replacement = max(1, int(0.1*length))
 
-                for _ in range(4):
-                    for _ in range(num_replacement):
-                        splited_paragraph = deepcopy(original_splited_paragraph)
-                        replace_position = random.randint(0, length-1)
-                        replaced_word = splited_paragraph[replace_position]
-                        while replaced_word in stopwords.words('english'):
-                            replace_position = random.randint(0, length-1)
-                            replaced_word = splited_paragraph[replace_position]                        
-                        splited_paragraph[replace_position] = model.wv.most_similar(replaced_word, topn=1)[0][0]
-                    augmented_train_data.append(' '.join(splited_paragraph))
-            augmented_train_data.extend(train_data)
+                for _ in range(self._aug_args.multiple_number - 1):
+                    augmented_sentence = self._data_augmentor.word_replacement(paragraph, model, num_replacement)
+                    count = 0
+                    while augmented_sentence in augmented_train_data:
+                        count += 1
+                        augmented_sentence = self._data_augmentor.word_replacement(paragraph, model, num_replacement)
+                        if count >3:
+                            break
+                    augmented_train_data.append(augmented_sentence)
 
             augmented_eval_data = eval_data
 
@@ -380,3 +299,56 @@ class SelfDataAugmentor(object):
             with open(eval_file, mode='w', encoding='utf8') as fp:
                 for item in self._augmented_data[media]['eval']:
                     fp.write(item+'\n')
+
+class DataAugmentor(object):
+    def __init__(self) -> None:
+        super().__init__()
+    
+    def sentence_order_replacement(self, paragraph):
+        sentence_list = sent_tokenize(paragraph.replace(';', '.'))
+        random.shuffle(sentence_list)
+        augmented_sentence_list = deepcopy(sentence_list)
+        augmented_sentence = ' '.join(augmented_sentence_list)
+        return augmented_sentence
+
+
+    def span_cutoff(self, paragraph, num_span):
+        splited_paragraph = paragraph.split(' ')
+        length = len(splited_paragraph)
+
+        start_index = random.randint(0, length-num_span)
+        cutoff_paragraph = splited_paragraph[:start_index]+splited_paragraph[start_index+num_span:]
+        cutoff_paragraph = ' '.join(cutoff_paragraph)
+
+        return cutoff_paragraph
+
+    def word_replacement(self, paragraph, model, num_replacement):
+        original_splited_paragraph = paragraph.split(' ')
+        length = len(original_splited_paragraph)
+        for _ in range(num_replacement):
+            splited_paragraph = deepcopy(original_splited_paragraph)
+            replace_position = random.randint(0, length-1)
+            replaced_word = splited_paragraph[replace_position]
+            while replaced_word in stopwords.words('english'):
+                replace_position = random.randint(0, length-1)
+                replaced_word = splited_paragraph[replace_position]                        
+            splited_paragraph[replace_position] = model.wv.most_similar(replaced_word, topn=1)[0][0]
+        return ' '.join(splited_paragraph)
+
+    def word_order_replacement(self, paragraph, num_swap):
+            length = len(paragraph.split(' '))
+            splited_paragraph = paragraph.split(' ')
+
+            for i in range(num_swap):
+                random_idx_1 = random.randint(0, length-1)
+                random_idx_2 = random.randint(0, length-1)
+                counter = 0
+                while random_idx_2 == random_idx_1:
+                    random_idx_2 = random.randint(0, length-1)
+                    counter += 1
+                    if counter >3:
+                        break
+                splited_paragraph[random_idx_1], splited_paragraph[random_idx_2] = splited_paragraph[random_idx_2], splited_paragraph[random_idx_1]
+            augmented_sentence = ' '.join(splited_paragraph)
+
+            return augmented_sentence

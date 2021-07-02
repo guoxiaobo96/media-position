@@ -1,4 +1,4 @@
-from program.config import AnalysisArguments, get_config, DataArguments, MiscArgument, ModelArguments, AdapterArguments, TrainingArguments
+from program.config import AnalysisArguments, get_config, DataArguments, MiscArgument, ModelArguments, AdapterArguments, TrainingArguments, DataAugArguments
 from program.data import extract_data
 from program.util import prepare_dirs_and_logger, save_config
 from program.run_function import train_lm, analysis, label_score_predict, label_score_analysis, data_augemnt, train_mask_score_model, eval_lm, sentence_replacement_train
@@ -9,6 +9,7 @@ def main(
         misc_args: MiscArgument,
         model_args: ModelArguments,
         data_args: DataArguments,
+        aug_args: DataAugArguments,
         training_args: TrainingArguments,
         adapter_args: AdapterArguments,
         analysis_args: AnalysisArguments
@@ -35,15 +36,15 @@ def main(
         analysis(misc_args, model_args, data_args,
                  training_args, analysis_args)
     elif misc_args.task == "data_collect":
-        if data_args.data_type == 'original':
+        if aug_args.augment_type == 'original':
             data_collect(misc_args, data_args)
         else:
-            data_augemnt(misc_args, data_args)
+            data_augemnt(misc_args, data_args, aug_args)
 
 if __name__ == '__main__':
-    misc_args, model_args, data_args, training_args, adapter_args, analysis_args = get_config()
+    misc_args, model_args, data_args, aug_args, training_args, adapter_args, analysis_args = get_config()
     # misc_args.global_debug = False
     prepare_dirs_and_logger(misc_args, model_args,
                             data_args, training_args, adapter_args, analysis_args)
-    main(misc_args, model_args, data_args,
+    main(misc_args, model_args, data_args, aug_args, 
          training_args, adapter_args, analysis_args)

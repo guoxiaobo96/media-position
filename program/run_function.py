@@ -12,7 +12,7 @@ from sklearn.metrics.pairwise import euclidean_distances
 from tqdm import tqdm
 
 
-from .config import DataArguments, FullArticleMap, MiscArgument, ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap, BaselineArticleMap
+from .config import DataArguments, DataAugArguments, FullArticleMap, MiscArgument, ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap, BaselineArticleMap
 from .model import MLMAdapterModel, SentenceReplacementAdapterModel, NERModel
 from .data import get_dataset, get_analysis_data, get_label_data, get_mask_score_data
 from .analysis import ClusterAnalysis,DistanceAnalysis,ClusterCompare
@@ -500,9 +500,10 @@ def label_score_analysis(
 def data_augemnt(
     misc_args:MiscArgument,
     data_args:DataArguments,
+    aug_args: DataAugArguments
 ):
-    self_data_augmentor = SelfDataAugmentor(misc_args, data_args)
-    self_data_augmentor.data_augment(data_args.data_type)
+    self_data_augmentor = SelfDataAugmentor(misc_args, data_args, aug_args)
+    self_data_augmentor.data_augment(aug_args.augment_type)
     self_data_augmentor.save()
 
 def train_mask_score_model(model_args: ModelArguments,
