@@ -4,7 +4,7 @@ result_dir = "/data/xiaobo/media-position"
 
 topic_list = ["obamacare"]
 loss_list = ["mlm"]
-augmentation_list = ["duplicate"]
+augmentation_list = ["no_augmentation", "duplicate","sentence_order_replacement","span_cutoff","word_order_replacement"]
 
 result = dict()
 
@@ -17,9 +17,11 @@ for topic in topic_list:
             if loss_type not in result:
                 result[loss_type] = dict()
             for augmentation in augmentation_list:
+                result_dir = os.path.join(os.path.join(os.path.join(result_path,model),loss_type),augmentation)
+                if not os.path.exists(result_dir):
+                    continue
                 if augmentation not in result[loss_type]:
                     result[loss_type][augmentation] = dict()
-                result_dir = os.path.join(os.path.join(os.path.join(result_path,model),loss_type),augmentation)
                 multi_number_list = os.listdir(result_dir)
                 for multi_numer in multi_number_list:
                     if multi_numer not in result[loss_type][augmentation]:

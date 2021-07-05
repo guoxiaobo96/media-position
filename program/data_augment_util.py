@@ -88,8 +88,8 @@ class SelfDataAugmentor(object):
             self._back_translation()
         elif augment_type == 'duplicate':
             self._duplicate()
-        elif augment_type == 'original':
-            self._paragraph()
+        elif augment_type == 'no_augmentation':
+            self._no_augmentation()
         elif augment_type == 'word_order_replacement':
             self._word_order_replacement()
         elif augment_type == 'span_cutoff':
@@ -171,7 +171,7 @@ class SelfDataAugmentor(object):
             self._augmented_data[media]['train'] = augmented_train_data
             self._augmented_data[media]['eval'] = augmented_eval_data
 
-    def _paragraph(self):
+    def _no_augmentation(self):
         for media, media_data in self._raw_data.items():
             if media not in self._augmented_data:
                 self._augmented_data[media] = dict()
@@ -263,7 +263,7 @@ class SelfDataAugmentor(object):
             model = Word2Vec(sentences=sentence_list, window=5, min_count=1, workers=4)
             augmented_train_data.extend(train_data)
 
-            for paragraph in train_data:
+            for index, paragraph in enumerate(train_data):
                 original_splited_paragraph = paragraph.split(' ')
                 length = len(original_splited_paragraph)
                 num_replacement = max(1, int(0.1*length))
