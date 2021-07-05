@@ -12,3 +12,4 @@ analysis/*/*/*/*/*.json
 log/*/*/json/*.json
 log/*/*/dict/*
 log/*/*/model/*
+*.csv
