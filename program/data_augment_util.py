@@ -263,6 +263,7 @@ class SelfDataAugmentor(object):
             model = Word2Vec(sentences=sentence_list, window=5, min_count=1, workers=4)
             augmented_train_data.extend(train_data)
 
+            debug_count = 0
             for index, paragraph in enumerate(train_data):
                 original_splited_paragraph = paragraph.split(' ')
                 length = len(original_splited_paragraph)
@@ -277,6 +278,10 @@ class SelfDataAugmentor(object):
                         if count >3:
                             break
                     augmented_train_data.append(augmented_sentence)
+                if self._misc_args.global_debug:
+                    debug_count += 1
+                    if debug_count > 100:
+                        break
 
             augmented_eval_data = eval_data
 
