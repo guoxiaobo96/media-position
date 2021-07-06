@@ -98,7 +98,7 @@ class SelfDataAugmentor(object):
             self._word_replacement()
 
     def _sentence_order_replacement(self):
-        for media, media_data in self._raw_data.items():
+        for media, media_data in tqdm.tqdm(self._raw_data.items()):
             if media not in self._augmented_data:
                 self._augmented_data[media] = dict()
             train_data = media_data['train']
@@ -154,7 +154,7 @@ class SelfDataAugmentor(object):
             self._augmented_data[media]['eval'] = augmented_eval_data
 
     def _duplicate(self):
-        for media, media_data in self._raw_data.items():
+        for media, media_data in tqdm.tqdm(self._raw_data.items()):
             if media not in self._augmented_data:
                 self._augmented_data[media] = dict()
             train_data = media_data['train']
@@ -172,7 +172,7 @@ class SelfDataAugmentor(object):
             self._augmented_data[media]['eval'] = augmented_eval_data
 
     def _no_augmentation(self):
-        for media, media_data in self._raw_data.items():
+        for media, media_data in tqdm.tqdm(self._raw_data.items()):
             if media not in self._augmented_data:
                 self._augmented_data[media] = dict()
             train_data = media_data['train']
@@ -188,7 +188,7 @@ class SelfDataAugmentor(object):
             self._augmented_data[media]['eval'] = augmented_eval_data
 
     def _word_order_replacement(self):
-        for media, media_data in self._raw_data.items():
+        for media, media_data in tqdm.tqdm(self._raw_data.items()):
             if media not in self._augmented_data:
                 self._augmented_data[media] = dict()
             train_data = media_data['train']
@@ -219,7 +219,7 @@ class SelfDataAugmentor(object):
             self._augmented_data[media]['eval'] = augmented_eval_data        
 
     def _span_cutoff(self):
-        for media, media_data in self._raw_data.items():
+        for media, media_data in tqdm.tqdm(self._raw_data.items()):
             if media not in self._augmented_data:
                 self._augmented_data[media] = dict()
             train_data = media_data['train']
@@ -251,7 +251,7 @@ class SelfDataAugmentor(object):
             self._augmented_data[media]['eval'] = augmented_eval_data              
 
     def _word_replacement(self):
-        for media, media_data in self._raw_data.items():
+        for media, media_data in tqdm.tqdm(self._raw_data.items()):
             if media not in self._augmented_data:
                 self._augmented_data[media] = dict()
             train_data = media_data['train']
