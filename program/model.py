@@ -16,9 +16,6 @@ import transformers
 from transformers import (
     CONFIG_MAPPING,
     MODEL_WITH_LM_HEAD_MAPPING,
-    AdapterArguments,
-    AdapterConfig,
-    AdapterType,
     AutoConfig,
     AutoModelWithLMHead,
     AutoModelForTokenClassification,
@@ -41,12 +38,32 @@ from transformers import (
     BertPreTrainedModel,
     BertConfig,
     BertModel,
-    ModelWithHeadsAdaptersMixin,
     AutoModelForSequenceClassification
 )
+
+
+from .transformers import (
+    CONFIG_MAPPING,
+    AutoConfig,
+    AutoModelWithLMHead,
+    BertForSequenceClassification,
+    AutoTokenizer,
+    DataCollatorForLanguageModeling,
+    LineByLineTextDataset,
+    TextDataset,
+    Trainer,
+    TrainingArguments,
+    AutoModel,
+    BertPreTrainedModel,
+    BertModel,
+    AutoModelForSequenceClassification
+)
+
 from transformers.configuration_utils import PretrainedConfig
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.modeling_outputs import TokenClassifierOutput
+
+
 
 import torch
 import torch.utils.checkpoint
@@ -92,33 +109,6 @@ class DeepModel(ABC):
         )
         self._logger.setLevel(logging.INFO)
 
-    def _load_adapter(self) -> None:
-        self._language = self._adapter_args.language
-        if not self._language:
-            raise ValueError(
-                "--language flag must be set when training an adapter")
-        # check if language adapter already exists, otherwise add it
-        if self._language not in self._model.config.adapters:
-            # resolve the adapter config
-            adapter_config = AdapterConfig.load(
-                self._adapter_args.adapter_config,
-                non_linearity=self._adapter_args.adapter_non_linearity,
-                reduction_factor=self._adapter_args.adapter_reduction_factor,
-            )
-            # load a pre-trained from Hub if specified
-            if self._adapter_args.load_adapter:
-                self._model.load_adapter(
-                    self._adapter_args.load_adapter,
-                    config=adapter_config,
-                    load_as=self._language,
-                )
-            # otherwise, add a fresh adapter
-            else:
-                self._model.add_adapter(
-                    self._language, config=adapter_config)
-        # Freeze all model weights except of those of this adapter & use this adapter in every forward pass
-        self._model.train_adapter([self._language])
-
     def _load_config(self) -> None:
         if self._model_args.config_name:
             self._config = AutoConfig.from_pretrained(
@@ -153,16 +143,14 @@ class DeepModel(ABC):
         pass
 
 
-class MLMAdapterModel(DeepModel):
+class MLMModel(DeepModel):
     def __init__(
             self,
             model_args: ModelArguments,
             data_args: DataArguments,
             training_args: TrainingArguments,
-            adapter_args: AdapterArguments
     ) -> None:
         super().__init__(model_args, data_args, training_args)
-        self._adapter_args: AdapterArguments = adapter_args
         self._language: str = ''
         self._fill_mask = None
         self._prepare_model()
@@ -202,8 +190,6 @@ class MLMAdapterModel(DeepModel):
         self._load_config()
         self._load_tokenizer()
         self._load_model()
-        if self._adapter_args.train_adapter:
-            self._load_adapter()
         self._load_data_collator()
 
     def train(
@@ -220,8 +206,6 @@ class MLMAdapterModel(DeepModel):
             data_collator=self._data_collator,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
-            do_save_full_model=not self._adapter_args.train_adapter,
-            do_save_adapters=self._adapter_args.train_adapter,
         )
         if self._training_args.do_train:
             self._trainer.train(model_path=self._model_path)
@@ -245,8 +229,6 @@ class MLMAdapterModel(DeepModel):
             args=self._training_args,
             data_collator=self._data_collator,
             eval_dataset=eval_dataset,
-            do_save_full_model=not self._adapter_args.train_adapter,
-            do_save_adapters=self._adapter_args.train_adapter,
         )
         self._eval(record_file, verbose)
 
@@ -265,7 +247,7 @@ class MLMAdapterModel(DeepModel):
             for key in sorted(result.keys()):
                 self._logger.info("  %s = %s", key, str(result[key]))
 
-        output_eval_file = os.path.join(self._training_args.output_dir, self._adapter_args.language)
+        output_eval_file = self._training_args.output_dir
         if record_file is not None:
             output_eval_file = os.path.join(output_eval_file, record_file)
         if not os.path.exists(output_eval_file):
@@ -303,8 +285,6 @@ class MLMAdapterModel(DeepModel):
     #             model=self._model,
     #             args=self._training_args,
     #             data_collator=self._data_collator,
-    #             do_save_full_model=not self._adapter_args.train_adapter,
-    #             do_save_adapters=self._adapter_args.train_adapter,
     #         )
 
     #     results = dict()
@@ -329,16 +309,14 @@ class MLMAdapterModel(DeepModel):
     #     return results
 
 
-class SentenceReplacementAdapterModel(DeepModel):
+class SentenceReplacementModel(DeepModel):
     def __init__(
             self,
             model_args: ModelArguments,
             data_args: DataArguments,
             training_args: TrainingArguments,
-            adapter_args: AdapterArguments
     ) -> None:
         super().__init__(model_args, data_args, training_args)
-        self._adapter_args: AdapterArguments = adapter_args
         self._language: str = ''
         self._prepare_model()
 
@@ -361,8 +339,6 @@ class SentenceReplacementAdapterModel(DeepModel):
         self._load_config()
         self._load_tokenizer()
         self._load_model()
-        if self._adapter_args.train_adapter:
-            self._load_adapter()
 
 
     def train(
@@ -374,8 +350,6 @@ class SentenceReplacementAdapterModel(DeepModel):
         if number_label > self._config.num_labels:
             self._config.num_labels = number_label
             self._load_model()
-            if self._adapter_args.train_adapter:
-                self._load_adapter()
 
 
         self._model.train()
@@ -385,8 +359,6 @@ class SentenceReplacementAdapterModel(DeepModel):
             args=self._training_args,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
-            do_save_full_model=not self._adapter_args.train_adapter,
-            do_save_adapters=self._adapter_args.train_adapter,
         )
         self._trainer.train(model_path=self._model_path)
         self._trainer.save_model()
@@ -404,8 +376,7 @@ class SentenceReplacementAdapterModel(DeepModel):
         loss = eval_output["eval_loss"]
         result = {"loss": loss}
 
-        output_eval_file = os.path.join(
-            self._training_args.output_dir, self._adapter_args.language)
+        output_eval_file = self._training_args.output_dir
         if not os.path.exists(output_eval_file):
             os.makedirs(output_eval_file)
         output_eval_file = os.path.join(
@@ -440,10 +411,8 @@ class NERModel(DeepModel):
             model_args: ModelArguments,
             data_args: DataArguments,
             training_args: TrainingArguments,
-            adapter_args: AdapterArguments
     ) -> None:
         super().__init__(model_args, data_args, training_args)
-        self._adapter_args: AdapterArguments = adapter_args
         self._language: str = ''
         self._prepare_model()
 
@@ -467,8 +436,6 @@ class NERModel(DeepModel):
         self._load_config()
         self._load_tokenizer()
         self._load_model()
-        # if self._adapter_args.train_adapter:
-        #     self._load_adapter()
         self._load_data_collator()
 
     def _load_data_collator(self) -> None:
@@ -487,8 +454,6 @@ class NERModel(DeepModel):
             args=self._training_args,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
-            do_save_full_model=not self._adapter_args.train_adapter,
-            do_save_adapters=self._adapter_args.train_adapter,
         )
         self._trainer.train(model_path=self._model_path)
         self._trainer.save_model()
@@ -506,8 +471,7 @@ class NERModel(DeepModel):
         loss = eval_output["eval_loss"]
         result = {"loss": loss}
 
-        output_eval_file = os.path.join(
-            self._training_args.output_dir, self._adapter_args.language)
+        output_eval_file = self._training_args.output_dir
         if not os.path.exists(output_eval_file):
             os.makedirs(output_eval_file)
         output_eval_file = os.path.join(
@@ -571,7 +535,7 @@ class BertSimpleModel(DeepModel):
         return result_dict
 
 
-class BertForScoreLabel(ModelWithHeadsAdaptersMixin, BertPreTrainedModel):
+class BertForScoreLabel(BertPreTrainedModel):
 
     _keys_to_ignore_on_load_unexpected = [r"pooler"]
 

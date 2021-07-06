@@ -5,7 +5,6 @@ from transformers.trainer_utils import default_compute_objective
 import transformers
 from transformers import (
     MODEL_WITH_LM_HEAD_MAPPING,
-    AdapterArguments,
     HfArgumentParser,
     TrainingArguments,
     set_seed,
@@ -349,7 +348,6 @@ def get_config() -> Tuple:
         aug_args: DataAugArguments,
         model_args: ModelArguments,
         training_args: TrainingArguments,
-        adapter_args: AdapterArguments,
         analysis_args: AnalysisArguments
     ) -> None:
 
@@ -367,22 +365,14 @@ def get_config() -> Tuple:
         
         if training_args.do_train:
             data_args.train_data_file = os.path.join(
-                data_args.data_path, adapter_args.language+'.train')
+                data_args.data_path, '.train')
         if training_args.do_eval:
             data_args.eval_data_file = os.path.join(
-                data_args.data_path, adapter_args.language+'.valid')
+                data_args.data_path, '.valid')
         if misc_args.load_model:
-            if adapter_args.load_adapter == '':
-                model_args.load_model_dir = os.path.join(os.path.join(
-                    model_args.load_model_dir,model_args.loss_type),data_args.data_type)
-                if adapter_args.train_adapter:
-                    model_args.load_model_dir = model_args.load_model_dir+'_adapter'
-                    adapter_args.load_adapter = os.path.join(
-                        model_args.load_model_dir, adapter_args.language)
-                    adapter_args.adapter_config = os.path.join(
-                        adapter_args.load_adapter, 'adapter_config.json')
-                else:
-                    model_args.model_name_or_path = model_args.load_model_dir
+            model_args.load_model_dir = os.path.join(os.path.join(
+                model_args.load_model_dir,model_args.loss_type),data_args.data_type)
+            model_args.model_name_or_path = model_args.load_model_dir
                 
 
         analysis_args.analysis_data_dir = os.path.join(os.path.join(os.path.join(
@@ -394,13 +384,13 @@ def get_config() -> Tuple:
         
 
     parser = HfArgumentParser((MiscArgument, DataArguments, DataAugArguments, 
-                               ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments))
+                               ModelArguments, TrainingArguments, AnalysisArguments))
 
-    misc_args, data_args, aug_args, model_args, training_args, adapter_args, analysis_args = parser.parse_args_into_dataclasses()
+    misc_args, data_args, aug_args, model_args, training_args, analysis_args = parser.parse_args_into_dataclasses()
     _get_config(misc_args, data_args, aug_args, model_args,
-                training_args, adapter_args, analysis_args)
+                training_args, analysis_args)
     set_seed(training_args.seed)
-    return misc_args, model_args, data_args, aug_args, training_args, adapter_args, analysis_args
+    return misc_args, model_args, data_args, aug_args, training_args, analysis_args
 
 
 if __name__ == '__main__':

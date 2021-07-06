@@ -1,5 +1,4 @@
 from os import path
-from posix import listdir
 from typing import Dict, List
 import json
 import os
@@ -13,7 +12,7 @@ from tqdm import tqdm
 
 
 from .config import DataArguments, DataAugArguments, FullArticleMap, MiscArgument, ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap, BaselineArticleMap
-from .model import MLMAdapterModel, SentenceReplacementAdapterModel, NERModel
+from .model import MLMModel, SentenceReplacementModel, NERModel
 from .data import get_dataset, get_analysis_data, get_label_data, get_mask_score_data
 from .analysis import ClusterAnalysis,DistanceAnalysis,ClusterCompare
 from .ner_util import NERDataset
@@ -27,7 +26,7 @@ def train_lm(
     training_args: TrainingArguments,
     adapter_args: AdapterArguments
 ) -> Dict:
-    model = MLMAdapterModel(model_args, data_args, training_args, adapter_args)
+    model = MLMModel(model_args, data_args, training_args, adapter_args)
     train_dataset = (
         get_dataset(data_args, model_args, tokenizer=model.tokenizer,
                     cache_dir=model_args.cache_dir) if training_args.do_train else None
@@ -46,7 +45,7 @@ def eval_lm(
     training_args: TrainingArguments,
     adapter_args: AdapterArguments
 ) -> Dict:
-    model = MLMAdapterModel(model_args, data_args, training_args, adapter_args)
+    model = MLMModel(model_args, data_args, training_args, adapter_args)
     eval_dataset = (
         get_dataset(data_args, tokenizer=model.tokenizer,
                     evaluate=True, cache_dir=model_args.cache_dir)
@@ -62,7 +61,7 @@ def sentence_replacement_train(
     training_args: TrainingArguments,
     adapter_args: AdapterArguments
 ) -> Dict:
-    model = SentenceReplacementAdapterModel(model_args, data_args, training_args, adapter_args)
+    model = SentenceReplacementModel(model_args, data_args, training_args, adapter_args)
     train_dataset, eval_dataset, number_label = get_dataset(data_args, model.tokenizer)
     model.train(train_dataset, eval_dataset, number_label)
 
@@ -204,7 +203,7 @@ def label_score_predict(
     if dataset in ['vanilla']:
         data_type = ['dataset', 'position']
 
-    model = MLMAdapterModel(model_args, data_args, training_args, adapter_args)
+    model = MLMModel(model_args, data_args, training_args, adapter_args)
     word_set = set()
 
     log_dir = os.path.join(misc_args.log_dir, data_args.data_dir.split('_')[1].split('/')[0])

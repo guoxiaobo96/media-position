@@ -71,6 +71,21 @@ def mlm_get_dataset(
                 cache_dir=cache_dir,
             )
 
+    def _reformat_dataset(file_path: str) -> str:
+        cache_file_path = file_path+'.cache'
+        sentence_list = list()
+        with open(file_path, mode='r', encoding='utf8') as fp:
+            for line in fp.readlines():
+                item = json.loads(line.strip())
+                sentence_list.append(item['original'])
+                if 'augmented' in item and item['augmented'] is not None:
+                    sentence_list.extend(item['augmented'])
+        random.shuffle(sentence_list)
+        with open(cache_file_path,mode='w',encoding='utf8') as fp:
+            for sentence in sentence_list:
+                fp.write(sentence+'\n')
+        return cache_file_path
+
     if args.block_size <= 0:
         args.block_size = tokenizer.model_max_length
         # Our input block size will be the max possible for the model
@@ -82,7 +97,8 @@ def mlm_get_dataset(
     elif args.train_data_files:
         return ConcatDataset([_mlm_dataset(f) for f in glob(args.train_data_files)])
     else:
-        return _mlm_dataset(args.train_data_file, args.train_ref_file)
+        train_data_file = _reformat_dataset(args.train_data_file)
+        return _mlm_dataset(train_data_file, args.train_ref_file)
 
 
 def sentence_replacement_get_data(
@@ -226,9 +242,9 @@ def get_mask_score_data(
 
 
 def main():
-    misc_args, model_args, data_args, training_args, adapter_args, analysis_args = get_config()
+    misc_args, model_args, data_args, training_args, analysis_args = get_config()
     prepare_dirs_and_logger(misc_args, model_args,
-                            data_args, training_args, adapter_args, analysis_args)
+                            data_args, training_args, analysis_args)
     # extract_data(misc_args, data_args)
     get_analysis_data(analysis_args)
 

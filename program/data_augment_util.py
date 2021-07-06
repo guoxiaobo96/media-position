@@ -120,9 +120,6 @@ class SelfDataAugmentor(object):
 
     def _no_augmentation(self, paragraph, model):
         augmented_data = list()
-
-        augmented_data.append(paragraph)
-        
         return augmented_data
 
     def _duplicate(self, paragraph, model):

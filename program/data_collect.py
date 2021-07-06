@@ -653,9 +653,9 @@ def data_collect(
 
 
 def main():
-    misc_args, model_args, data_args, training_args, adapter_args, analysis_args = get_config()
+    misc_args, model_args, data_args, training_args, analysis_args = get_config()
     prepare_dirs_and_logger(misc_args, model_args,
-                            data_args, training_args, adapter_args, analysis_args)
+                            data_args, training_args, analysis_args)
     # twitter_collect(misc_args, data_args)
     # article_collect(misc_args, data_args)
     data_collect(misc_args, data_args)
