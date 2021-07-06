@@ -22,7 +22,12 @@ for topic in topic_list:
                     continue
                 if augmentation not in result[loss_type]:
                     result[loss_type][augmentation] = dict()
+                    
                 multi_number_list = os.listdir(result_dir)
+                multi_number_list = [int(i) for i in multi_number_list]
+                multi_number_list.sort()
+                multi_number_list = [str(i) for i in multi_number_list]
+
                 for multi_numer in multi_number_list:
                     if multi_numer not in result[loss_type][augmentation]:
                         result[loss_type][augmentation][multi_numer] = list()
