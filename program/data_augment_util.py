@@ -87,7 +87,7 @@ class SelfDataAugmentor(object):
     def data_augment(self, augment_type):
         self._augment_method = self._augment_method_map[augment_type]
 
-        for media, media_data in self._raw_data.items():
+        for media, media_data in tqdm.tqdm(self._raw_data.items()):
             if media not in self._augmented_data:
                 self._augmented_data[media] = dict()
             train_data = media_data['train']
