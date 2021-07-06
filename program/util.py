@@ -3,7 +3,7 @@ import os
 import json
 import logging
 from datetime import datetime
-from .config import DataArguments, MiscArgument, ModelArguments, AdapterArguments, TrainingArguments,AnalysisArguments
+from .config import DataArguments, MiscArgument, ModelArguments, TrainingArguments,AnalysisArguments
 
 
 
@@ -12,7 +12,6 @@ def prepare_dirs_and_logger(
         model_args: ModelArguments,
         data_args: DataArguments,
         training_args: TrainingArguments,
-        adapter_args: AdapterArguments,
         analysis_args: AnalysisArguments
 
 ) -> None:

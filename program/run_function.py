@@ -11,7 +11,7 @@ from sklearn.metrics.pairwise import euclidean_distances
 from tqdm import tqdm
 
 
-from .config import DataArguments, DataAugArguments, FullArticleMap, MiscArgument, ModelArguments, TrainingArguments, AdapterArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap, BaselineArticleMap
+from .config import DataArguments, DataAugArguments, FullArticleMap, MiscArgument, ModelArguments, TrainingArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap, BaselineArticleMap
 from .model import MLMModel, SentenceReplacementModel, NERModel
 from .data import get_dataset, get_analysis_data, get_label_data, get_mask_score_data
 from .analysis import ClusterAnalysis,DistanceAnalysis,ClusterCompare
@@ -24,9 +24,8 @@ def train_lm(
     model_args: ModelArguments,
     data_args: DataArguments,
     training_args: TrainingArguments,
-    adapter_args: AdapterArguments
 ) -> Dict:
-    model = MLMModel(model_args, data_args, training_args, adapter_args)
+    model = MLMModel(model_args, data_args, training_args)
     train_dataset = (
         get_dataset(data_args, model_args, tokenizer=model.tokenizer,
                     cache_dir=model_args.cache_dir) if training_args.do_train else None
@@ -43,9 +42,8 @@ def eval_lm(
     model_args: ModelArguments,
     data_args: DataArguments,
     training_args: TrainingArguments,
-    adapter_args: AdapterArguments
 ) -> Dict:
-    model = MLMModel(model_args, data_args, training_args, adapter_args)
+    model = MLMModel(model_args, data_args, training_args)
     eval_dataset = (
         get_dataset(data_args, tokenizer=model.tokenizer,
                     evaluate=True, cache_dir=model_args.cache_dir)
@@ -59,9 +57,8 @@ def sentence_replacement_train(
     model_args: ModelArguments,
     data_args: DataArguments,
     training_args: TrainingArguments,
-    adapter_args: AdapterArguments
 ) -> Dict:
-    model = SentenceReplacementModel(model_args, data_args, training_args, adapter_args)
+    model = SentenceReplacementModel(model_args, data_args, training_args)
     train_dataset, eval_dataset, number_label = get_dataset(data_args, model.tokenizer)
     model.train(train_dataset, eval_dataset, number_label)
 
@@ -190,7 +187,6 @@ def label_score_predict(
     model_args: ModelArguments,
     data_args: DataArguments,
     training_args: TrainingArguments,
-    adapter_args: AdapterArguments,
 ) -> Dict:
     dataset_map = FullArticleMap()
     
@@ -203,17 +199,15 @@ def label_score_predict(
     if dataset in ['vanilla']:
         data_type = ['dataset', 'position']
 
-    model = MLMModel(model_args, data_args, training_args, adapter_args)
+    model = MLMModel(model_args, data_args, training_args)
     word_set = set()
 
     log_dir = os.path.join(misc_args.log_dir, data_args.data_dir.split('_')[1].split('/')[0])
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    if adapter_args.train_adapter:
-        log_dir = os.path.join(log_dir, data_args.data_type+'-'+model_args.loss_type)+'_adapter'
-    else:
-        log_dir = os.path.join(log_dir, data_args.data_type+'-'+model_args.loss_type)
+
+    log_dir = os.path.join(log_dir, data_args.data_type+'-'+model_args.loss_type)
 
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
@@ -508,10 +502,9 @@ def data_augemnt(
 def train_mask_score_model(model_args: ModelArguments,
     data_args: DataArguments,
     training_args: TrainingArguments,
-    analysis_args: AnalysisArguments,
-    adapter_args: AdapterArguments) -> None:
+    analysis_args: AnalysisArguments) -> None:
 
-    model = NERModel(model_args, data_args, training_args, adapter_args)
+    model = NERModel(model_args, data_args, training_args)
 
     train_dataset, eval_dataset = get_mask_score_data(analysis_args,data_args,model.tokenizer)
     model.train(train_dataset, eval_dataset)

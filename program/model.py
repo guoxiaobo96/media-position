@@ -42,22 +42,22 @@ from transformers import (
 )
 
 
-from .transformers import (
-    CONFIG_MAPPING,
-    AutoConfig,
-    AutoModelWithLMHead,
-    BertForSequenceClassification,
-    AutoTokenizer,
-    DataCollatorForLanguageModeling,
-    LineByLineTextDataset,
-    TextDataset,
-    Trainer,
-    TrainingArguments,
-    AutoModel,
-    BertPreTrainedModel,
-    BertModel,
-    AutoModelForSequenceClassification
-)
+# from .transformers import (
+#     CONFIG_MAPPING,
+#     AutoConfig,
+#     AutoModelWithLMHead,
+#     BertForSequenceClassification,
+#     AutoTokenizer,
+#     DataCollatorForLanguageModeling,
+#     LineByLineTextDataset,
+#     TextDataset,
+#     Trainer,
+#     TrainingArguments,
+#     AutoModel,
+#     BertPreTrainedModel,
+#     BertModel,
+#     AutoModelForSequenceClassification
+# )
 
 from transformers.configuration_utils import PretrainedConfig
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase

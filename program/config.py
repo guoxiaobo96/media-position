@@ -365,10 +365,10 @@ def get_config() -> Tuple:
         
         if training_args.do_train:
             data_args.train_data_file = os.path.join(
-                data_args.data_path, '.train')
+                data_args.data_path, 'en.train')
         if training_args.do_eval:
             data_args.eval_data_file = os.path.join(
-                data_args.data_path, '.valid')
+                data_args.data_path, 'en.valid')
         if misc_args.load_model:
             model_args.load_model_dir = os.path.join(os.path.join(
                 model_args.load_model_dir,model_args.loss_type),data_args.data_type)

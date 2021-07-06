@@ -571,9 +571,9 @@ def main():
     # from config import get_config
     # from data import get_analysis_data
     # from util import prepare_dirs_and_logger
-    # misc_args, model_args, data_args, training_args, adapter_args, analysis_args = get_config()
+    # misc_args, model_args, data_args, training_args, analysis_args = get_config()
     # prepare_dirs_and_logger(misc_args, model_args,
-    #                         data_args, training_args, adapter_args,analysis_args)
+    #                         data_args, training_args, analysis_args)
     # analysis_data = get_analysis_data(analysis_args)
     # analysis_model = DistanceAnalysis(model_args, data_args, training_args, analysis_args)
     # for k,v in analysis_data.items():
