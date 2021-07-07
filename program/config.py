@@ -2,8 +2,8 @@ import os
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Tuple, Any, NewType
 
-import transformers
 from transformers import MODEL_WITH_LM_HEAD_MAPPING, HfArgumentParser, set_seed, logging
+import transformers
 
 
 MODEL_CONFIG_CLASSES = list(MODEL_WITH_LM_HEAD_MAPPING.keys())
