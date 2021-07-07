@@ -196,11 +196,11 @@ class MLMModel(DeepModel):
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
         )
-        # if self._training_args.do_train:
-        #     self._trainer.train(model_path=self._model_path)
-        #     self._trainer.save_model()
-        #     if self._trainer.is_world_process_zero():
-        #         self.tokenizer.save_pretrained(self._training_args.output_dir)
+        if self._training_args.do_train:
+            self._trainer.train(model_path=self._model_path)
+            self._trainer.save_model()
+            if self._trainer.is_world_process_zero():
+                self.tokenizer.save_pretrained(self._training_args.output_dir)
         if self._training_args.do_eval:
             self._eval()
 
