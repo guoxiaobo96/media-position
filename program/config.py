@@ -1,18 +1,9 @@
 import os
-
-
-from transformers.trainer_utils import default_compute_objective
-import transformers
-from transformers import (
-    MODEL_WITH_LM_HEAD_MAPPING,
-    HfArgumentParser,
-    TrainingArguments,
-    set_seed,
-    logging
-)
-import argparse
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Tuple, Any, NewType
+
+import transformers
+from transformers import MODEL_WITH_LM_HEAD_MAPPING, HfArgumentParser, set_seed, logging
 
 
 MODEL_CONFIG_CLASSES = list(MODEL_WITH_LM_HEAD_MAPPING.keys())
@@ -49,6 +40,17 @@ class MiscArgument:
         default=False, metadata={"help": "Whether the program is in debug mode"}
     )
 
+
+@dataclass
+class TrainingArguments(transformers.TrainingArguments):
+    output_dir: str = field(
+        default='',
+        metadata={"help": "The output directory where the model predictions and checkpoints will be written."},
+    )
+    loss_type: str = field(
+        default='mlm',
+        metadata={"help": "The loss function used for Trainer.train"}
+    )
 
 @dataclass
 class DataArguments:
@@ -175,11 +177,6 @@ class ModelArguments:
         default=None,
         metadata={
             "help": "If training from scratch, pass a model type from the list: " + ", ".join(MODEL_TYPES)},
-    )
-    loss_type: Optional[str] = field(
-        default="mlm",
-        metadata={
-            "help": "The loss function used for the language model"},
     )
     config_name: Optional[str] = field(
         default=None, metadata={"help": "Pretrained config name or path if not the same as model_name"}
@@ -359,9 +356,9 @@ def get_config() -> Tuple:
 
         data_args.data_path = os.path.join(
             data_args.data_dir, os.path.join(data_args.dataset, data_args.data_type))
-        if model_args.loss_type=='mlm':
+        if training_args.loss_type in ['mlm','mlm_con']:
             data_args.mlm = True
-        training_args.output_dir = os.path.join(os.path.join(training_args.output_dir,model_args.loss_type),data_args.data_type)
+        training_args.output_dir = os.path.join(os.path.join(training_args.output_dir,training_args.loss_type),data_args.data_type)
         
         if training_args.do_train:
             data_args.train_data_file = os.path.join(
@@ -371,14 +368,14 @@ def get_config() -> Tuple:
                 data_args.data_path, 'en.valid')
         if misc_args.load_model:
             model_args.load_model_dir = os.path.join(os.path.join(
-                model_args.load_model_dir,model_args.loss_type),data_args.data_type)
+                model_args.load_model_dir,training_args.loss_type),data_args.data_type)
             model_args.model_name_or_path = model_args.load_model_dir
                 
 
         analysis_args.analysis_data_dir = os.path.join(os.path.join(os.path.join(
-            os.path.join(analysis_args.analysis_data_dir,data_args.dataset),model_args.loss_type),data_args.data_type), 'json')
+            os.path.join(analysis_args.analysis_data_dir,data_args.dataset),training_args.loss_type),data_args.data_type), 'json')
         analysis_args.analysis_result_dir = os.path.join(os.path.join(os.path.join(os.path.join(
-            analysis_args.analysis_result_dir,data_args.dataset),model_args.loss_type),data_args.data_type), analysis_args.analysis_compare_method)
+            analysis_args.analysis_result_dir,data_args.dataset),training_args.loss_type),data_args.data_type), analysis_args.analysis_compare_method)
 
         training_args.disable_tqdm = False
         

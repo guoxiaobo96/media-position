@@ -10,7 +10,6 @@ import numpy as np
 from sklearn.metrics.pairwise import euclidean_distances
 from tqdm import tqdm
 
-
 from .config import DataArguments, DataAugArguments, FullArticleMap, MiscArgument, ModelArguments, TrainingArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap, BaselineArticleMap
 from .model import MLMModel, SentenceReplacementModel, NERModel
 from .data import get_dataset, get_analysis_data, get_label_data, get_mask_score_data
@@ -18,6 +17,7 @@ from .analysis import ClusterAnalysis,DistanceAnalysis,ClusterCompare
 from .ner_util import NERDataset
 from .predict_util import MaksedPredictionDataset
 from .data_augment_util import SelfDataAugmentor
+from .fine_tune_util import DataCollatorForLanguageModelingConsistency
 
 
 def train_lm(
@@ -27,11 +27,11 @@ def train_lm(
 ) -> Dict:
     model = MLMModel(model_args, data_args, training_args)
     train_dataset = (
-        get_dataset(data_args, model_args, tokenizer=model.tokenizer,
+        get_dataset(training_args, data_args, model_args, tokenizer=model.tokenizer,
                     cache_dir=model_args.cache_dir) if training_args.do_train else None
     )
     eval_dataset = (
-        get_dataset(data_args, model_args, tokenizer=model.tokenizer,
+        get_dataset(training_args, data_args, model_args, tokenizer=model.tokenizer,
                     evaluate=True, cache_dir=model_args.cache_dir)
         if training_args.do_eval
         else None
@@ -45,7 +45,7 @@ def eval_lm(
 ) -> Dict:
     model = MLMModel(model_args, data_args, training_args)
     eval_dataset = (
-        get_dataset(data_args, tokenizer=model.tokenizer,
+        get_dataset(training_args, data_args, tokenizer=model.tokenizer,
                     evaluate=True, cache_dir=model_args.cache_dir)
         if training_args.do_eval
         else None
@@ -59,7 +59,7 @@ def sentence_replacement_train(
     training_args: TrainingArguments,
 ) -> Dict:
     model = SentenceReplacementModel(model_args, data_args, training_args)
-    train_dataset, eval_dataset, number_label = get_dataset(data_args, model.tokenizer)
+    train_dataset, eval_dataset, number_label = get_dataset(training_args, data_args, model.tokenizer)
     model.train(train_dataset, eval_dataset, number_label)
 
 def analysis(
@@ -207,7 +207,7 @@ def label_score_predict(
         os.makedirs(log_dir)
 
 
-    log_dir = os.path.join(log_dir, data_args.data_type+'-'+model_args.loss_type)
+    log_dir = os.path.join(log_dir, data_args.data_type+'-'+training_args.loss_type)
 
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)

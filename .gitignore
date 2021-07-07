@@ -13,4 +13,4 @@ log/*/*/json/*.json
 log/*/*/dict/*
 log/*/*/model/*
 *.csv
-program/transformers/*
+transformers/*

@@ -8,8 +8,13 @@ from glob import glob
 from typing import Any, Dict, Optional, Tuple, Union
 from tokenizers import Tokenizer
 
-from torch.utils.data import ConcatDataset
 import torch
+from torch import nn
+from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
+import torch.nn.functional as F
+import torch.utils.checkpoint
+from torch.utils.data import ConcatDataset
+
 import numpy as np
 
 import transformers
@@ -17,66 +22,39 @@ from transformers import (
     CONFIG_MAPPING,
     MODEL_WITH_LM_HEAD_MAPPING,
     AutoConfig,
-    AutoModelWithLMHead,
+    AutoTokenizer,
+    AutoModel,
+    AutoModelForSequenceClassification,
     AutoModelForTokenClassification,
+    AutoModelWithLMHead,
+    BertConfig,
     BertForTokenClassification,
     BertForSequenceClassification,
-    AutoTokenizer,
+    BertModel,
+    BertPreTrainedModel,
     DataCollatorForLanguageModeling,
     DataCollatorForPermutationLanguageModeling,
-    DataCollatorForWholeWordMask,
     DataCollatorForTokenClassification,
+    DataCollatorForWholeWordMask,
     HfArgumentParser,
     LineByLineTextDataset,
     LineByLineWithRefDataset,
-    PreTrainedTokenizer,
-    TextDataset,
-    Trainer,
-    TrainingArguments,
     pipeline,
-    AutoModel,
-    BertPreTrainedModel,
-    BertConfig,
-    BertModel,
-    AutoModelForSequenceClassification
+    PretrainedConfig,
+    PreTrainedTokenizer,
+    PreTrainedTokenizerBase,
+    TextDataset,
 )
-
-
-# from .transformers import (
-#     CONFIG_MAPPING,
-#     AutoConfig,
-#     AutoModelWithLMHead,
-#     BertForSequenceClassification,
-#     AutoTokenizer,
-#     DataCollatorForLanguageModeling,
-#     LineByLineTextDataset,
-#     TextDataset,
-#     Trainer,
-#     TrainingArguments,
-#     AutoModel,
-#     BertPreTrainedModel,
-#     BertModel,
-#     AutoModelForSequenceClassification
-# )
-
-from transformers.configuration_utils import PretrainedConfig
-from transformers.tokenization_utils_base import PreTrainedTokenizerBase
-from transformers.modeling_outputs import TokenClassifierOutput
-
-
-
-import torch
-import torch.utils.checkpoint
-from torch import nn
-from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
+from transformers.modeling_outputs import MaskedLMOutput, TokenClassifierOutput
 
 
 
 
-from .config import DataArguments, ModelArguments
+
+from .config import DataArguments, ModelArguments, TrainingArguments
 from .data import get_dataset
 from .ner_util import NERDataset
-from .fine_tune_util import SentenceReplacementDataset
+from .fine_tune_util import SentenceReplacementDataset, DataCollatorForLanguageModelingConsistency, Trainer
 
 
 class DeepModel(ABC):
@@ -94,7 +72,8 @@ class DeepModel(ABC):
         self._model_args: ModelArguments = model_args
         self._data_args: DataArguments = data_args
         self._training_args: TrainingArguments = training_args
-        self._data_collator = None
+        self._data_collator_train = None
+        self._data_collator_eval = None
         self._trainer: Trainer = None
         self._model_path = (
             self._model_args.model_name_or_path
@@ -167,15 +146,25 @@ class MLMModel(DeepModel):
                 self._data_collator = DataCollatorForWholeWordMask(
                     tokenizer=self.tokenizer, mlm_probability=self._data_args.mlm_probability
                 )
+            elif self._training_args.loss_type == 'mlm_con':
+                self._data_collator_train = DataCollatorForLanguageModelingConsistency(
+                    tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
+                )
+                self._data_collator_eval = DataCollatorForLanguageModeling(
+                    tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
+                )
             else:
-                self._data_collator = DataCollatorForLanguageModeling(
+                self._data_collator_train = DataCollatorForLanguageModeling(
+                    tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
+                )
+                self._data_collator_eval = DataCollatorForLanguageModeling(
                     tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
                 )
 
     def _load_model(self) -> None:
         self._config.return_dict = True
         if self._model_args.model_name_or_path:
-            self._model = AutoModelWithLMHead.from_pretrained(
+            self._model = BertForMaskedLM.from_pretrained(
                 self._model_args.model_name_or_path,
                 from_tf=bool(".ckpt" in self._model_args.model_name_or_path),
                 config=self._config,
@@ -183,7 +172,7 @@ class MLMModel(DeepModel):
             )
         else:
             self._logger.info("Training new model from scratch")
-            self._model = AutoModelWithLMHead.from_config(self._config)
+            self._model = BertForMaskedLM.from_config(self._config)
         self._model.resize_token_embeddings(len(self.tokenizer))
 
     def _prepare_model(self) -> None:
@@ -203,7 +192,7 @@ class MLMModel(DeepModel):
         self._trainer = Trainer(
             model=self._model,
             args=self._training_args,
-            data_collator=self._data_collator,
+            data_collator=self._data_collator_train,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
         )
@@ -227,7 +216,7 @@ class MLMModel(DeepModel):
         self._trainer = Trainer(
             model=self._model,
             args=self._training_args,
-            data_collator=self._data_collator,
+            data_collator=self._data_collator_eval,
             eval_dataset=eval_dataset,
         )
         self._eval(record_file, verbose)
@@ -401,8 +390,6 @@ class SentenceReplacementModel(DeepModel):
             results = fill_mask(sentence)
             result_dict[sentence] = results
         return result_dict
-
-
 
 
 class NERModel(DeepModel):
@@ -612,3 +599,65 @@ class BertForScoreLabel(BertPreTrainedModel):
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
         )
+
+class BertForMaskedLM(transformers.BertForMaskedLM):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def forward(
+        self,
+        input_ids=None,
+        attention_mask=None,
+        token_type_ids=None,
+        position_ids=None,
+        head_mask=None,
+        inputs_embeds=None,
+        encoder_hidden_states=None,
+        encoder_attention_mask=None,
+        labels=None,
+        output_attentions=None,
+        output_hidden_states=None,
+        return_dict=None,
+    ):
+        r"""
+        labels (:obj:`torch.LongTensor` of shape :obj:`(batch_size, sequence_length)`, `optional`):
+            Labels for computing the masked language modeling loss. Indices should be in ``[-100, 0, ...,
+            config.vocab_size]`` (see ``input_ids`` docstring) Tokens with indices set to ``-100`` are ignored
+            (masked), the loss is only computed for the tokens with labels in ``[0, ..., config.vocab_size]``
+        """
+
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        outputs = self.bert(
+            input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            position_ids=position_ids,
+            head_mask=head_mask,
+            inputs_embeds=inputs_embeds,
+            encoder_hidden_states=encoder_hidden_states,
+            encoder_attention_mask=encoder_attention_mask,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+        )
+
+        sequence_output = outputs[0]
+        prediction_scores = self.cls(sequence_output)
+
+        masked_lm_loss = None
+        if labels is not None:
+            loss_fct = CrossEntropyLoss()  # -100 index = padding token
+            masked_lm_loss = loss_fct(prediction_scores.view(-1, self.config.vocab_size), labels.view(-1))
+
+        if not return_dict:
+            output = (prediction_scores,) + outputs[2:]
+            output ((masked_lm_loss,) + output) if masked_lm_loss is not None else output
+        else:
+            output = MaskedLMOutput(
+            loss=masked_lm_loss,
+            logits=prediction_scores,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+        )
+        return output, sequence_output

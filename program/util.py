@@ -3,8 +3,8 @@ import os
 import json
 import logging
 from datetime import datetime
-from .config import DataArguments, MiscArgument, ModelArguments, TrainingArguments,AnalysisArguments
 
+from .config import DataArguments, MiscArgument, ModelArguments, TrainingArguments, AnalysisArguments
 
 
 def prepare_dirs_and_logger(
@@ -19,13 +19,11 @@ def prepare_dirs_and_logger(
     os.chdir(misc_args.root_dir)
     path = os.getcwd()
 
-    
     if not os.path.exists(misc_args.log_dir):
         os.makedirs(misc_args.log_dir)
-    
+
     # if not os.path.exists(analysis_args.analysis_result_dir):
     #     os.makedirs(analysis_args.analysis_result_dir)
-
 
     formatter = logging.Formatter("%(asctime)s:%(levelname)s::%(message)s")
     logger = logging.getLogger()
@@ -39,7 +37,6 @@ def prepare_dirs_and_logger(
     logger.addHandler(handler)
 
     # data path
-
 
 
 def get_time(format_string="%m%d_%H%M%S"):

@@ -1,6 +1,3 @@
-import logging
-import warnings
-import math
 import os
 from matplotlib import pyplot as plt
 import csv
@@ -32,14 +29,8 @@ from sklearn.metrics.pairwise import(
     cosine_distances
 )
 from scipy.sparse.csgraph import shortest_path
-
-
 import numpy as np
 from numpy import ndarray
-from tqdm import tqdm
-
-
-from tokenizers import EncodeInput, Tokenizer, models
 
 
 from .config import AnalysisArguments, MiscArgument, ModelArguments, DataArguments, TrainingArguments
@@ -62,6 +53,7 @@ class BaseAnalysis(ABC):
         self._misc_args = misc_args
         self._data_args = data_args
         self._model_args = model_args
+        self._training_args = training_args
 
         self._load_encoder(self._config.analysis_encode_method, misc_args,
                            model_args, data_args, training_args)
@@ -96,7 +88,7 @@ class BaseAnalysis(ABC):
     def analyze(
         self,
         data,
-        sentence_number : str,
+        sentence_number: str,
         analysis_args: AnalysisArguments
     ):
         pass
@@ -130,7 +122,8 @@ class ClusterAnalysis(BaseAnalysis):
             self._analyser = SpectralClustering()
         elif cluster_method == "AgglomerativeClustering":
             # self._analyser =  AgglomerativeClustering(n_clusters=2, compute_distances=True)
-            self._analyser =  AgglomerativeClustering(n_clusters=2, compute_distances=True, affinity='cosine',linkage='single')
+            self._analyser = AgglomerativeClustering(
+                n_clusters=2, compute_distances=True, affinity='cosine', linkage='single')
         elif cluster_method == "DBSCAN":
             self._analyser = DBSCAN(eps=0.5, min_samples=2)
         elif cluster_method == "OPTICS":
@@ -141,11 +134,11 @@ class ClusterAnalysis(BaseAnalysis):
     def analyze(
         self,
         data,
-        sentence_number : str,
+        sentence_number: str,
         analysis_args: AnalysisArguments,
-        keep_result = True,
-        encode:bool = True,
-        dataset_list :List = [],
+        keep_result=True,
+        encode: bool = True,
+        dataset_list: List = [],
 
     ) -> Dict[int, Set[str]]:
         cluster_result = dict()
@@ -156,7 +149,6 @@ class ClusterAnalysis(BaseAnalysis):
         else:
             encoded_list = data
 
-
         clusters = deepcopy(self._analyser.fit(encoded_list))
         labels = clusters.labels_
         for i, label in enumerate(labels.tolist()):
@@ -165,14 +157,18 @@ class ClusterAnalysis(BaseAnalysis):
             cluster_result[label].append(dataset_list[i])
         if keep_result:
             plt.title('Hierarchical Clustering Dendrogram')
-            plot_dendrogram(self._analyser, orientation='right', labels=dataset_list)
-            plt_file = os.path.join(analysis_args.analysis_result_dir,analysis_args.analysis_encode_method+'_'+analysis_args.analysis_cluster_method+'_'+sentence_number+'.png')
-            model_path = os.path.join(os.path.join(os.path.join(self._misc_args.log_dir, self._data_args.dataset), self._data_args.data_type+'-'+self._model_args.loss_type),'model')
+            plot_dendrogram(self._analyser, orientation='right',
+                            labels=dataset_list)
+            plt_file = os.path.join(analysis_args.analysis_result_dir, analysis_args.analysis_encode_method +
+                                    '_'+analysis_args.analysis_cluster_method+'_'+sentence_number+'.png')
+            model_path = os.path.join(os.path.join(os.path.join(
+                self._misc_args.log_dir, self._data_args.dataset), self._data_args.data_type+'-'+self._training_args.loss_type), 'model')
             if not os.path.exists(model_path):
                 os.makedirs(model_path)
-            model_file = os.path.join(model_path,analysis_args.analysis_encode_method+'_'+analysis_args.analysis_cluster_method+'_'+sentence_number+'.c')
+            model_file = os.path.join(model_path, analysis_args.analysis_encode_method +
+                                      '_'+analysis_args.analysis_cluster_method+'_'+sentence_number+'.c')
             joblib.dump(self._analyser, model_file)
-            plt.savefig(plt_file,bbox_inches = 'tight')
+            plt.savefig(plt_file, bbox_inches='tight')
             plt.close()
         return clusters, cluster_result, dataset_list, encoded_list
 
@@ -214,9 +210,9 @@ class DistanceAnalysis(BaseAnalysis):
     def analyze(
         self,
         data,
-        sentence_number : str,
+        sentence_number: str,
         analysis_args: AnalysisArguments,
-        keep_result = True
+        keep_result=True
     ) -> None:
         distance_result = dict()
         dataset_list, encoded_list = self._encode_data(data)
@@ -236,6 +232,7 @@ class DistanceAnalysis(BaseAnalysis):
         #     distance_result[exclusive_dataset_list[i]] = distance
 
         return exclusive_dataset_list, distance_list
+
 
 class TermEncoder(object):
     def __init__(self) -> None:
@@ -258,6 +255,7 @@ class TermEncoder(object):
             encode_result[dataset] = encode_array
         return encode_result
 
+
 class BinaryEncoder(object):
     def __init__(self) -> None:
         self._term_dict = dict()
@@ -278,6 +276,7 @@ class BinaryEncoder(object):
                 encode_array[self._term_dict[k]] = 1
             encode_result[dataset] = encode_array
         return encode_result
+
 
 class LiwcEncoder(object):
     def __init__(
@@ -319,6 +318,7 @@ class LiwcEncoder(object):
             encode_result[dataset] = np.sum(term_encode.T, axis=0)
         return encode_result
 
+
 class BertEncoder(object):
     def __init__(self, model_args, data_args, training_args) -> None:
         self._model = BertSimpleModel(model_args, data_args, training_args)
@@ -337,6 +337,7 @@ class BertEncoder(object):
             term_encode = term_encode.T*score_list
             encode_result[dataset] = np.sum(term_encode.T, axis=0)
         return encode_result
+
 
 class Word2VecEncoder(object):
     def __init__(self) -> None:
@@ -366,43 +367,48 @@ class Word2VecEncoder(object):
             encode_result[dataset] = np.sum(term_encode.T, axis=0)
         return encode_result
 
+
 class ClusterCompare(object):
-    def __init__(self, misc_args:MiscArgument, analysis_args:AnalysisArguments) -> None:
+    def __init__(self, misc_args: MiscArgument, analysis_args: AnalysisArguments) -> None:
         super().__init__()
-        self. _result_path = os.path.join(os.path.join(analysis_args.analysis_result_dir, analysis_args.graph_distance), analysis_args.graph_kernel)
+        self. _result_path = os.path.join(os.path.join(
+            analysis_args.analysis_result_dir, analysis_args.graph_distance), analysis_args.graph_kernel)
         self._analysis_args = analysis_args
 
-    def _calculate_leaf_distance(self, model:AgglomerativeClustering):
+    def _calculate_leaf_distance(self, model: AgglomerativeClustering):
         leaf_node_number = len(model.labels_)
         inter_node_number = len(model.children_)
         counts = np.zeros(leaf_node_number+inter_node_number)
         for i in range(leaf_node_number):
             counts[i] = 1
 
-        node_matrix = np.zeros((leaf_node_number+inter_node_number,leaf_node_number+inter_node_number))
-        distance_matrix = np.zeros((leaf_node_number,leaf_node_number))
+        node_matrix = np.zeros(
+            (leaf_node_number+inter_node_number, leaf_node_number+inter_node_number))
+        distance_matrix = np.zeros((leaf_node_number, leaf_node_number))
         for i, merge in enumerate(model.children_):
             current_count = 0
             for child_idx in merge:
                 for distance in self._analysis_args.graph_distance.split('_'):
                     if distance == 'cluster':
                         node_matrix[i+leaf_node_number][child_idx] += model.distances_[i]
-                        node_matrix[child_idx][i+leaf_node_number] += model.distances_[i]
+                        node_matrix[child_idx][i +
+                                               leaf_node_number] += model.distances_[i]
                     elif distance == 'alpha':
                         node_matrix[i+leaf_node_number][child_idx] += 1
                         node_matrix[child_idx][i+leaf_node_number] += 1
                     elif distance == 'acc':
                         node_matrix[i+leaf_node_number][child_idx] += counts[child_idx]
-                        node_matrix[child_idx][i+leaf_node_number] += counts[child_idx]
+                        node_matrix[child_idx][i +
+                                               leaf_node_number] += counts[child_idx]
                     current_count += counts[child_idx]
                 counts[i+leaf_node_number] = current_count
 
         dist_matrix = shortest_path(csgraph=node_matrix, directed=False)
-        dist_matrix = dist_matrix[:leaf_node_number,:leaf_node_number]
+        dist_matrix = dist_matrix[:leaf_node_number, :leaf_node_number]
 
         return dist_matrix
 
-    def _graph_generate(self, model:AgglomerativeClustering, label_list: List[int] = None):
+    def _graph_generate(self, model: AgglomerativeClustering, label_list: List[int] = None):
         edges = list()
         edge_labels = dict()
         node_labels = dict()
@@ -421,23 +427,23 @@ class ClusterCompare(object):
                         distance += model.distances_[i]
                     elif distance_type == 'alpha':
                         distance += 1
-                        distance += 1                   
+                        distance += 1
                 edges.append((i+n_samples, child_idx, distance))
                 edge_labels[(i+n_samples, child_idx)] = 1
                 if child_idx < n_samples:
-                    current_counts += 1 
+                    current_counts += 1
                 else:
                     current_counts += counts[child_idx - n_samples]
             counts[i] = current_counts
         for i in range(len(counts)+n_samples):
-            if i<n_samples:
+            if i < n_samples:
                 node_labels[i] = label_list[i]
             else:
                 node_labels[i] = n_samples
         graph = Graph(edges, node_labels=node_labels, edge_labels=edge_labels)
-        return graph        
+        return graph
 
-    def _cluster_generate(self, model:AgglomerativeClustering, label_list: List[int] = None):
+    def _cluster_generate(self, model: AgglomerativeClustering, label_list: List[int] = None):
         cluster_dict = dict()
         n_samples = len(model.labels_)
         if label_list is None:
@@ -453,7 +459,7 @@ class ClusterCompare(object):
         cluster_list = list(cluster_dict.values())
         return cluster_list
 
-    def _tree_generate(self, model:AgglomerativeClustering, label_list: List[int] = None):
+    def _tree_generate(self, model: AgglomerativeClustering, label_list: List[int] = None):
         cluster_dict = dict()
         n_samples = len(model.labels_)
         if label_list is None:
@@ -461,14 +467,13 @@ class ClusterCompare(object):
 
         node_list = [0 for _ in range(n_samples*2 - 1)]
         for i in range(n_samples):
-            node_list[i] = Node(str(i),[])
+            node_list[i] = Node(str(i), [])
         for i, merge in enumerate(model.children_):
             child_list = list()
             for child_idx in merge:
                 child_list.append(node_list[child_idx])
-            node_list[i+n_samples] = Node('-1',child_list)
+            node_list[i+n_samples] = Node('-1', child_list)
         return node_list[-1]
-
 
     def _build_graph(self, model, label_list=None) -> None:
         if self._analysis_args.graph_kernel == 'cluster':
@@ -496,11 +501,11 @@ class ClusterCompare(object):
                 gk = ShortestPath()
             elif self._analysis_args.graph_kernel == 'ShortestPathAttr':
                 gk = ShortestPathAttr()
-            elif self._analysis_args.graph_kernel == 'NeighborhoodHash':                
+            elif self._analysis_args.graph_kernel == 'NeighborhoodHash':
                 gk = NeighborhoodHash()
-            elif self._analysis_args.graph_kernel == 'PyramidMatch':                 
+            elif self._analysis_args.graph_kernel == 'PyramidMatch':
                 gk = PyramidMatch()
-            elif self._analysis_args.graph_kernel == 'SubgraphMatching': 
+            elif self._analysis_args.graph_kernel == 'SubgraphMatching':
                 gk = SubgraphMatching()
             elif self._analysis_args.graph_kernel == 'NeighborhoodSubgraphPairwiseDistance':
                 gk = NeighborhoodSubgraphPairwiseDistance()
@@ -528,26 +533,28 @@ class ClusterCompare(object):
                 gk = CoreFramework()
             elif self._analysis_args.graph_kernel == 'WeisfeilerLehmanOptimalAssignment':
                 gk = WeisfeilerLehmanOptimalAssignment()
-            
+
             graph_list = gk.fit_transform(graph_list)
         base_index = name_list.index('base')
         for i, name in enumerate(tqdm(name_list)):
             if i != base_index:
-                if self._analysis_args.graph_distance == 'count' :
+                if self._analysis_args.graph_distance == 'count':
                     count = 0
                     for cluster in graph_list[i]:
                         if cluster not in graph_list[base_index]:
                             count += 1
                     distance = count / (len(graph_list[base_index]) - 1)
                 elif self._analysis_args.graph_distance == 'edit':
-                    distance = simple_distance(graph_list[base_index], graph_list[i])
+                    distance = simple_distance(
+                        graph_list[base_index], graph_list[i])
                 else:
-                    distance = np.linalg.norm(graph_list[i]-graph_list[base_index])
+                    distance = np.linalg.norm(
+                        graph_list[i]-graph_list[base_index])
 
                 result_dict[name] = distance
-        return result_dict        
+        return result_dict
 
-    def compare(self, model_dict:Dict[str,AgglomerativeClustering], label_list=None) -> None:
+    def compare(self, model_dict: Dict[str, AgglomerativeClustering], label_list=None) -> None:
         graph_list = list()
         name_list = list()
         method = str()
@@ -559,12 +566,10 @@ class ClusterCompare(object):
         for name, model in model_dict.items():
             name_list.append(name)
             graph_list.append(self._build_graph(model, label_list))
-        
-        result_dict = self._calculate_distance(graph_list,name_list)
 
-        
+        result_dict = self._calculate_distance(graph_list, name_list)
+
         return result_dict
-
 
 
 def main():

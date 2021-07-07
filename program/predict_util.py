@@ -1,26 +1,27 @@
 import argparse
 from scipy.sparse.construct import random
-from transformers import BertTokenizer
 import numpy as np
 import json
 from typing import Optional, List, Dict, Tuple, Any, NewType
 import torch
-from transformers import BatchEncoding, PreTrainedTokenizer
 from torch.utils.data import DataLoader, Dataset, RandomSampler, SequentialSampler
 import os
 import pickle
+
+from transformers import BatchEncoding, BertTokenizer, PreTrainedTokenizer
+
 from .config import MiscArgument, DataArguments
 
 
-
 class MaksedPredictionDataset(Dataset):
-    def __init__(self, tokenizer: PreTrainedTokenizer, sentence_list:List[str], cached_features_file='', overwrite_cache=False):
+    def __init__(self, tokenizer: PreTrainedTokenizer, sentence_list: List[str], cached_features_file='', overwrite_cache=False):
 
         if os.path.exists(cached_features_file) and not overwrite_cache:
             with open(cached_features_file, "rb") as handle:
                 self.examples = pickle.load(handle)
 
-        self.examples = tokenizer.batch_encode_plus(sentence_list, max_length=512, padding=True)["input_ids"]
+        self.examples = tokenizer.batch_encode_plus(
+            sentence_list, max_length=512, padding=True)["input_ids"]
 
         # self.examples = []
         # for sentence in sentence_list:
@@ -28,7 +29,8 @@ class MaksedPredictionDataset(Dataset):
         #     self.examples.append(tokenizer.build_inputs_with_special_tokens(tokenized_text))
 
         with open(cached_features_file, "wb") as handle:
-            pickle.dump(self.examples, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.examples, handle,
+                        protocol=pickle.HIGHEST_PROTOCOL)
 
     def __len__(self):
         return len(self.examples)
@@ -37,7 +39,7 @@ class MaksedPredictionDataset(Dataset):
         return torch.tensor(self.examples[item], dtype=torch.long)
 
 
-def encode_scores(scores, encodings:BatchEncoding):
+def encode_scores(scores, encodings: BatchEncoding):
     scores = [[score for score in doc] for doc in scores]
     encoded_scores = []
     input_ids = list()
@@ -49,11 +51,12 @@ def encode_scores(scores, encodings:BatchEncoding):
     for (doc_scores, doc_input_ids, doc_attemtion_mask, doc_token_type_ids, doc_offset, doc_encoding) in zip(scores, encodings.input_ids, encodings.attention_mask, encodings.token_type_ids, encodings.offset_mapping, encodings._encodings):
         # create an empty array of -100
         try:
-            doc_enc_scores = np.ones(len(doc_offset),dtype=float) * -100
+            doc_enc_scores = np.ones(len(doc_offset), dtype=float) * -100
             arr_offset = np.array(doc_offset)
 
             # set labels whose first offset position is 0 and the second is not 0
-            doc_enc_scores[(arr_offset[:,0] == 0) & (arr_offset[:,1] != 0)] = doc_scores
+            doc_enc_scores[(arr_offset[:, 0] == 0) & (
+                arr_offset[:, 1] != 0)] = doc_scores
             encoded_scores.append(doc_enc_scores.tolist())
             input_ids.append(doc_input_ids)
             token_type_ids.append(doc_token_type_ids)
@@ -62,8 +65,8 @@ def encode_scores(scores, encodings:BatchEncoding):
         except:
             error_count += 1
 
-    data = {'input_ids':input_ids,'token_type_ids':token_type_ids, 'attention_mask':attention_mask}
+    data = {'input_ids': input_ids, 'token_type_ids': token_type_ids,
+            'attention_mask': attention_mask}
     encodings = BatchEncoding(data, encoding_list)
-
 
     return encoded_scores, encodings

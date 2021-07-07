@@ -1,41 +1,46 @@
-from multiprocessing.pool import ApplyResult
-from transformers import PreTrainedTokenizer, LineByLineWithRefDataset, LineByLineTextDataset, TextDataset
+from transformers.training_args import TrainingArguments
 from torch.utils.data import ConcatDataset, dataset
 import os
 from os import path
 import warnings
 import json
-import csv
-import re
 from multiprocessing import Pool
 import random
 from typing import Any, List, Optional, Union, Dict, Set, List
 from glob import glob
 from sklearn.model_selection import train_test_split
 
-from transformers.tokenization_bert import BertTokenizer
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-warnings.filterwarnings('ignore')
+from transformers import (
+    PreTrainedTokenizer,
+    LineByLineWithRefDataset,
+    LineByLineTextDataset,
+    TextDataset,
+    BertTokenizer
+)
 
-from .ner_util import NERDataset, encode_scores
-from .config import AnalysisArguments, DataArguments, FullArticleMap, MiscArgument, ModelArguments, SourceMap, TrustMap, get_config, ArticleMap, TwitterMap, BaselineArticleMap
+from .fine_tune_util import SentenceReplacementDataset, MLMConsistencyDataset
 from .util import prepare_dirs_and_logger
-from .fine_tune_util import SentenceReplacementDataset
+from .config import AnalysisArguments, DataArguments, FullArticleMap, MiscArgument, ModelArguments, SourceMap, TrustMap, get_config, ArticleMap, TwitterMap, BaselineArticleMap
+from .ner_util import NERDataset, encode_scores
+
 
 def extract_data():
     pass
 
 
 def get_dataset(
+    training_args: TrainingArguments,
     data_args: DataArguments,
     model_args: ModelArguments,
     tokenizer: PreTrainedTokenizer,
     evaluate: bool = False,
     cache_dir: Optional[str] = None,
 ) -> Union[LineByLineWithRefDataset, LineByLineTextDataset, TextDataset, ConcatDataset]:
-    if model_args.loss_type == 'mlm':
+    if training_args.loss_type == 'mlm':
         return mlm_get_dataset(data_args, tokenizer, evaluate, cache_dir)
-    elif data_args.data_type in ['sentence_random_replacement','sentence_chosen_replacement']:
+    elif training_args.loss_type == 'mlm_con':
+        return mlm_consistency_get_data(data_args, tokenizer, evaluate)
+    elif data_args.data_type in ['sentence_random_replacement', 'sentence_chosen_replacement']:
         return sentence_replacement_get_data(data_args, tokenizer)
 
 
@@ -81,7 +86,7 @@ def mlm_get_dataset(
                 if 'augmented' in item and item['augmented'] is not None:
                     sentence_list.extend(item['augmented'])
         random.shuffle(sentence_list)
-        with open(cache_file_path,mode='w',encoding='utf8') as fp:
+        with open(cache_file_path, mode='w', encoding='utf8') as fp:
             for sentence in sentence_list:
                 fp.write(sentence+'\n')
         return cache_file_path
@@ -101,32 +106,73 @@ def mlm_get_dataset(
         return _mlm_dataset(train_data_file, args.train_ref_file)
 
 
+def mlm_consistency_get_data(
+    data_args: DataArguments,
+    tokenizer: BertTokenizer,
+    evaluate: bool
+):
+    train_file = os.path.join(data_args.data_path, 'en.train')
+    eval_file = os.path.join(data_args.data_path, 'en.valid')
+
+
+    if not evaluate:
+        train_data = {'original_sentence': list(), 'augmented_sentence': list()}
+        with open(train_file, mode='r', encoding='utf8') as fp:
+            for line in fp.readlines():
+                item = json.loads(line.strip())
+                original_sentence = item['original']
+                for aug_sentence in item['augmented']:
+                    train_data['original_sentence'].append(original_sentence)
+                    train_data['augmented_sentence'].append(aug_sentence)
+                train_data['original_sentence'].append(original_sentence)
+                train_data['augmented_sentence'].append(original_sentence)
+        ori_encodings = tokenizer(
+            train_data['original_sentence'], padding=False, truncation=True)
+        aug_encodings = tokenizer(
+            train_data['augmented_sentence'], padding=False, truncation=True)
+        dataset = MLMConsistencyDataset(ori_encodings, aug_encodings)
+    else:
+        if data_args.block_size <= 0:
+            data_args.block_size = tokenizer.model_max_length
+            # Our input block size will be the max possible for the model
+        else:
+            data_args.block_size = min(data_args.block_size, tokenizer.model_max_length)
+        dataset = LineByLineTextDataset(
+            tokenizer=tokenizer, file_path=eval_file, block_size=data_args.block_size)
+
+    return dataset
+
+
 def sentence_replacement_get_data(
     data_args: DataArguments,
     tokenizer: BertTokenizer
 ):
     train_file = os.path.join(data_args.data_path, 'en.train')
     eval_file = os.path.join(data_args.data_path, 'en.valid')
-    train_data = {'sentence':list(),'label':list()}
-    eval_data = {'sentence':list(),'label':list()}
+    train_data = {'sentence': list(), 'label': list()}
+    eval_data = {'sentence': list(), 'label': list()}
 
-    with open(train_file,mode='r', encoding='utf8') as fp:
+    with open(train_file, mode='r', encoding='utf8') as fp:
         for line in fp.readlines():
             item = json.loads(line.strip())
             train_data['sentence'].append(item['sentence'])
             train_data['label'].append(item['label'])
-    with open(eval_file,mode='r', encoding='utf8') as fp:
+    with open(eval_file, mode='r', encoding='utf8') as fp:
         for line in fp.readlines():
             item = json.loads(line.strip())
             eval_data['sentence'].append(item['sentence'])
             eval_data['label'].append(item['label'])
 
-    number_label = max(len(set(train_data['label'])),len(set(eval_data['label'])))
+    number_label = max(
+        len(set(train_data['label'])), len(set(eval_data['label'])))
 
-    train_encodings = tokenizer(train_data['sentence'], padding=True, truncation=True)
-    val_encodings = tokenizer(eval_data['sentence'],  padding=True, truncation=True)
+    train_encodings = tokenizer(
+        train_data['sentence'], padding=True, truncation=True)
+    val_encodings = tokenizer(
+        eval_data['sentence'],  padding=True, truncation=True)
 
-    train_dataset = SentenceReplacementDataset(train_encodings, train_data['label'])
+    train_dataset = SentenceReplacementDataset(
+        train_encodings, train_data['label'])
     val_dataset = SentenceReplacementDataset(val_encodings, eval_data['label'])
 
     return train_dataset, val_dataset, number_label
@@ -177,7 +223,8 @@ def get_label_data(
     data_map = BaselineArticleMap()
     row_data = dict()
     for file in data_map.dataset_list:
-        analysis_data_file = os.path.join(analysis_args.analysis_data_dir, file+'.json')
+        analysis_data_file = os.path.join(
+            analysis_args.analysis_data_dir, file+'.json')
         with open(analysis_data_file) as fp:
             count = 0
             for line in fp:

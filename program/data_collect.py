@@ -1,24 +1,19 @@
 from platform import node
 from numpy.core import einsumfunc
-from torch import chunk, dist, mode
-from .util import prepare_dirs_and_logger
-from .config import AnalysisArguments, DataArguments, MiscArgument, get_config, SourceMap, TrustMap, ArticleMap, FullArticleMap
-import tweepy
-import time
 import os
 import warnings
 import re
 import random
 from typing import List
 import twint
-from bs4 import BeautifulSoup
-import requests
-from tqdm import tqdm
 import json
 from multiprocessing import Pool
 from nltk.tokenize import sent_tokenize
 from sklearn.cluster import AgglomerativeClustering
 import csv
+
+from .util import prepare_dirs_and_logger
+from .config import AnalysisArguments, DataArguments, MiscArgument, get_config, SourceMap, TrustMap, ArticleMap, FullArticleMap
 
 warnings.filterwarnings('ignore')
 
@@ -242,7 +237,7 @@ def origianl_collect(
     if data_args.dataset in topic_dict:
         topic_list = topic_dict[data_args.dataset]
     else:
-        topic_list = [data_args.dataset.replace('-',' ')]
+        topic_list = [data_args.dataset.replace('-', ' ')]
     data_args.data_dir = data_args.data_dir + '_' + data_args.dataset
 
     year_list = os.listdir(data_args.original_data_dir)
@@ -320,7 +315,7 @@ def _original_collect(data_path_dir, global_debug):
             media = item['media']
         if media not in article_dict:
             article_dict[media] = list()
-        text = text.strip().replace('\n','\\n').replace('\"','')
+        text = text.strip().replace('\n', '\\n').replace('\"', '')
         text = text.lower()
         article_dict[media].append(text)
     return article_dict
@@ -378,18 +373,26 @@ def sentence_random_replacement_collect(
 
         for sentence_list in raw_data[media]['split_train_data']:
             for replace_media in media_list:
-                replaced_sentence = random.choice(raw_data[replace_media]['train_sentences_list'])
+                replaced_sentence = random.choice(
+                    raw_data[replace_media]['train_sentences_list'])
                 while sentence_list[1] == replaced_sentence:
-                    replaced_sentence = random.choice(raw_data[replace_media]['train_sentences_list'])
-                sentence = sentence_list[0] + replaced_sentence + sentence_list[2]
-                train_data[media].append({'sentence':sentence,'label':distance_dict[media][replace_media]})
+                    replaced_sentence = random.choice(
+                        raw_data[replace_media]['train_sentences_list'])
+                sentence = sentence_list[0] + \
+                    replaced_sentence + sentence_list[2]
+                train_data[media].append(
+                    {'sentence': sentence, 'label': distance_dict[media][replace_media]})
         for sentence_list in raw_data[media]['split_eval_data']:
             for replace_media in media_list:
-                replaced_sentence = random.choice(raw_data[replace_media]['eval_sentences_list'])
+                replaced_sentence = random.choice(
+                    raw_data[replace_media]['eval_sentences_list'])
                 while sentence_list[1] == replaced_sentence:
-                    replaced_sentence = random.choice(raw_data[replace_media]['eval_sentences_list'])
-                sentence = sentence_list[0] + replaced_sentence + sentence_list[2]
-                eval_data[media].append({'sentence':sentence,'label':distance_dict[media][replace_media]})
+                    replaced_sentence = random.choice(
+                        raw_data[replace_media]['eval_sentences_list'])
+                sentence = sentence_list[0] + \
+                    replaced_sentence + sentence_list[2]
+                eval_data[media].append(
+                    {'sentence': sentence, 'label': distance_dict[media][replace_media]})
     for media in media_list:
         data_path = os.path.join(os.path.join(
             data_args.data_dir, media), data_args.data_type)
@@ -405,7 +408,6 @@ def sentence_random_replacement_collect(
         with open(eval_file, mode='w', encoding='utf8') as fp:
             for item in eval_data[media]:
                 fp.write(json.dumps(item, ensure_ascii=False)+'\n')
-
 
 
 def sentence_random_replacement_collect(
@@ -460,18 +462,26 @@ def sentence_random_replacement_collect(
 
         for sentence_list in raw_data[media]['split_train_data']:
             for replace_media in media_list:
-                replaced_sentence = random.choice(raw_data[replace_media]['train_sentences_list'])
+                replaced_sentence = random.choice(
+                    raw_data[replace_media]['train_sentences_list'])
                 while sentence_list[1] == replaced_sentence:
-                    replaced_sentence = random.choice(raw_data[replace_media]['train_sentences_list'])
-                sentence = sentence_list[0] + replaced_sentence + sentence_list[2]
-                train_data[media].append({'sentence':sentence,'label':distance_dict[media][replace_media]})
+                    replaced_sentence = random.choice(
+                        raw_data[replace_media]['train_sentences_list'])
+                sentence = sentence_list[0] + \
+                    replaced_sentence + sentence_list[2]
+                train_data[media].append(
+                    {'sentence': sentence, 'label': distance_dict[media][replace_media]})
         for sentence_list in raw_data[media]['split_eval_data']:
             for replace_media in media_list:
-                replaced_sentence = random.choice(raw_data[replace_media]['eval_sentences_list'])
+                replaced_sentence = random.choice(
+                    raw_data[replace_media]['eval_sentences_list'])
                 while sentence_list[1] == replaced_sentence:
-                    replaced_sentence = random.choice(raw_data[replace_media]['eval_sentences_list'])
-                sentence = sentence_list[0] + replaced_sentence + sentence_list[2]
-                eval_data[media].append({'sentence':sentence,'label':distance_dict[media][replace_media]})
+                    replaced_sentence = random.choice(
+                        raw_data[replace_media]['eval_sentences_list'])
+                sentence = sentence_list[0] + \
+                    replaced_sentence + sentence_list[2]
+                eval_data[media].append(
+                    {'sentence': sentence, 'label': distance_dict[media][replace_media]})
     for media in media_list:
         data_path = os.path.join(os.path.join(
             data_args.data_dir, media), data_args.data_type)
@@ -514,36 +524,38 @@ def paragraph_collect(
             for line in fp:
                 paragraph_list = line.strip().split('\\n\\n')
                 for paragraph in paragraph_list:
-                    if len(paragraph.split(' '))<sequence_length and len(paragraph.split(' '))>5:
+                    if len(paragraph.split(' ')) < sequence_length and len(paragraph.split(' ')) > 5:
                         grouped_train_data.append(paragraph)
-                    elif len(paragraph.split(' '))>=sequence_length:
-                        sentence_list =sent_tokenize(paragraph.strip())
+                    elif len(paragraph.split(' ')) >= sequence_length:
+                        sentence_list = sent_tokenize(paragraph.strip())
                         chunk_sentences = str()
                         for sentence in sentence_list:
                             if len(chunk_sentences.split(' ')) + len(sentence.split(' ')) < sequence_length:
-                                chunk_sentences = chunk_sentences +' '+ sentence
+                                chunk_sentences = chunk_sentences + ' ' + sentence
                             else:
-                                grouped_train_data.append(chunk_sentences.strip())
+                                grouped_train_data.append(
+                                    chunk_sentences.strip())
                                 chunk_sentences = sentence
                         grouped_train_data.append(chunk_sentences.strip())
         with open(eval_file, mode='r', encoding='utf8') as fp:
             for line in fp:
                 paragraph_list = line.strip().split('\\n\\n')
                 for paragraph in paragraph_list:
-                    if len(paragraph.split(' '))<sequence_length and len(paragraph.split(' '))>5:
+                    if len(paragraph.split(' ')) < sequence_length and len(paragraph.split(' ')) > 5:
                         grouped_eval_data.append(paragraph)
-                    elif len(paragraph.split(' '))>=sequence_length:
-                        sentence_list =sent_tokenize(paragraph.strip())
+                    elif len(paragraph.split(' ')) >= sequence_length:
+                        sentence_list = sent_tokenize(paragraph.strip())
                         chunk_sentences = str()
                         for sentence in sentence_list:
                             if len(chunk_sentences.split(' ')) + len(sentence.split(' ')) < sequence_length:
-                                chunk_sentences = chunk_sentences +' '+ sentence
+                                chunk_sentences = chunk_sentences + ' ' + sentence
                             else:
-                                grouped_eval_data.append(chunk_sentences.strip())
+                                grouped_eval_data.append(
+                                    chunk_sentences.strip())
                                 chunk_sentences = sentence
                         grouped_eval_data.append(chunk_sentences.strip())
-        raw_data[media] = {'train': grouped_train_data, 'eval': grouped_eval_data}
-
+        raw_data[media] = {'train': grouped_train_data,
+                           'eval': grouped_eval_data}
 
     for media in media_list:
         data_path = os.path.join(os.path.join(
@@ -561,7 +573,7 @@ def paragraph_collect(
             for item in raw_data[media]['eval']:
                 fp.write(item+'\n')
 
-                
+
 def _calcualte_score(data_type, label_type, media_list):
     label_list = media_list
     article_map = FullArticleMap()
@@ -598,16 +610,16 @@ def _calcualte_score(data_type, label_type, media_list):
         if a_name not in distance_dict:
             distance_dict[a_name] = dict()
         for j, b_name in enumerate(media_list):
-            if i==j:
+            if i == j:
                 distance_dict[a_name][b_name] = 0
                 continue
             max_distance = 1000
             for k, node_list in inter_node_dict.items():
                 if i in node_list and j in node_list:
-                    max_distance = min(max_distance,max(node_list[i],node_list[j])+len(node_list)-2)
+                    max_distance = min(max_distance, max(
+                        node_list[i], node_list[j])+len(node_list)-2)
                     # max_distance = min(max_distance,max(node_list[i],node_list[j])+node_list[i]+node_list[j])
-            distance_dict[a_name][b_name] = max_distance   
-
+            distance_dict[a_name][b_name] = max_distance
 
     # distance_matrix = [[1000 for _ in range(len(label_list)*2 - 1)] for _ in range(len(label_list)*2 - 1)]
     # child_node = clusters.children_
@@ -628,16 +640,14 @@ def _calcualte_score(data_type, label_type, media_list):
     #     for j, b_name in enumerate(media_list):
     #         distance_dict[a_name][b_name] = distance_matrix[i][j]
 
-    for k,dist in distance_dict.items():
+    for k, dist in distance_dict.items():
         new_dist = dict()
         adj_distance_list = sorted(set(dist.values()))
         for media, d in dist.items():
             new_dist[media] = adj_distance_list.index(d)
         distance_dict[k] = new_dist
 
-
     return distance_dict
-    
 
 
 def data_collect(

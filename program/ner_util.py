@@ -1,11 +1,9 @@
 import argparse
 from scipy.sparse.construct import random
-from transformers import BertTokenizer
 import numpy as np
 import json
 from typing import Optional, List, Dict, Tuple, Any, NewType
 import torch
-from transformers.tokenization_bert_fast import BertTokenizerFast
 from transformers import BatchEncoding
 
 
