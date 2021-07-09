@@ -3,7 +3,7 @@ import os
 result_dir = "/data/xiaobo/media-position"
 
 topic_list = ["obamacare"]
-loss_list = ["mlm"]
+loss_list = ["mlm_con"]
 augmentation_list = ["no_augmentation", "duplicate","sentence_order_replacement","span_cutoff","word_order_replacement", "word_replacement"]
 
 result = dict()
@@ -29,13 +29,16 @@ for topic in topic_list:
                 multi_number_list = [str(i) for i in multi_number_list]
 
                 for multi_numer in multi_number_list:
-                    if multi_numer not in result[loss_type][augmentation]:
-                        result[loss_type][augmentation][multi_numer] = list()
-                    result_file = os.path.join(os.path.join(os.path.join(result_dir,multi_numer), 'en'),'eval_results_lm.txt')
-                    with open(result_file,mode='r',encoding='utf8') as fp:
-                        for line in fp.readlines():
-                            r = float(line.strip().split(' = ')[-1])
-                    result[loss_type][augmentation][multi_numer].append(str(round(r,3)))
+                    try:
+                        if multi_numer not in result[loss_type][augmentation]:
+                            result[loss_type][augmentation][multi_numer] = list()
+                        result_file = os.path.join(os.path.join(result_dir,multi_numer),'eval_results_lm.txt')
+                        with open(result_file,mode='r',encoding='utf8') as fp:
+                            for line in fp.readlines():
+                                r = float(line.strip().split(' = ')[-1])
+                        result[loss_type][augmentation][multi_numer].append(str(round(r,3)))
+                    except:
+                        print(model)
 
     with open('./result.csv',mode='w',encoding='utf8') as fp:
         item = 'loss,augmentation,multi_number,'+','.join(model_list)

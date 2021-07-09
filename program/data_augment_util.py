@@ -138,7 +138,7 @@ class SelfDataAugmentor(object):
             augmented_sentence = self._data_augmentor.sentence_order_replacement(
                 paragraph)
             count = 0
-            while augmented_sentence in augmented_data:
+            while augmented_sentence in existing_data:
                 count += 1
                 augmented_sentence = self._data_augmentor.sentence_order_replacement(
                     paragraph)
@@ -158,7 +158,7 @@ class SelfDataAugmentor(object):
             augmented_sentence = self._data_augmentor.span_cutoff(
                 paragraph, num_span)
             count = 0
-            while augmented_sentence in augmented_data:
+            while augmented_sentence in existing_data:
                 count += 1
                 augmented_sentence = self._data_augmentor.span_cutoff(
                     paragraph, num_span)
@@ -177,7 +177,7 @@ class SelfDataAugmentor(object):
             augmented_sentence = self._data_augmentor.word_order_replacement(
                 paragraph, num_swap)
             count = 0
-            while augmented_sentence in augmented_data:
+            while augmented_sentence in existing_data:
                 count += 1
                 augmented_sentence = self._data_augmentor.word_order_replacement(
                     paragraph, num_swap)
@@ -197,7 +197,7 @@ class SelfDataAugmentor(object):
             augmented_sentence = self._data_augmentor.word_replacement(
                 paragraph, model, num_replacement)
             count = 0
-            while augmented_sentence in augmented_data:
+            while augmented_sentence in existing_data:
                 count += 1
                 augmented_sentence = self._data_augmentor.word_replacement(
                     paragraph, model, num_replacement)
