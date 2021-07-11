@@ -3,7 +3,7 @@ import os
 result_dir = "/data/xiaobo/media-position"
 
 topic_list = ["obamacare"]
-loss_list = ["mlm_con"]
+loss_list = ["mlm", "mlm_con"]
 augmentation_list = ["no_augmentation", "duplicate","sentence_order_replacement","span_cutoff","word_order_replacement", "word_replacement"]
 
 result = dict()
@@ -22,7 +22,7 @@ for topic in topic_list:
                     continue
                 if augmentation not in result[loss_type]:
                     result[loss_type][augmentation] = dict()
-                    
+                
                 multi_number_list = os.listdir(result_dir)
                 multi_number_list = [int(i) for i in multi_number_list]
                 multi_number_list.sort()

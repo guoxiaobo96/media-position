@@ -351,8 +351,6 @@ def get_config() -> Tuple:
         data_args.data_type = os.path.join(aug_args.augment_type, str(aug_args.multiple_number))
         if aug_args.augment_type == 'original':
             data_args.data_type = aug_args.augment_type
-        elif aug_args.augment_type == 'no_augmentation':
-            data_args.data_type = aug_args.augment_type
 
         data_args.data_path = os.path.join(
             data_args.data_dir, os.path.join(data_args.dataset, data_args.data_type))
