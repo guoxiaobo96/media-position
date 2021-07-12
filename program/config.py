@@ -52,6 +52,18 @@ class TrainingArguments(transformers.TrainingArguments):
         metadata={"help": "The loss function used for Trainer.train"}
     )
 
+    ori_loss_scale: float = field(
+        default=0.5, metadata={"help": "The scale of loss of original data"}
+    )
+
+    aug_loss_scale: float = field(
+        default=0.5, metadata={"help": "The scale of loss of augmentation data"}
+    )
+
+    con_loss_scale: float = field(
+        default=1, metadata={"help": "The scale of consistency loss between origianl and augmentation data"}
+    )
+
 @dataclass
 class DataArguments:
     """

@@ -159,7 +159,7 @@ class Trainer(transformers.Trainer):
                     loss = self.compute_loss(model, inputs)
             else:
                 loss = self.compute_loss(model, inputs)
-        elif self.args.loss_type in ['mlm_con','mlm_cos']:
+        elif self.args.loss_type in ['mlm_supercon','mlm_cos']:
             if self.use_amp:
                 with autocast():
                     loss = self.compute_loss_consistency(model, inputs)
@@ -218,7 +218,7 @@ class Trainer(transformers.Trainer):
         """
         self._con_loss = None
 
-        if self.args.loss_type == 'mlm_con':
+        if self.args.loss_type == 'mlm_supercon':
             self._con_loss = self._contrastive_loss
         elif self.args.loss_type == 'mlm_cos':
             self._con_loss = self._cosine_loss
@@ -252,7 +252,7 @@ class Trainer(transformers.Trainer):
             loss_ori = outputs_ori["loss"] if isinstance(outputs_ori, dict) else outputs_ori[0]
             loss_aug = outputs_aug["loss"] if isinstance(outputs_aug, dict) else outputs_aug[0]
 
-        loss = loss_aug + 0*loss_ori + self._con_loss(sequence_output_ori,sequence_output_aug)
+        loss = self.args.ori_loss_scale*loss_ori + self.args.aug_loss_scale*loss_aug + self.args.con_loss_scale*self._con_loss(sequence_output_ori,sequence_output_aug)
 
         return (loss, outputs_ori) if return_outputs else loss
 

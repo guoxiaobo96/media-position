@@ -38,7 +38,7 @@ def get_dataset(
 ) -> Union[LineByLineWithRefDataset, LineByLineTextDataset, TextDataset, ConcatDataset]:
     if training_args.loss_type == 'mlm':
         return mlm_get_dataset(data_args, tokenizer, evaluate, cache_dir)
-    elif training_args.loss_type in ['mlm_con','mlm_cos']:
+    elif training_args.loss_type in ['mlm_supercon','mlm_cos']:
         return mlm_consistency_get_data(data_args, tokenizer, evaluate)
     elif data_args.data_type in ['sentence_random_replacement', 'sentence_chosen_replacement']:
         return sentence_replacement_get_data(data_args, tokenizer)

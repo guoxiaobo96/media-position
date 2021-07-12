@@ -146,7 +146,7 @@ class MLMModel(DeepModel):
                 self._data_collator = DataCollatorForWholeWordMask(
                     tokenizer=self.tokenizer, mlm_probability=self._data_args.mlm_probability
                 )
-            elif self._training_args.loss_type in ['mlm_con','mlm_cos']:
+            elif self._training_args.loss_type in ['mlm_supercon','mlm_cos']:
                 self._data_collator_train = DataCollatorForLanguageModelingConsistency(
                     tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
                 )
