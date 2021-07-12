@@ -146,20 +146,22 @@ class MLMModel(DeepModel):
                 self._data_collator = DataCollatorForWholeWordMask(
                     tokenizer=self.tokenizer, mlm_probability=self._data_args.mlm_probability
                 )
-            elif self._training_args.loss_type == 'mlm_con':
+            elif self._training_args.loss_type in ['mlm_con','mlm_cos']:
                 self._data_collator_train = DataCollatorForLanguageModelingConsistency(
                     tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
                 )
                 self._data_collator_eval = DataCollatorForLanguageModeling(
                     tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
                 )
-            else:
+            elif self._training_args.loss_type in ['mlm']:
                 self._data_collator_train = DataCollatorForLanguageModeling(
                     tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
                 )
                 self._data_collator_eval = DataCollatorForLanguageModeling(
                     tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
                 )
+            else:
+                print("Wrong loss type")
 
     def _load_model(self) -> None:
         self._config.return_dict = True
