@@ -354,7 +354,7 @@ def get_config() -> Tuple:
 
         data_args.data_path = os.path.join(
             data_args.data_dir, os.path.join(data_args.dataset, data_args.data_type))
-        if training_args.loss_type in ['mlm','mlm_con']:
+        if 'mlm' in training_args.loss_type:
             data_args.mlm = True
         training_args.output_dir = os.path.join(os.path.join(training_args.output_dir,training_args.loss_type),data_args.data_type)
         

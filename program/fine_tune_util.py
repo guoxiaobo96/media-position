@@ -1,5 +1,6 @@
 from numpy.lib.arraysetops import isin
 from sklearn.metrics.pairwise import cosine_distances
+from transformers import training_args
 from transformers.modeling_outputs import MaskedLMOutput
 from scipy.sparse.construct import random
 import numpy as np
@@ -125,6 +126,7 @@ class Trainer(transformers.Trainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._contrastive_loss = SupConLoss()
+        self._cosine_loss = CosineLoss()
 
     def training_step(self, model: nn.Module, inputs: Dict[str, Union[torch.Tensor, Any]]) -> torch.Tensor:
         """
@@ -157,7 +159,7 @@ class Trainer(transformers.Trainer):
                     loss = self.compute_loss(model, inputs)
             else:
                 loss = self.compute_loss(model, inputs)
-        elif self.args.loss_type == 'mlm_con':
+        elif self.args.loss_type in ['mlm_con','mlm_cos']:
             if self.use_amp:
                 with autocast():
                     loss = self.compute_loss_consistency(model, inputs)
@@ -214,6 +216,14 @@ class Trainer(transformers.Trainer):
 
         Except for the traditional loss, we add the cosine similarity 
         """
+        self._con_loss = None
+
+        if self.args.loss_type == 'mlm_con':
+            self._con_loss = self._contrastive_loss
+        elif self.args.loss_type == 'mlm_cos':
+            self._con_loss = self._cosine_loss
+            
+
         if self.label_smoother is not None and "labels" in inputs:
             labels = inputs.pop("labels")
         else:
@@ -242,7 +252,7 @@ class Trainer(transformers.Trainer):
             loss_ori = outputs_ori["loss"] if isinstance(outputs_ori, dict) else outputs_ori[0]
             loss_aug = outputs_aug["loss"] if isinstance(outputs_aug, dict) else outputs_aug[0]
 
-        loss = loss_aug + 0*loss_ori + self._contrastive_loss(sequence_output_ori,sequence_output_aug)
+        loss = loss_aug + 0*loss_ori + self._con_loss(sequence_output_ori,sequence_output_aug)
 
         return (loss, outputs_ori) if return_outputs else loss
 
@@ -342,6 +352,13 @@ class SupConLoss(nn.Module):
 
         return loss
 
+class CosineLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, features_ori, features_aug):
+        loss = 1 - F.cosine_similarity(features_ori,features_aug).mean()
+        return loss
 
 class SentenceReplacementDataset(torch.utils.data.Dataset):
     def __init__(self, encodings, labels):
