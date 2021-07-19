@@ -50,6 +50,30 @@ class MLMConsistencyDataset(torch.utils.data.Dataset):
         return int(len(self.ori_encodings['input_ids']))
 
 
+class ClassConsistencyDataset(torch.utils.data.Dataset):
+    def __init__(self, ori_encodings, aug_encodings,ori_labels, aug_labels):
+        self.ori_encodings = ori_encodings
+        self.aug_encodings = aug_encodings
+        self.ori_labels = ori_labels
+        self.aug_labels = aug_labels
+
+    def __getitem__(self, idx):
+        item = dict()
+        ori_item = {key: torch.tensor(val[idx])
+                for key, val in self.ori_encodings.items()}
+        ori_item['labels'] = torch.tensor(self.ori_labels[idx])
+        aug_item = {key: torch.tensor(val[idx])
+                for key, val in self.aug_encodings.items()}
+        aug_item['labels'] = torch.tensor(self.aug_labels[idx])
+        item['original'] = ori_item
+        item['augmentation'] = aug_item
+        
+        return item
+
+    def __len__(self):
+        return int(len(self.ori_encodings['input_ids']))
+
+
 class DataCollatorForLanguageModelingConsistency(DataCollatorForLanguageModeling):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

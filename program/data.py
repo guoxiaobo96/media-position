@@ -18,7 +18,7 @@ from transformers import (
     BertTokenizer
 )
 
-from .fine_tune_util import SentenceReplacementDataset, MLMConsistencyDataset
+from .fine_tune_util import ClassConsistencyDataset, SentenceReplacementDataset, MLMConsistencyDataset
 from .util import prepare_dirs_and_logger
 from .config import AnalysisArguments, DataArguments, FullArticleMap, MiscArgument, ModelArguments, SourceMap, TrustMap, get_config, ArticleMap, TwitterMap, BaselineArticleMap
 from .ner_util import NERDataset, encode_scores
@@ -40,6 +40,8 @@ def get_dataset(
         return mlm_get_dataset(data_args, tokenizer, evaluate, cache_dir)
     elif training_args.loss_type in ['mlm_supercon','mlm_cos']:
         return mlm_consistency_get_data(data_args, tokenizer, evaluate)
+    elif training_args.loss_type in ['class_cos']:
+        return class_consistency_get_data(data_args, tokenizer, evaluate)
     elif data_args.data_type in ['sentence_random_replacement', 'sentence_chosen_replacement']:
         return sentence_replacement_get_data(data_args, tokenizer)
 
@@ -141,6 +143,51 @@ def mlm_consistency_get_data(
             tokenizer=tokenizer, file_path=eval_file, block_size=data_args.block_size)
 
     return dataset
+
+
+def class_consistency_get_data(
+    data_args: DataArguments,
+    tokenizer: BertTokenizer,
+    evaluate: bool
+):
+    train_file = os.path.join(data_args.data_path, 'en.train')
+    eval_file = os.path.join(data_args.data_path, 'en.valid')
+
+
+    if not evaluate:
+        train_data = {'original_sentence': list(), 'augmented_sentence': list(),'original_label':list(),'augmented_label':list()}
+        with open(train_file, mode='r', encoding='utf8') as fp:
+            for line in fp.readlines():
+                item = json.loads(line.strip())
+                original_sentence = item['original']['sentence']
+                original_label = item['original']['label']
+                for aug_item in item['augmented']:
+                    train_data['original_sentence'].append(original_sentence)
+                    train_data['original_label'].append(original_label)
+                    train_data['augmented_sentence'].append(aug_item['sentence'])
+                    train_data['augmented_label'].append(aug_item['label'])
+
+                train_data['original_sentence'].append(original_sentence)
+                train_data['original_label'].append(original_label)
+                train_data['augmented_sentence'].append(original_sentence)
+                train_data['augmented_label'].append(original_label)
+
+        ori_encodings = tokenizer(
+            train_data['original_sentence'], padding=False, truncation=True)
+        aug_encodings = tokenizer(
+            train_data['augmented_sentence'], padding=False, truncation=True)
+        dataset = ClassConsistencyDataset(ori_encodings, aug_encodings,train_data['original_label'],train_data['augmented_label'])
+    else:
+        if data_args.block_size <= 0:
+            data_args.block_size = tokenizer.model_max_length
+            # Our input block size will be the max possible for the model
+        else:
+            data_args.block_size = min(data_args.block_size, tokenizer.model_max_length)
+        dataset = LineByLineTextDataset(
+            tokenizer=tokenizer, file_path=eval_file, block_size=data_args.block_size)
+
+    return dataset
+
 
 
 def sentence_replacement_get_data(
