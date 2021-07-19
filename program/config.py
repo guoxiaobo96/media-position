@@ -237,6 +237,20 @@ class AnalysisArguments:
         },
     )
 
+@dataclass 
+class BaselineArguments:
+    baseline_encode_method: str = field(
+        default="tfidf", metadata={"help": "The method for encoding the baseline"}
+    )
+    min_num_gram: int = field(
+        default=0, metadata={"help": "The minimum number of gram for baseline encoding method where 0 means the method without n_gram"}
+    )
+
+    max_num_gram: int = field(
+        default=0, metadata={"help": "The maxinum number of gram for baseline encoding method where 0 means the method without n_gram"}
+    )
+
+
 @dataclass
 class FullArticleMap:
     dataset_to_name: Dict = field(default_factory=lambda: {'ABC.com':'ABC News','Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','guardiannews.com':'Guardian','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','rushlimbaugh.com':'rushlimbaugh.com','sean':'The Sean Hannity Show','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
@@ -357,7 +371,8 @@ def get_config() -> Tuple:
         aug_args: DataAugArguments,
         model_args: ModelArguments,
         training_args: TrainingArguments,
-        analysis_args: AnalysisArguments
+        analysis_args: AnalysisArguments,
+        baseline_args: BaselineArguments
     ) -> None:
 
         data_args.data_type = os.path.join(aug_args.augment_type, str(aug_args.multiple_number))
@@ -391,13 +406,13 @@ def get_config() -> Tuple:
         
 
     parser = HfArgumentParser((MiscArgument, DataArguments, DataAugArguments, 
-                               ModelArguments, TrainingArguments, AnalysisArguments))
+                               ModelArguments, TrainingArguments, AnalysisArguments, BaselineArguments))
 
-    misc_args, data_args, aug_args, model_args, training_args, analysis_args = parser.parse_args_into_dataclasses()
+    misc_args, data_args, aug_args, model_args, training_args, analysis_args, baseline_args = parser.parse_args_into_dataclasses()
     _get_config(misc_args, data_args, aug_args, model_args,
-                training_args, analysis_args)
+                training_args, analysis_args, baseline_args)
     set_seed(training_args.seed)
-    return misc_args, model_args, data_args, aug_args, training_args, analysis_args
+    return misc_args, model_args, data_args, aug_args, training_args, analysis_args, baseline_args
 
 
 if __name__ == '__main__':
