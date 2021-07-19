@@ -5,6 +5,7 @@ from typing import List
 from bs4 import BeautifulSoup
 import json
 from multiprocessing import Pool
+from nltk.data import split_resource_url
 from nltk.tokenize import sent_tokenize
 from sklearn.cluster import AgglomerativeClustering
 from copy import copy, deepcopy
@@ -17,7 +18,7 @@ from .util import prepare_dirs_and_logger
 from .config import AnalysisArguments, DataArguments, MiscArgument, get_config, SourceMap, TrustMap, ArticleMap, FullArticleMap, DataAugArguments
 
 
-class SelfDataAugmentor(object):
+class BasicDataAugementor(object):
     def __init__(self, misc_args: MiscArgument, data_args: DataArguments, aug_args: DataAugArguments) -> None:
         super().__init__()
         self._misc_args = misc_args
@@ -28,8 +29,7 @@ class SelfDataAugmentor(object):
         self._raw_data = dict()
         self._augmented_data = dict()
         self._article_map = FullArticleMap()
-        self._augment_method_map = {'duplicate': self._duplicate, 'no_augmentation': self._no_augmentation, 'sentence_order_replacement': self._sentence_order_replacement,
-                                    'span_cutoff': self._span_cutoff, 'word_order_replacement': self._word_order_replacement, 'word_replacement': self._word_replacement}
+        self._augment_method_map = None
 
         self._load_original_data()
 
@@ -83,6 +83,29 @@ class SelfDataAugmentor(object):
                             grouped_eval_data.append(chunk_sentences.strip())
             self._raw_data[media] = {
                 'train': grouped_train_data, 'eval': grouped_eval_data}
+
+    def save(self):
+        for media in list(self._augmented_data.keys()):
+            data_path = os.path.join(os.path.join(
+                self._data_args.data_dir, media), self._data_args.data_type)
+            if not os.path.exists(data_path):
+                os.makedirs(data_path)
+            train_file = os.path.join(data_path, 'en.train')
+            with open(train_file, mode='w', encoding='utf8') as fp:
+                for item in self._augmented_data[media]['train']:
+                    fp.write(json.dumps(item, ensure_ascii=False)+'\n')
+            eval_file = os.path.join(data_path, 'en.valid')
+            random.shuffle(self._augmented_data[media]['eval'])
+            with open(eval_file, mode='w', encoding='utf8') as fp:
+                for item in self._augmented_data[media]['eval']:
+                    fp.write(item+'\n')
+
+
+class SelfDataAugmentor(BasicDataAugementor):
+    def __init__(self, misc_args: MiscArgument, data_args: DataArguments, aug_args: DataAugArguments) -> None:
+        super().__init__()
+        self._augment_method_map = {'duplicate': self._duplicate, 'no_augmentation': self._no_augmentation, 'sentence_order_replacement': self._sentence_order_replacement,
+                                    'span_cutoff': self._span_cutoff, 'word_order_replacement': self._word_order_replacement, 'word_replacement': self._word_replacement}
 
     def data_augment(self, augment_type):
         self._augment_method = self._augment_method_map[augment_type]
@@ -235,22 +258,6 @@ class SelfDataAugmentor(object):
             self._augmented_data[media]['train'] = augmented_train_data
             self._augmented_data[media]['eval'] = augmented_eval_data
 
-    def save(self):
-        for media in list(self._augmented_data.keys()):
-            data_path = os.path.join(os.path.join(
-                self._data_args.data_dir, media), self._data_args.data_type)
-            if not os.path.exists(data_path):
-                os.makedirs(data_path)
-            train_file = os.path.join(data_path, 'en.train')
-            with open(train_file, mode='w', encoding='utf8') as fp:
-                for item in self._augmented_data[media]['train']:
-                    fp.write(json.dumps(item, ensure_ascii=False)+'\n')
-            eval_file = os.path.join(data_path, 'en.valid')
-            random.shuffle(self._augmented_data[media]['eval'])
-            with open(eval_file, mode='w', encoding='utf8') as fp:
-                for item in self._augmented_data[media]['eval']:
-                    fp.write(item+'\n')
-
 
 class DataAugmentor(object):
     def __init__(self) -> None:
@@ -305,3 +312,90 @@ class DataAugmentor(object):
         augmented_sentence = ' '.join(splited_paragraph)
 
         return augmented_sentence
+
+    def sentence_replacement(self, original_paragraph, chosen_sentence):
+        splited_original_paragraph = sent_tokenize(original_paragraph)
+        chosen_original_sentence = random.randint(0,len(splited_original_paragraph) - 1)
+        splited_original_paragraph[chosen_original_sentence] = chosen_sentence
+        augmented_sentence = ' '.join(splited_original_paragraph)
+
+        return augmented_sentence
+
+
+
+class CrossDataAugmentor(BasicDataAugementor):
+    def __init__(self, misc_args: MiscArgument, data_args: DataArguments, aug_args: DataAugArguments) -> None:
+        super().__init__(misc_args, data_args, aug_args)
+        self._augment_method_map = {'sentence_replacement': self._sentece_replacement}
+        self._cross_data = dict()
+        self._data_prepare()
+
+    def _data_prepare(self):
+        if self._aug_args.augment_type == 'sentence_replacement':
+            sentence_split_data = dict()
+            for media, media_data in self._raw_data.items():
+                sentence_list = list()
+                for item in media_data['train']:
+                    sentence_list.extend(sent_tokenize(item))
+                sentence_split_data[media] = sentence_list
+            self._cross_data = sentence_split_data
+
+
+    def data_augment(self, augment_type):
+        self._augment_method = self._augment_method_map[augment_type]
+
+        for media, media_data in tqdm.tqdm(self._raw_data.items()):
+            if media not in self._augmented_data:
+                self._augmented_data[media] = dict()
+            train_data = media_data['train']
+            eval_data = media_data['eval']
+
+            augmented_train_data = list()
+            augmented_eval_data = list()
+
+            for index, paragraph in enumerate(train_data):
+                if paragraph == '':
+                    continue
+                item = {'original': {'sentence':paragraph,'label':1}, 'augmented': list()}
+
+                augmented_sentence = self._augment_method(media, paragraph, self._cross_data)
+                item['augmented']=augmented_sentence
+                augmented_train_data.append(item)
+
+                if self._misc_args.global_debug and index>100:
+                    break
+
+            augmented_eval_data = eval_data
+
+            self._augmented_data[media]['train'] = augmented_train_data
+            self._augmented_data[media]['eval'] = augmented_eval_data
+
+
+    def _sentece_replacement(self, media, original_paragraph, cross_paragraph):
+        existing_data = [original_paragraph]
+        augmented_data = list()
+        media_list = list(self._cross_data.keys())
+
+        for _ in range(self._aug_args.multiple_number - 1):
+            cross_media = random.choice(media_list)
+            chosen_sentence = random.choice(cross_paragraph[cross_media])
+            augmented_sentence = self._data_augmentor.sentence_replacement(original_paragraph, chosen_sentence)
+
+            count = 0
+            while augmented_sentence in existing_data:
+                count += 1
+                chosen_sentence = random.choice(cross_paragraph[cross_media])
+                augmented_sentence = self._data_augmentor.sentence_replacement(original_paragraph, chosen_sentence)
+                if count > 3:
+                    break
+
+            if media == cross_media:
+                label = 1
+            else:
+                label = 0
+
+            augmented_data.append({'sentence':augmented_sentence,'label':label})
+            existing_data.append(augmented_sentence)
+
+        return augmented_data
+
