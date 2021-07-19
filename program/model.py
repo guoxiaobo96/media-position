@@ -46,7 +46,7 @@ from transformers import (
     TextDataset,
 )
 from transformers.modeling_outputs import MaskedLMOutput, TokenClassifierOutput
-
+from transformers.models.bert.modeling_bert import BertPooler
 
 
 
@@ -54,7 +54,7 @@ from transformers.modeling_outputs import MaskedLMOutput, TokenClassifierOutput
 from .config import DataArguments, ModelArguments, TrainingArguments
 from .data import get_dataset
 from .ner_util import NERDataset
-from .fine_tune_util import SentenceReplacementDataset, DataCollatorForLanguageModelingConsistency, Trainer
+from .fine_tune_util import DataCollatorForClassConsistency, SentenceReplacementDataset, DataCollatorForLanguageModelingConsistency, Trainer
 
 
 class DeepModel(ABC):
@@ -161,7 +161,7 @@ class MLMModel(DeepModel):
                     tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
                 )
             elif self._training_args.loss_type in ['class_cos']:
-                self._data_collator_train = DataCollatorForLanguageModelingConsistency(
+                self._data_collator_train = DataCollatorForClassConsistency(
                     tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
                 )
                 self._data_collator_eval = DataCollatorForLanguageModeling(
@@ -272,39 +272,6 @@ class MLMModel(DeepModel):
         for i, sentence in enumerate(sentence_list):
             result_dict[sentence] = results[i]
         return result_dict
-
-    # def predict(
-    #     self,
-    #     inputs,
-    #     original_sentence_list
-    # ) -> None:
-    #     if self._trainer is None:
-    #         self._trainer = Trainer(
-    #             model=self._model,
-    #             args=self._training_args,
-    #             data_collator=self._data_collator,
-    #         )
-
-    #     results = dict()
-    #     outputs = torch.tensor(self._trainer.predict(inputs).predictions)
-
-    #     for i, original_sentence in enumerate(original_sentence_list):
-    #         input_ids = inputs[i]
-    #         result = []
-    #         masked_index = torch.nonzero(input_ids == self.tokenizer.mask_token_id, as_tuple=False)
-    #         logits = outputs[i, masked_index.item(), :]
-    #         probs = logits.softmax(dim=0)
-    #         values, predictions = probs.topk(10)
-    #         for v, p in zip(values.tolist(), predictions.tolist()):
-    #             result.append(
-    #                 {
-    #                     "score": v,
-    #                     "token": p,
-    #                     "token_str": self.tokenizer.decode(p),
-    #                 }
-    #             )
-    #         results[original_sentence] = result
-    #     return results
 
 
 class SentenceReplacementModel(DeepModel):
@@ -610,8 +577,15 @@ class BertForScoreLabel(BertPreTrainedModel):
         )
 
 class BertForMaskedLM(transformers.BertForMaskedLM):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, config):
+        super().__init__(config)
+        self.num_labels = config.num_labels
+
+        self.pooler = BertPooler(config)
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.classifier = nn.Linear(config.hidden_size, config.num_labels)
+
+        self.init_weights()
 
     def forward(
         self,
@@ -627,6 +601,8 @@ class BertForMaskedLM(transformers.BertForMaskedLM):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
+        class_labels=None,
+        classification=False,
     ):
         r"""
         labels (:obj:`torch.LongTensor` of shape :obj:`(batch_size, sequence_length)`, `optional`):
@@ -650,14 +626,42 @@ class BertForMaskedLM(transformers.BertForMaskedLM):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
         )
-
         sequence_output = outputs[0]
+
         prediction_scores = self.cls(sequence_output)
 
         masked_lm_loss = None
         if labels is not None:
             loss_fct = CrossEntropyLoss()  # -100 index = padding token
             masked_lm_loss = loss_fct(prediction_scores.view(-1, self.config.vocab_size), labels.view(-1))
+
+        class_loss = None
+        if classification:
+            pooled_output = self.pooler(sequence_output)
+            pooled_output = self.dropout(pooled_output)
+            logits = self.classifier(pooled_output)
+
+            if class_labels is not None:
+                if self.config.problem_type is None:
+                    if self.num_labels == 1:
+                        self.config.problem_type = "regression"
+                    elif self.num_labels > 1 and (class_labels.dtype == torch.long or class_labels.dtype == torch.int):
+                        self.config.problem_type = "single_label_classification"
+                    else:
+                        self.config.problem_type = "multi_label_classification"
+
+                if self.config.problem_type == "regression":
+                    loss_fct = MSELoss()
+                    if self.num_labels == 1:
+                        class_loss = loss_fct(logits.squeeze(), class_labels.squeeze())
+                    else:
+                        class_loss = loss_fct(logits, class_labels)
+                elif self.config.problem_type == "single_label_classification":
+                    loss_fct = CrossEntropyLoss()
+                    class_loss = loss_fct(logits.view(-1, self.num_labels), class_labels.view(-1))
+                elif self.config.problem_type == "multi_label_classification":
+                    loss_fct = BCEWithLogitsLoss()
+                    class_loss = loss_fct(logits, class_labels)
 
         if not return_dict:
             output = (prediction_scores,) + outputs[2:]
@@ -669,4 +673,5 @@ class BertForMaskedLM(transformers.BertForMaskedLM):
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
         )
-        return output, sequence_output
+
+        return output, sequence_output, class_loss
