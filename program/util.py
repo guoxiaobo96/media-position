@@ -4,7 +4,7 @@ import json
 import logging
 from datetime import datetime
 
-from .config import DataArguments, MiscArgument, ModelArguments, TrainingArguments, AnalysisArguments
+from .config import DataArguments, MiscArgument, ModelArguments, TrainingArguments, AnalysisArguments, BaselineArguments
 
 
 def prepare_dirs_and_logger(
@@ -12,7 +12,8 @@ def prepare_dirs_and_logger(
         model_args: ModelArguments,
         data_args: DataArguments,
         training_args: TrainingArguments,
-        analysis_args: AnalysisArguments
+        analysis_args: AnalysisArguments,
+        baseline_args: BaselineArguments
 
 ) -> None:
     # os.chdir(os.path.dirname(__file__))

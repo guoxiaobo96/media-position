@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.metrics.pairwise import euclidean_distances
 from tqdm import tqdm
 
-from .config import DataArguments, DataAugArguments, FullArticleMap, MiscArgument, ModelArguments, TrainingArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap, BaselineArticleMap
+from .config import BaselineArguments, DataArguments, DataAugArguments, FullArticleMap, MiscArgument, ModelArguments, TrainingArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap, BaselineArticleMap
 from .model import MLMModel, SentenceReplacementModel, NERModel
 from .data import get_dataset, get_analysis_data, get_label_data, get_mask_score_data
 from .analysis import ClusterAnalysis,DistanceAnalysis,ClusterCompare
@@ -18,6 +18,19 @@ from .ner_util import NERDataset
 from .predict_util import MaksedPredictionDataset
 from .data_augment_util import SelfDataAugmentor
 from .fine_tune_util import DataCollatorForLanguageModelingConsistency
+from .baseline import BaselineCalculator
+
+
+def generate_baseline(
+    misc_args: MiscArgument,
+    baseline_args: BaselineArguments,
+    data_args: DataArguments
+) -> Dict:
+    baseline_calculator = BaselineCalculator(misc_args, baseline_args, data_args)
+    baseline_calculator.load_data()
+    baseline_calculator.encode_data()
+    result = baseline_calculator.feature_analysis()
+    return result
 
 
 def train_lm(
