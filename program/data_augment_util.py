@@ -4,7 +4,7 @@ import random
 from typing import List
 from bs4 import BeautifulSoup
 import json
-from multiprocessing import Pool
+from multiprocessing import Condition, Pool
 from nltk.data import split_resource_url
 from nltk.tokenize import sent_tokenize
 from sklearn.cluster import AgglomerativeClustering
@@ -103,9 +103,20 @@ class BasicDataAugementor(object):
 
 class SelfDataAugmentor(BasicDataAugementor):
     def __init__(self, misc_args: MiscArgument, data_args: DataArguments, aug_args: DataAugArguments) -> None:
-        super().__init__()
+        super().__init__(misc_args, data_args, aug_args)
         self._augment_method_map = {'duplicate': self._duplicate, 'no_augmentation': self._no_augmentation, 'sentence_order_replacement': self._sentence_order_replacement,
-                                    'span_cutoff': self._span_cutoff, 'word_order_replacement': self._word_order_replacement, 'word_replacement': self._word_replacement}
+                                    'span_cutoff': self._span_cutoff, 'word_order_replacement': self._word_order_replacement, 'word_replacement': self._word_replacement,'sentence_replacement':self._sentence_replacement}
+        self._data_prepare()
+
+    def _data_prepare(self):
+        if self._aug_args.augment_type == 'sentence_replacement':
+            sentence_split_data = dict()
+            for media, media_data in self._raw_data.items():
+                sentence_list = list()
+                for item in media_data['train']:
+                    sentence_list.extend(sent_tokenize(item))
+                sentence_split_data[media] = sentence_list
+            self._cross_data = sentence_split_data
 
     def data_augment(self, augment_type):
         self._augment_method = self._augment_method_map[augment_type]
@@ -123,10 +134,12 @@ class SelfDataAugmentor(BasicDataAugementor):
                 sentence_list = [s.split(' ') for s in train_data]
                 model = Word2Vec(sentences=sentence_list,
                                 window=5, min_count=1, workers=4)
-            else:
-                model = None
+            elif augment_type in ['sentence_replacement']:
+                model = self._cross_data[media]
 
             for index, paragraph in enumerate(train_data):
+                if paragraph == '':
+                    continue
                 item = {'original': paragraph, 'augmented': list()}
 
                 augmented_sentence = self._augment_method(paragraph, model)
@@ -224,6 +237,27 @@ class SelfDataAugmentor(BasicDataAugementor):
                 count += 1
                 augmented_sentence = self._data_augmentor.word_replacement(
                     paragraph, model, num_replacement)
+                if count > 3:
+                    break
+            augmented_data.append(augmented_sentence)
+            existing_data.append(augmented_sentence)
+        return augmented_data
+
+
+    def _sentence_replacement(self, paragraph, model):
+        existing_data = [paragraph]
+        augmented_data = list()
+        
+        for _ in range(self._aug_args.multiple_number - 1):
+            chosen_sentence = random.choice(model)
+            augmented_sentence = self._data_augmentor.sentence_replacement(
+                paragraph, chosen_sentence)
+            count = 0
+            while augmented_sentence in existing_data:
+                count += 1
+                chosen_sentence = random.choice(model)
+                augmented_sentence = self._data_augmentor.sentence_replacement(
+                    paragraph, chosen_sentence)
                 if count > 3:
                     break
             augmented_data.append(augmented_sentence)

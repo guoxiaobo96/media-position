@@ -344,8 +344,8 @@ class Trainer(transformers.Trainer):
             inputs_ori[k] = inputs[k][:size]
             inputs_aug[k] = inputs[k][size:]
 
-        outputs_ori, sequence_output_ori = model(**inputs_ori)
-        outputs_aug, sequence_output_aug = model(**inputs_aug)
+        outputs_ori, sequence_output_ori, _ = model(**inputs_ori)
+        outputs_aug, sequence_output_aug, _ = model(**inputs_aug)
         # Save past state if it exists
 
         if self.args.past_index >= 0:

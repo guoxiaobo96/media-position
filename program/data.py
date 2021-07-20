@@ -42,9 +42,6 @@ def get_dataset(
         return mlm_consistency_get_data(data_args, tokenizer, evaluate)
     elif training_args.loss_type in ['class_cos']:
         return class_consistency_get_data(data_args, tokenizer, evaluate)
-    elif data_args.data_type in ['sentence_random_replacement', 'sentence_chosen_replacement']:
-        return sentence_replacement_get_data(data_args, tokenizer)
-
 
 def mlm_get_dataset(
     args: DataArguments,
