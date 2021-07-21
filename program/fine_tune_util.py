@@ -405,7 +405,7 @@ class Trainer(transformers.Trainer):
             loss_ori = outputs_ori["loss"] if isinstance(outputs_ori, dict) else outputs_ori[0]
             loss_aug = outputs_aug["loss"] if isinstance(outputs_aug, dict) else outputs_aug[0]
 
-        loss = loss_ori+class_loss_ori+class_loss_aug+self.args.con_loss_scale*self._con_loss(sequence_output_ori,sequence_output_aug)
+        loss = loss_ori+class_loss_ori+class_loss_aug+ 1 - self.args.con_loss_scale*self._con_loss(sequence_output_ori,sequence_output_aug)
 
         return (loss, outputs_ori) if return_outputs else loss
 
