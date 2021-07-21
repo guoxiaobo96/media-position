@@ -360,12 +360,12 @@ class DataAugmentor(object):
 class CrossDataAugmentor(BasicDataAugementor):
     def __init__(self, misc_args: MiscArgument, data_args: DataArguments, aug_args: DataAugArguments) -> None:
         super().__init__(misc_args, data_args, aug_args)
-        self._augment_method_map = {'sentence_replacement': self._sentece_replacement}
+        self._augment_method_map = {'cross_sentence_replacement': self._sentece_replacement}
         self._cross_data = dict()
         self._data_prepare()
 
     def _data_prepare(self):
-        if self._aug_args.augment_type == 'sentence_replacement':
+        if self._aug_args.augment_type == 'cross_sentence_replacement':
             sentence_split_data = dict()
             for media, media_data in self._raw_data.items():
                 sentence_list = list()
