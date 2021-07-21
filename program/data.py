@@ -36,11 +36,15 @@ def get_dataset(
     evaluate: bool = False,
     cache_dir: Optional[str] = None,
 ) -> Union[LineByLineWithRefDataset, LineByLineTextDataset, TextDataset, ConcatDataset]:
-    if training_args.loss_type == 'mlm':
+    basic_loss_type = training_args.loss_type.split('_')[0]
+    add_loss_type = None
+    if len(training_args.loss_type.split('_')) > 1:
+        add_loss_type = training_args.loss_type.split('_')[1]
+    if basic_loss_type == 'mlm' and add_loss_type is None:
         return mlm_get_dataset(data_args, tokenizer, evaluate, cache_dir)
-    elif training_args.loss_type in ['mlm_supercon','mlm_cos']:
+    elif basic_loss_type == 'mlm' and add_loss_type is not None:
         return mlm_consistency_get_data(data_args, tokenizer, evaluate)
-    elif training_args.loss_type in ['class_cos']:
+    elif basic_loss_type == 'class':
         return class_consistency_get_data(data_args, tokenizer, evaluate)
 
 def mlm_get_dataset(

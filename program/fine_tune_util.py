@@ -228,6 +228,14 @@ class Trainer(transformers.Trainer):
         super().__init__(*args, **kwargs)
         self._contrastive_loss = SupConLoss()
         self._cosine_loss = CosineLoss()
+        self._consine_sim_loss = CosineSimLoss()
+
+        self.basic_loss_type = self.args.loss_type.split('_')[0]
+        self.add_loss_type = None
+        if len(self.args.loss_type.split('_')) > 1:
+            self.add_loss_type = self.args.loss_type.split('_')[1]
+
+
 
     def training_step(self, model: nn.Module, inputs: Dict[str, Union[torch.Tensor, Any]]) -> torch.Tensor:
         """
@@ -254,19 +262,21 @@ class Trainer(transformers.Trainer):
             loss_mb = smp_forward_backward(model, inputs, self.args.gradient_accumulation_steps, scaler=scaler)
             return loss_mb.reduce_mean().detach().to(self.args.device)
 
-        if self.args.loss_type == 'mlm':
+
+
+        if self.basic_loss_type == 'mlm' and self.add_loss_type is None:
             if self.use_amp:
                 with autocast():
                     loss = self.compute_loss(model, inputs)
             else:
                 loss = self.compute_loss(model, inputs)
-        elif self.args.loss_type in ['mlm_supercon','mlm_cos']:
+        elif self.basic_loss_type == 'mlm' and self.add_loss_type is not None:
             if self.use_amp:
                 with autocast():
                     loss = self.compute_loss_consistency(model, inputs)
             else:
                 loss = self.compute_loss_consistency(model, inputs)
-        elif self.args.loss_type in ['class_cos']:
+        elif self.basic_loss_type == 'class':
             if self.use_amp:
                 with autocast():
                     loss = self.compute_loss_class_consistency(model, inputs)
@@ -325,10 +335,12 @@ class Trainer(transformers.Trainer):
         """
         self._con_loss = None
 
-        if self.args.loss_type == 'mlm_supercon':
+        if self.add_loss_type == 'supercon':
             self._con_loss = self._contrastive_loss
-        elif self.args.loss_type == 'mlm_cos':
+        elif self.add_loss_type == 'cosdist':
             self._con_loss = self._cosine_loss
+        elif self.add_loss_type == 'cossim':
+            self._con_loss = self._consine_sim_loss
             
 
         if self.label_smoother is not None and "labels" in inputs:
@@ -371,10 +383,12 @@ class Trainer(transformers.Trainer):
         """
         self._con_loss = None
 
-        if self.args.loss_type == 'class_supercon':
+        if self.add_loss_type == 'supercon':
             self._con_loss = self._contrastive_loss
-        elif self.args.loss_type == 'class_cos':
+        elif self.add_loss_type == 'cosdist':
             self._con_loss = self._cosine_loss
+        elif self.add_loss_type == 'cossim':
+            self._con_loss = self._consine_sim_loss
             
 
         if self.label_smoother is not None and "labels" in inputs:
@@ -405,7 +419,9 @@ class Trainer(transformers.Trainer):
             loss_ori = outputs_ori["loss"] if isinstance(outputs_ori, dict) else outputs_ori[0]
             loss_aug = outputs_aug["loss"] if isinstance(outputs_aug, dict) else outputs_aug[0]
 
-        loss = loss_ori+class_loss_ori+class_loss_aug+ 1 - self.args.con_loss_scale*self._con_loss(sequence_output_ori,sequence_output_aug)
+        con_loss = self._con_loss(sequence_output_ori,sequence_output_aug)
+        class_loss = class_loss_ori+class_loss_aug
+        loss = self.args.ori_loss_scale*loss_ori+self.args.class_loss_scale*class_loss+self.args.con_loss_scale*con_loss
 
         return (loss, outputs_ori) if return_outputs else loss
 
@@ -511,6 +527,14 @@ class CosineLoss(nn.Module):
 
     def forward(self, features_ori, features_aug):
         loss = 1 - F.cosine_similarity(features_ori,features_aug).mean()
+        return loss
+
+class CosineSimLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, features_ori, features_aug):
+        loss = F.cosine_similarity(features_ori,features_aug).mean()
         return loss
 
 class SentenceReplacementDataset(torch.utils.data.Dataset):

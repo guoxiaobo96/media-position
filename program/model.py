@@ -135,6 +135,12 @@ class MLMModel(DeepModel):
         self._prepare_model()
 
     def _load_data_collator(self) -> None:
+
+        self.basic_loss_type =self._training_args.loss_type.split('_')[0]
+        self.add_loss_type = None
+        if len(self._training_args.loss_type.split('_')) > 1:
+            self.add_loss_type = self._training_args.loss_type.split('_')[1]
+        
         if self._config.model_type == "xlnet":
             self._data_collator = DataCollatorForPermutationLanguageModeling(
                 tokenizer=self.tokenizer,
@@ -146,21 +152,21 @@ class MLMModel(DeepModel):
                 self._data_collator = DataCollatorForWholeWordMask(
                     tokenizer=self.tokenizer, mlm_probability=self._data_args.mlm_probability
                 )
-            elif self._training_args.loss_type in ['mlm_supercon','mlm_cos']:
+            elif self.basic_loss_type == 'mlm' and self.add_loss_type is None:
+                self._data_collator_train = DataCollatorForLanguageModeling(
+                    tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
+                )
+                self._data_collator_eval = DataCollatorForLanguageModeling(
+                    tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
+                )                
+            elif self.basic_loss_type == 'mlm' and self.add_loss_type is not None:
                 self._data_collator_train = DataCollatorForLanguageModelingConsistency(
                     tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
                 )
                 self._data_collator_eval = DataCollatorForLanguageModeling(
                     tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
                 )
-            elif self._training_args.loss_type in ['mlm']:
-                self._data_collator_train = DataCollatorForLanguageModeling(
-                    tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
-                )
-                self._data_collator_eval = DataCollatorForLanguageModeling(
-                    tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
-                )
-            elif self._training_args.loss_type in ['class_cos']:
+            elif self.basic_loss_type == 'class':
                 self._data_collator_train = DataCollatorForClassConsistency(
                     tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
                 )
