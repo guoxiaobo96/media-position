@@ -419,6 +419,7 @@ class Trainer(transformers.Trainer):
             loss_ori = outputs_ori["loss"] if isinstance(outputs_ori, dict) else outputs_ori[0]
             loss_aug = outputs_aug["loss"] if isinstance(outputs_aug, dict) else outputs_aug[0]
 
+        sequence_output_aug = sequence_output_aug.detach()
         con_loss = self._con_loss(sequence_output_ori,sequence_output_aug)
         class_loss = class_loss_ori+class_loss_aug
         loss = self.args.ori_loss_scale*loss_ori+self.args.class_loss_scale*class_loss+self.args.con_loss_scale*con_loss

@@ -105,7 +105,7 @@ class SelfDataAugmentor(BasicDataAugementor):
     def __init__(self, misc_args: MiscArgument, data_args: DataArguments, aug_args: DataAugArguments) -> None:
         super().__init__(misc_args, data_args, aug_args)
         self._augment_method_map = {'duplicate': self._duplicate, 'no_augmentation': self._no_augmentation, 'sentence_order_replacement': self._sentence_order_replacement,
-                                    'span_cutoff': self._span_cutoff, 'word_order_replacement': self._word_order_replacement, 'word_replacement': self._word_replacement,'sentence_replacement':self._sentence_replacement}
+                                    'span_cutoff': self._span_cutoff, 'word_order_replacement': self._word_order_replacement, 'word_replacement': self._word_replacement,'sentence_replacement':self._sentence_replacement,'combine_aug':self._combine_aug}
         self._data_prepare()
 
     def _data_prepare(self):
@@ -136,6 +136,8 @@ class SelfDataAugmentor(BasicDataAugementor):
                                 window=5, min_count=1, workers=4)
             elif augment_type in ['sentence_replacement']:
                 model = self._cross_data[media]
+            else:
+                model = None
 
             for index, paragraph in enumerate(train_data):
                 if paragraph == '':
@@ -263,6 +265,18 @@ class SelfDataAugmentor(BasicDataAugementor):
             augmented_data.append(augmented_sentence)
             existing_data.append(augmented_sentence)
         return augmented_data
+
+    def _combine_aug(self, paragraph, model):
+        aug_list = ['span_cutoff', 'sentence_order_replacement']
+        if len(sent_tokenize(paragraph))>1:
+            aug_chosen = random.choice(aug_list)
+        else:
+            aug_chosen = 'span_cutoff'
+        if aug_chosen == 'span_cutoff':
+            augmented_data = self._span_cutoff(paragraph, model)
+        elif aug_chosen == 'sentence_order_replacement':
+            augmented_data = self._sentence_order_replacement(paragraph, model)
+        return augmented_data 
 
 
     def _back_translation(self):
@@ -409,6 +423,7 @@ class CrossDataAugmentor(BasicDataAugementor):
         existing_data = [original_paragraph]
         augmented_data = list()
         media_list = list(self._cross_data.keys())
+        media_list.remove(media)
 
         for _ in range(self._aug_args.multiple_number - 1):
             cross_media = random.choice(media_list)

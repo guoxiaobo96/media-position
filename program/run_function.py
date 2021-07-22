@@ -508,7 +508,7 @@ def data_augemnt(
     data_args:DataArguments,
     aug_args: DataAugArguments
 ):
-    if aug_args.augment_type in ['duplicate','sentence_order_replacement','span_cutoff','word_order_replacement','word_replacement', 'sentence_replacement']:
+    if aug_args.augment_type in ['duplicate','sentence_order_replacement','span_cutoff','word_order_replacement','word_replacement', 'sentence_replacement', 'combine_aug']:
         data_augmentor = SelfDataAugmentor(misc_args, data_args, aug_args)
     elif aug_args.augment_type in ['cross_sentence_replacement']:
         data_augmentor = CrossDataAugmentor(misc_args, data_args, aug_args)
