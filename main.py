@@ -1,7 +1,7 @@
 from program.config import AnalysisArguments, get_config, DataArguments, MiscArgument, ModelArguments,TrainingArguments, DataAugArguments, BaselineArguments
 from program.data import extract_data
 from program.util import prepare_dirs_and_logger, save_config
-from program.run_function import train_lm, analysis, label_score_predict, label_score_analysis, data_augemnt, train_mask_score_model, eval_lm, sentence_replacement_train, generate_baseline
+from program.run_function import train_lm, analysis, label_score_predict, label_score_analysis, data_augemnt, train_mask_score_model, eval_lm,  generate_baseline, train_classifier
 from program.data_collect import twitter_collect, article_collect, data_collect
 
 
@@ -22,9 +22,8 @@ def main(
         train_lm(model_args, data_args, training_args)
     elif misc_args.task == 'eval_lm':
         eval_lm(model_args, data_args, training_args)
-    elif misc_args.task == 'train_sentence_replacement':
-        sentence_replacement_train(
-            model_args, data_args, training_args)
+    elif misc_args.task == 'train_classifier':
+        train_classifier(model_args, data_args, training_args)
     elif misc_args.task == 'train_mask_score_model':
         train_mask_score_model(model_args, data_args,
                                training_args, analysis_args)

@@ -4,6 +4,7 @@ import json
 import os
 import joblib
 import matplotlib
+from transformers.utils.dummy_pt_objects import BertForSequenceClassification
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 import numpy as np
@@ -11,7 +12,7 @@ from sklearn.metrics.pairwise import euclidean_distances
 from tqdm import tqdm
 
 from .config import BaselineArguments, DataArguments, DataAugArguments, FullArticleMap, MiscArgument, ModelArguments, TrainingArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap, BaselineArticleMap
-from .model import MLMModel, SentenceReplacementModel, NERModel
+from .model import MLMModel, SentenceReplacementModel, NERModel, ClassifyModel
 from .data import get_dataset, get_analysis_data, get_label_data, get_mask_score_data
 from .analysis import ClusterAnalysis,DistanceAnalysis,ClusterCompare
 from .ner_util import NERDataset
@@ -66,14 +67,25 @@ def eval_lm(
     record_file = os.path.join(data_args.data_dir.split('_')[-1].split('/')[0],data_args.dataset)
     model.eval(eval_dataset, record_file, verbose=False)
 
-def sentence_replacement_train(
+def train_classifier(
     model_args: ModelArguments,
     data_args: DataArguments,
     training_args: TrainingArguments,
 ) -> Dict:
-    model = SentenceReplacementModel(model_args, data_args, training_args)
-    train_dataset, eval_dataset, number_label = get_dataset(training_args, data_args, model.tokenizer)
-    model.train(train_dataset, eval_dataset, number_label)
+    model = ClassifyModel(model_args, data_args, training_args)
+    train_dataset = (
+        get_dataset(training_args, data_args, model_args, tokenizer=model.tokenizer,
+                    cache_dir=model_args.cache_dir) if training_args.do_train else None
+    )
+    eval_dataset = (
+        get_dataset(training_args, data_args, model_args, tokenizer=model.tokenizer,
+                    evaluate=True, cache_dir=model_args.cache_dir)
+        if training_args.do_eval
+        else None
+    )
+    model.train(train_dataset, eval_dataset)
+
+
 
 def analysis(
     misc_args: MiscArgument,

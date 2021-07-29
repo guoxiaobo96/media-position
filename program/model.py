@@ -1,10 +1,14 @@
 import logging
+
+from program.data_collect import data_collect
 import warnings
 import math
 import os
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 from glob import glob
+from sklearn.metrics import precision_recall_fscore_support, accuracy_score
+
 from typing import Any, Dict, Optional, Tuple, Union
 from tokenizers import Tokenizer
 
@@ -28,6 +32,7 @@ from transformers import (
     AutoModelForTokenClassification,
     AutoModelWithLMHead,
     BertConfig,
+    BertForMultipleChoice,
     BertForTokenClassification,
     BertForSequenceClassification,
     BertModel,
@@ -36,6 +41,7 @@ from transformers import (
     DataCollatorForPermutationLanguageModeling,
     DataCollatorForTokenClassification,
     DataCollatorForWholeWordMask,
+    DataCollatorWithPadding,
     HfArgumentParser,
     LineByLineTextDataset,
     LineByLineWithRefDataset,
@@ -55,6 +61,7 @@ from .config import DataArguments, ModelArguments, TrainingArguments
 from .data import get_dataset
 from .ner_util import NERDataset
 from .fine_tune_util import DataCollatorForClassConsistency, SentenceReplacementDataset, DataCollatorForLanguageModelingConsistency, Trainer
+from .classify_util import ClassifyDataset
 
 
 class DeepModel(ABC):
@@ -99,7 +106,7 @@ class DeepModel(ABC):
             self._config = CONFIG_MAPPING[self._model_args.model_type]()
             self._logger.warning(
                 "You are instantiating a new config instance from scratch.")
-
+        self._config.num_labels = 10
     def _load_tokenizer(self) -> None:
         if self._model_args.tokenizer_name:
             self.tokenizer = AutoTokenizer.from_pretrained(
@@ -278,6 +285,139 @@ class MLMModel(DeepModel):
         for i, sentence in enumerate(sentence_list):
             result_dict[sentence] = results[i]
         return result_dict
+
+
+class ClassifyModel(DeepModel):
+    def __init__(
+            self,
+            model_args: ModelArguments,
+            data_args: DataArguments,
+            training_args: TrainingArguments,
+    ) -> None:
+        super().__init__(model_args, data_args, training_args)
+        self._language: str = ''
+        self._fill_mask = None
+        self._prepare_model()
+
+    def _load_data_collator(self) -> None:
+        self._data_collator_train = DataCollatorWithPadding(tokenizer=self.tokenizer)
+        self._data_collator_eval = DataCollatorWithPadding(tokenizer=self.tokenizer)
+
+    def _load_model(self) -> None:
+        self._config.return_dict = True
+        if self._model_args.model_name_or_path:
+            self._model = BertForSequenceClassification.from_pretrained(
+                self._model_args.model_name_or_path,
+                from_tf=bool(".ckpt" in self._model_args.model_name_or_path),
+                config=self._config,
+                cache_dir=self._model_args.cache_dir,
+            )
+        else:
+            self._logger.info("Training new model from scratch")
+            self._model = BertForSequenceClassification.from_config(self._config)
+        self._model.resize_token_embeddings(len(self.tokenizer))
+
+    def _prepare_model(self) -> None:
+        self._load_config()
+        self._load_tokenizer()
+        self._load_model()
+        self._load_data_collator()
+
+    def train(
+        self,
+        train_dataset: Union[LineByLineWithRefDataset,
+                             LineByLineTextDataset, TextDataset, ConcatDataset],
+        eval_dataset: Union[LineByLineWithRefDataset,
+                           LineByLineTextDataset, TextDataset, ConcatDataset]
+    ) -> None:
+        self._model.train()
+        self._trainer = transformers.Trainer(
+            model=self._model,
+            args=self._training_args,
+            data_collator=self._data_collator_train,
+            train_dataset=train_dataset,
+            eval_dataset=eval_dataset,
+            compute_metrics = compute_metrics
+        )
+        if self._training_args.do_train:
+            self._trainer.train(model_path=self._model_path)
+            self._trainer.save_model()
+            if self._trainer.is_world_process_zero():
+                self.tokenizer.save_pretrained(self._training_args.output_dir)
+        if self._training_args.do_eval:
+            self._eval()
+
+    def eval(
+        self,
+        eval_dataset: Union[LineByLineWithRefDataset,
+                           LineByLineTextDataset, TextDataset, ConcatDataset],
+        record_file: str = None,
+        verbose :bool = True,
+    ) -> None:
+        if not verbose:
+            self._training_args.disable_tqdm = True
+        self._trainer = Trainer(
+            model=self._model,
+            args=self._training_args,
+            data_collator=self._data_collator_eval,
+            eval_dataset=eval_dataset,
+            compute_metrics = compute_metrics
+        )
+        self._eval(record_file, verbose)
+
+    def _eval(self, record_file = None, verbose=True) -> Dict:
+        results = {}
+        if verbose:
+            self._logger.info("*** Evaluate ***")
+
+        eval_output = self._trainer.evaluate()
+        result = eval_output
+
+        if verbose:
+            self._logger.info("***** Eval results *****")
+            for key in sorted(result.keys()):
+                self._logger.info("  %s = %s", key, str(result[key]))
+
+        output_eval_file = self._training_args.output_dir
+        if record_file is not None:
+            output_eval_file = os.path.join(output_eval_file, record_file)
+        if not os.path.exists(output_eval_file):
+            os.makedirs(output_eval_file)
+        output_eval_file = os.path.join(output_eval_file, "eval_results_lm.txt")
+
+        with open(output_eval_file, "w") as writer:
+            for key in sorted(result.keys()):
+                writer.write("%s = %s\n" % (key, str(result[key])))
+
+        results.update(result)
+
+        return results
+
+    def predict(self, sentence_list, batch_size=64) -> Dict:
+        if self._fill_mask is None:
+            self._model.eval()
+            self._fill_mask = pipeline(task="fill-mask", model=self._model,
+                                tokenizer=self.tokenizer, device=0, top_k=10)
+        result_dict = dict()
+        results = self._fill_mask(sentence_list)
+        if len(sentence_list) == 1:
+            results = [results]
+        for i, sentence in enumerate(sentence_list):
+            result_dict[sentence] = results[i]
+        return result_dict
+
+
+def compute_metrics(pred):
+    labels = pred.label_ids
+    preds = pred.predictions.argmax(-1)
+    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='weighted')
+    acc = accuracy_score(labels, preds)
+    return {
+        'accuracy': acc,
+        'f1': f1,
+        'precision': precision,
+        'recall': recall
+    }
 
 
 class SentenceReplacementModel(DeepModel):

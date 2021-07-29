@@ -379,9 +379,10 @@ def get_config() -> Tuple:
         baseline_args: BaselineArguments
     ) -> None:
 
-        data_args.data_type = os.path.join(aug_args.augment_type, str(aug_args.multiple_number))
-        if aug_args.augment_type == 'original':
-            data_args.data_type = aug_args.augment_type
+        if aug_args.augment_type != 'original':
+            data_args.data_type = os.path.join(aug_args.augment_type, str(aug_args.multiple_number))
+        elif data_args.data_type=='':
+            data_args.data_type = 'original'
 
         data_args.data_path = os.path.join(
             data_args.data_dir, os.path.join(data_args.dataset, data_args.data_type))
