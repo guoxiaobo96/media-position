@@ -1,4 +1,3 @@
-from program.classify_util import ClassifyDataset
 from transformers.training_args import TrainingArguments
 from torch.utils.data import ConcatDataset, dataset
 import os
@@ -23,6 +22,7 @@ from .fine_tune_util import ClassConsistencyDataset, SentenceReplacementDataset,
 from .util import prepare_dirs_and_logger
 from .config import AnalysisArguments, DataArguments, FullArticleMap, MiscArgument, ModelArguments, SourceMap, TrustMap, get_config, ArticleMap, TwitterMap, BaselineArticleMap
 from .ner_util import NERDataset, encode_scores
+from .masked_token_util import ClassifyDataset
 
 
 def extract_data():

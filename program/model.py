@@ -58,10 +58,8 @@ from transformers.models.bert.modeling_bert import BertPooler
 
 
 from .config import DataArguments, ModelArguments, TrainingArguments
-from .data import get_dataset
 from .ner_util import NERDataset
 from .fine_tune_util import DataCollatorForClassConsistency, SentenceReplacementDataset, DataCollatorForLanguageModelingConsistency, Trainer
-from .classify_util import ClassifyDataset
 
 
 class DeepModel(ABC):
@@ -393,19 +391,34 @@ class ClassifyModel(DeepModel):
 
         return results
 
-    def predict(self, sentence_list, batch_size=64) -> Dict:
-        if self._fill_mask is None:
+    def predict(self, sentence) -> Dict:
+        # if self._fill_mask is None:
+        #     self._model.eval()
+        #     self._fill_mask = pipeline("text-classification", model=self._model,
+        #                         tokenizer=self.tokenizer, device=0)
+        # result_dict = dict()
+        # results = self._fill_mask(sentence)
+        if self._model.device.type != "cuda":
             self._model.eval()
-            self._fill_mask = pipeline(task="fill-mask", model=self._model,
-                                tokenizer=self.tokenizer, device=0, top_k=10)
-        result_dict = dict()
-        results = self._fill_mask(sentence_list)
-        if len(sentence_list) == 1:
-            results = [results]
-        for i, sentence in enumerate(sentence_list):
-            result_dict[sentence] = results[i]
-        return result_dict
-
+            self._model.to("cuda:0")
+        inputs = self.tokenizer(
+            sentence,
+            add_special_tokens=True,
+            return_tensors = 'pt',
+            padding=True
+        )
+        inputs = {
+            name: tensor.to("cuda:0") if isinstance(tensor, torch.Tensor) else tensor
+            for name, tensor in inputs.items()
+        }
+        with torch.no_grad():
+            result = self._model(**inputs,output_attentions=True)
+        result = {
+            name: tensor.to("cpu").numpy() if isinstance(tensor, torch.Tensor) else tensor
+            for name, tensor in result.items()
+        }
+        result['tokenized_inputs'] = inputs
+        return result
 
 def compute_metrics(pred):
     labels = pred.label_ids
