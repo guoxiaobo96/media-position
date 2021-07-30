@@ -4,7 +4,7 @@ result_dir = "/data/xiaobo/media-position"
 
 topic_list = ["obamacare"]
 loss_list = ["mlm_cosdist", "class_cossim"]
-augmentation_list = ["no_augmentation", "duplicate","sentence_order_replacement","span_cutoff","word_order_replacement", "word_replacement","sentence_replacement", "cross_sentence_replacement"]
+augmentation_list = ["no_augmentation", "duplicate","sentence_order_replacement","span_cutoff","word_order_replacement", "word_replacement","sentence_replacement", "cross_sentence_replacement", "combine_aug"]
 
 result = dict()
 
