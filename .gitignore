@@ -14,3 +14,4 @@ log/*/*/dict/*
 log/*/*/model/*
 *.csv
 transformers/*
+log/obamacare/*/*/*/json/*.json

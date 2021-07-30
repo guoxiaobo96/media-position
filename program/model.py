@@ -133,10 +133,12 @@ class MLMModel(DeepModel):
             model_args: ModelArguments,
             data_args: DataArguments,
             training_args: TrainingArguments,
+            vanilla_model = False
     ) -> None:
         super().__init__(model_args, data_args, training_args)
         self._language: str = ''
         self._fill_mask = None
+        self._vanilla_model = vanilla_model
         self._prepare_model()
 
     def _load_data_collator(self) -> None:
@@ -184,12 +186,20 @@ class MLMModel(DeepModel):
     def _load_model(self) -> None:
         self._config.return_dict = True
         if self._model_args.model_name_or_path:
-            self._model = BertForMaskedLM.from_pretrained(
-                self._model_args.model_name_or_path,
-                from_tf=bool(".ckpt" in self._model_args.model_name_or_path),
-                config=self._config,
-                cache_dir=self._model_args.cache_dir,
-            )
+            if not self._vanilla_model:
+                self._model = BertForMaskedLM.from_pretrained(
+                    self._model_args.model_name_or_path,
+                    from_tf=bool(".ckpt" in self._model_args.model_name_or_path),
+                    config=self._config,
+                    cache_dir=self._model_args.cache_dir,
+                )
+            else:
+                self._model = transformers.BertForMaskedLM.from_pretrained(
+                    self._model_args.model_name_or_path,
+                    from_tf=bool(".ckpt" in self._model_args.model_name_or_path),
+                    config=self._config,
+                    cache_dir=self._model_args.cache_dir,
+                )
         else:
             self._logger.info("Training new model from scratch")
             self._model = BertForMaskedLM.from_config(self._config)
