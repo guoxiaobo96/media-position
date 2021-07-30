@@ -22,6 +22,7 @@ from .fine_tune_util import ClassConsistencyDataset, SentenceReplacementDataset,
 from .util import prepare_dirs_and_logger
 from .config import AnalysisArguments, DataArguments, FullArticleMap, MiscArgument, ModelArguments, SourceMap, TrustMap, get_config, ArticleMap, TwitterMap, BaselineArticleMap
 from .ner_util import NERDataset, encode_scores
+from .masked_token_util import ClassifyDataset
 
 
 def extract_data():
@@ -40,12 +41,16 @@ def get_dataset(
     add_loss_type = None
     if len(training_args.loss_type.split('_')) > 1:
         add_loss_type = training_args.loss_type.split('_')[1]
-    if basic_loss_type == 'mlm' and add_loss_type is None:
-        return mlm_get_dataset(data_args, tokenizer, evaluate, cache_dir)
-    elif basic_loss_type == 'mlm' and add_loss_type is not None:
-        return mlm_consistency_get_data(data_args, tokenizer, evaluate)
+    if basic_loss_type == 'mlm':
+        if add_loss_type is None:
+            return mlm_get_dataset(data_args, tokenizer, evaluate, cache_dir)
+        else:
+            return mlm_consistency_get_data(data_args, tokenizer, evaluate)
     elif basic_loss_type == 'class':
-        return class_consistency_get_data(data_args, tokenizer, evaluate)
+        if add_loss_type is None:
+            return class_get_data(data_args,tokenizer,evaluate)
+        else:
+            return class_consistency_get_data(data_args, tokenizer, evaluate)
 
 def mlm_get_dataset(
     args: DataArguments,
@@ -145,6 +150,34 @@ def mlm_consistency_get_data(
 
     return dataset
 
+def class_get_data(
+    data_args: DataArguments,
+    tokenizer: BertTokenizer,
+    evaluate: bool
+):
+    train_file = os.path.join(data_args.data_path, 'en.train')
+    eval_file = os.path.join(data_args.data_path, 'en.valid')
+
+    if not evaluate:
+        file = train_file
+    else:
+        file = eval_file
+
+
+    data = {'sentence':[],'label':[]}
+    with open(file, mode='r', encoding='utf8') as fp:
+        for line in fp.readlines():
+            item = json.loads(line.strip())
+            sentence = item['sentence']
+            label = item['label']
+            data['sentence'].append(sentence)
+            data['label'].append(label)
+
+    encodings = tokenizer(
+        data['sentence'], padding=False, truncation=True)
+    dataset = ClassifyDataset(encodings,data['label'])
+
+    return dataset
 
 def class_consistency_get_data(
     data_args: DataArguments,
