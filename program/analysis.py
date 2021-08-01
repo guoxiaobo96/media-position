@@ -562,8 +562,8 @@ class ClusterCompare(object):
         basic_distance_matrix = np.zeros((len(cluster_list)+1,len(cluster_list)+1))
 
         for cluster in cluster_list:
-            if len(cluster) ==  len(cluster_list) + 1:
-                continue
+            # if len(cluster) ==  len(cluster_list) + 1:
+            #     continue
             for i in cluster:
                 for j in cluster:
                     if i != j:
@@ -574,8 +574,8 @@ class ClusterCompare(object):
                 distance_matrix[i] = distance_matrix[i] / temp
 
         for cluster in base_cluster_list:
-            if len(cluster) ==  len(cluster_list) + 1:
-                continue
+            # if len(cluster) ==  len(cluster_list) + 1:
+            #     continue
             for i in cluster:
                 for j in cluster:
                     if i != j:
