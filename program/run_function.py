@@ -388,6 +388,8 @@ def label_score_analysis(
                 length = len(k.split(' '))
                 error_count += 1
                 continue
+        if misc_args.global_debug and index > 100:
+            break
     analysis_data['media_average'] = dict()
     print("The total number is {}".format(index))
 
