@@ -445,22 +445,10 @@ def label_score_analysis(
         for k, v in analysis_result.items():
             label_list, data = v
             _draw_heatmap(data, label_list, label_list)
-            # data = pd.DataFrame(v,columns=k,index=k)
-            # sns.heatmap(data)
             plt_file = os.path.join(analysis_args.analysis_result_dir,
                                     analysis_args.analysis_encode_method+'_'+method+'_' + k.split('.')[0]+'.png')
             plt.savefig(plt_file, bbox_inches='tight')
             plt.close()
-        # with open(os.path.join(analysis_args.analysis_result_dir, analysis_args.analysis_encode_method+'_'+method+'.csv'), mode='w',encoding='utf8') as fp:
-        #     title = 'country,'
-        #     for i in range(len(analysis_result)):
-        #         title = title + str(i+1)+','
-        #     fp.write(title+'\n')
-        #     for country, distance_list in conclusion.items():
-        #         record = country+','
-        #         for i in range(len(distance_list)):
-        #             record = record+str(distance_list[str(i+1)+'.json'])+','
-        #         fp.write(record+'\n')
     else:
         base_model = joblib.load('log/baseline/model/baseline_trust_article.c')
         model_list['base'] = base_model

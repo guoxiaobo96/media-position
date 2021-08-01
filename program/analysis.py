@@ -477,7 +477,7 @@ class ClusterCompare(object):
 
     def _build_graph(self, model, label_list=None) -> None:
         if self._analysis_args.graph_kernel == 'cluster':
-            if self._analysis_args.graph_distance != 'count':
+            if self._analysis_args.graph_distance not in ['count','co_occurance']:
                 return self._calculate_leaf_distance(model)
             else:
                 return self._cluster_generate(model)
@@ -544,6 +544,8 @@ class ClusterCompare(object):
                         if cluster not in graph_list[base_index]:
                             count += 1
                     distance = count / (len(graph_list[base_index]) - 1)
+                elif self._analysis_args.graph_distance == 'co_occurance':
+                    distance = self._co_occurance_distance(graph_list[i],graph_list[base_index])
                 elif self._analysis_args.graph_distance == 'edit':
                     distance = simple_distance(
                         graph_list[base_index], graph_list[i])
@@ -553,6 +555,34 @@ class ClusterCompare(object):
 
                 result_dict[name] = distance
         return result_dict
+
+    def _co_occurance_distance(self, cluster_list, base_cluster_list):
+        cluster_number = len(cluster_list) - 1
+        distance_matrix = np.zeros((len(cluster_list)+1,len(cluster_list)+1))
+        basic_distance_matrix = np.zeros((len(cluster_list)+1,len(cluster_list)+1))
+
+        for cluster in cluster_list:
+            for i in cluster:
+                for j in cluster:
+                    if i != j:
+                        distance_matrix[i][j] += 1
+        for i in range(len(cluster_list)):
+            temp = np.sum(distance_matrix[i],axis=0)
+            if temp != 0:
+                distance_matrix[i] = distance_matrix[i] / temp
+
+        for cluster in base_cluster_list:
+            for i in cluster:
+                for j in cluster:
+                    if i != j:
+                        basic_distance_matrix[i][j] += 1
+        for i in range(len(cluster_list)):
+            basic_distance_matrix[i] = basic_distance_matrix[i] / np.sum(basic_distance_matrix[i],axis=0)
+        distance = 0
+        for i in range(len(distance_matrix)):
+            distance += cosine_distances(distance_matrix[i].reshape(1,-1), basic_distance_matrix[i].reshape(1,-1))
+        return distance[0][0]
+     
 
     def compare(self, model_dict: Dict[str, AgglomerativeClustering], label_list=None) -> None:
         graph_list = list()
