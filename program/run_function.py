@@ -448,10 +448,10 @@ def label_score_analysis(
             plt.savefig(plt_file, bbox_inches='tight')
             plt.close()
     else:
-        base_model = joblib.load('log/baseline/model/baseline_trust_article.c')
+        base_model = joblib.load('log/baseline/model/baseline_source_article.c')
         model_list['base'] = base_model
         base_model = joblib.load(
-            'log/baseline/model/baseline_source_article.c')
+            'log/baseline/model/baseline_trust_article.c')
         model_list['distance_base'] = base_model
         cluster_compare = ClusterCompare(misc_args, analysis_args)
         analysis_result = cluster_compare.compare(model_list)
