@@ -58,8 +58,8 @@ def distance_calculate(cluster_list):
     distance_matrix = np.zeros((len(cluster_list)+1,len(cluster_list)+1))
 
     for cluster in cluster_list:
-        if len(cluster) ==  len(cluster_list) + 1:
-            continue
+        # if len(cluster) ==  len(cluster_list) + 1:
+        #     continue
         for i in cluster:
             for j in cluster:
                 if i != j:
