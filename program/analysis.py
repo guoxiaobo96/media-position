@@ -536,7 +536,7 @@ class ClusterCompare(object):
 
             graph_list = gk.fit_transform(graph_list)
         base_index = name_list.index('base')
-        for i, name in enumerate(tqdm(name_list)):
+        for i, name in enumerate(tqdm(name_list,desc="Calculate distance")):
             if i != base_index:
                 if self._analysis_args.graph_distance == 'count':
                     count = 0
