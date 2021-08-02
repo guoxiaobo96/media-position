@@ -391,7 +391,6 @@ def label_score_analysis(
             break
     analysis_data['media_average'] = dict()
 
-
     # analysis_data['concatenate'] = dict()
     # for k, v in analysis_data.items():
     #     for media, item in v.items():

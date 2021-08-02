@@ -5,8 +5,10 @@ from sklearn.cluster import AgglomerativeClustering
 from matplotlib import pyplot as plt
 import csv
 import numpy as np
-from scipy.cluster.hierarchy import dendrogram, linkage
+from scipy.cluster.hierarchy import dendrogram
+from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import cosine_distances, cosine_similarity
+from sklearn.metrics import adjusted_rand_score
 import seaborn as sns
 import pandas as pd
 import joblib
@@ -74,6 +76,8 @@ def temp():
 
     source_model = joblib.load(source_model)
     trust_model = joblib.load(trust_model)
+    score = adjusted_rand_score(source_model.labels_,trust_model.labels_)
+    print(score)
     source_cluster_list = cluster_generate(source_model)
     trust_cluser_list = cluster_generate(trust_model)
     source_distance = distance_calculate(source_cluster_list)
@@ -83,57 +87,58 @@ def temp():
         distance += cosine_distances(source_distance[i].reshape(1,-1), trust_distance[i].reshape(1,-1))
     print(distance[0][0])
 
-# def build_baseline(data_type, label_type):
-#     data_map = BaselineArticleMap() if data_type=='article' else TwitterMap()
-#     label_list = list(data_map.name_to_dataset.keys())
+def build_baseline(data_type, label_type):
+    data_map = BaselineArticleMap() if data_type=='article' else TwitterMap()
+    label_list = list(data_map.name_to_dataset.keys())
 
-#     data = list()
-#     data_temp = dict()
-#     with open('./analysis/baseline/baseline_'+label_type+'_'+data_type+'.csv', mode='r', encoding='utf8') as fp:
-#         reader = csv.reader(fp)
-#         header = next(reader)
-#         for row in reader:
-#             data_temp[row[0]] = [float(x.strip()) for x in row[1:]]
-#     for k, _ in data_map.name_to_dataset.items():
-#         try:
-#             data.append(data_temp[k])
-#         except:
-#             print(k)
-#     analyzer = AgglomerativeClustering(
-#         n_clusters=2, compute_distances=True, affinity='cosine', linkage='single')
-#     cluster_result = dict()
-#     clusters = analyzer.fit(data)
-#     labels = clusters.labels_
-#     for i, label in enumerate(labels.tolist()):
-#         if label not in cluster_result:
-#             cluster_result[label] = list()
-#         cluster_result[label].append(label_list[i])
+    data = list()
+    data_temp = dict()
+    with open('./analysis/baseline/baseline_'+label_type+'_'+data_type+'.csv', mode='r', encoding='utf8') as fp:
+        reader = csv.reader(fp)
+        header = next(reader)
+        for row in reader:
+            data_temp[row[0]] = [float(x.strip()) for x in row[1:]]
+    for k, _ in data_map.name_to_dataset.items():
+        try:
+            data.append(data_temp[k])
+        except:
+            print(k)
+    analyzer = AgglomerativeClustering(
+        n_clusters=5, compute_distances=True, affinity='cosine', linkage='single')
+    # analyzer = KMeans(n_clusters=3)
+    cluster_result = dict()
+    clusters = analyzer.fit(data)
+    labels = clusters.labels_
+    for i, label in enumerate(labels.tolist()):
+        if label not in cluster_result:
+            cluster_result[label] = list()
+        cluster_result[label].append(label_list[i])
 
-#     if not os.path.exists('./log/baseline/model/'):
-#         os.makedirs('./log/baseline/model/')
-#     model_file = './log/baseline/model/baseline_'+label_type+'_'+data_type+'.c'
-#     joblib.dump(analyzer, model_file)
-#     plt.title('Baseline')
-#     plot_dendrogram(analyzer, orientation='right',
-#                     labels=label_list)
-#     plt_file = './analysis/baseline/baseline_'+label_type+'_'+data_type+'.png'
-#     plt.savefig(plt_file, bbox_inches='tight')
-#     plt.close()
+    if not os.path.exists('./log/baseline/model/'):
+        os.makedirs('./log/baseline/model/')
+    model_file = './log/baseline/model/baseline_'+label_type+'_'+data_type+'.c'
+    joblib.dump(analyzer, model_file)
+    plt.title('Baseline')
+    plot_dendrogram(analyzer, orientation='right',
+                    labels=label_list)
+    plt_file = './analysis/baseline/baseline_'+label_type+'_'+data_type+'.png'
+    plt.savefig(plt_file, bbox_inches='tight')
+    plt.close()
 
-#     # data = cosine_similarity(data)
-#     # data = pd.DataFrame(data,columns=label_list,index=label_list)
-#     # sns.heatmap(data)
-#     # plt_file = './analysis/baseline/baseline_'+data_type+'_heat.png'
-#     # plt.savefig(plt_file, bbox_inches='tight')
-#     # plt.close()
+    # data = cosine_similarity(data)
+    # data = pd.DataFrame(data,columns=label_list,index=label_list)
+    # sns.heatmap(data)
+    # plt_file = './analysis/baseline/baseline_'+data_type+'_heat.png'
+    # plt.savefig(plt_file, bbox_inches='tight')
+    # plt.close()
 
 
 
 
 def main():
-    temp()
-    # for data_type in ['article']:
-    #     for label_type in ['source', 'trust']:
-    #         build_baseline(data_type, label_type)
+    for data_type in ['article']:
+        for label_type in ['source', 'trust']:
+            build_baseline(data_type, label_type)
+    # temp()
 if __name__ == '__main__':
     main()
