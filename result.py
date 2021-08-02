@@ -3,7 +3,7 @@ import os
 result_dir = "/data/xiaobo/media-position"
 
 topic_list = ["obamacare"]
-loss_list = ["mlm_cosdist", "class_cossim"]
+loss_list = ["mlm_cosdist", "class_cossim","mlm_supercon"]
 augmentation_list = ["no_augmentation", "duplicate","sentence_order_replacement","span_cutoff","word_order_replacement", "word_replacement","sentence_replacement", "cross_sentence_replacement", "combine_aug"]
 
 result = dict()

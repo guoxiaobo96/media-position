@@ -369,11 +369,10 @@ def label_score_analysis(
     if not os.path.exists(analysis_args.analysis_result_dir):
         os.makedirs(analysis_args.analysis_result_dir)
 
-    print("Load data")
     error_count = 0
     analysis_data_temp = get_label_data(misc_args, analysis_args, data_args)
     index = 0
-    for k, item in tqdm(analysis_data_temp.items()):
+    for k, item in tqdm(analysis_data_temp.items(), desc="Load data"):
         for position, v in item.items():
             if len(v) != len(data_map.dataset_list):
                 continue
@@ -404,7 +403,6 @@ def label_score_analysis(
     #             else:
     #                 analysis_data['concatenate'][media][w] = float(analysis_data['concatenate'][media][w]) + float(c)
 
-    print("Build cluster")
     method = str()
     if analysis_args.analysis_compare_method == 'cluster':
         method = analysis_args.analysis_cluster_method
@@ -414,7 +412,7 @@ def label_score_analysis(
         method = analysis_args.analysis_distance_method
         analysis_model = DistanceAnalysis(
             misc_args, model_args, data_args, training_args, analysis_args)
-    for k, v in tqdm(analysis_data.items()):
+    for k, v in tqdm(analysis_data.items(), desc="Build cluster"):
         if k == 'media_average' or k == 'concatenate':
             continue
         try:
@@ -442,7 +440,6 @@ def label_score_analysis(
     #             conclusion[country] = dict()
     #         conclusion[country][k] = distance
 
-    print("Compare distance")
     if analysis_args.analysis_compare_method == 'distance':
         for k, v in analysis_result.items():
             label_list, data = v
@@ -460,8 +457,7 @@ def label_score_analysis(
         cluster_compare = ClusterCompare(misc_args, analysis_args)
         analysis_result = cluster_compare.compare(model_list)
 
-        print("Combine cluster")
-        for i, dataset_name_a in enumerate(tqdm(data_map.dataset_list)):
+        for i, dataset_name_a in enumerate(tqdm(data_map.dataset_list, desc="Combine cluster")):
             for j, dataset_name_b in enumerate(data_map.dataset_list):
                 if i == j or average_distance_matrix[i][j] != 0:
                     continue
@@ -499,7 +495,7 @@ def label_score_analysis(
 
         result = dict()
         average_distance = dict()
-        for k, v in tqdm(analysis_result):
+        for k, v in tqdm(analysis_result, desc="Combine cluster analyze"):
             sentence = sentence_position_data[k]['sentence']
             position = sentence_position_data[k]['position']
             word = sentence_position_data[k]['word']
