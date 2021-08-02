@@ -105,7 +105,7 @@ def build_baseline(data_type, label_type):
             print(k)
 
     analyzer = AgglomerativeClustering(
-        n_clusters=5, compute_distances=True, affinity='euclidean', linkage='ward')
+        n_clusters=5, compute_distances=True, affinity='euclidean', linkage='complete')
     # analyzer = KMeans(n_clusters=3)
     cluster_result = dict()
     clusters = analyzer.fit(data)
@@ -139,6 +139,6 @@ def main():
     for data_type in ['article']:
         for label_type in ['source', 'trust']:
             build_baseline(data_type, label_type)
-    # temp()
+    temp()
 if __name__ == '__main__':
     main()
