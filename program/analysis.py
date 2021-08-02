@@ -24,7 +24,7 @@ from sklearn.cluster import (
     DBSCAN,
     OPTICS,
     Birch)
-from sklearn.metrics import adjusted_rand_score
+from sklearn.metrics import adjusted_rand_score,adjusted_mutual_info_score
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.metrics.pairwise import(
     cosine_distances
@@ -547,7 +547,7 @@ class ClusterCompare(object):
                 elif self._analysis_args.graph_distance == 'co_occurance':
                     distance = self._co_occurance_distance(graph_list[i],graph_list[base_index])
                 elif self._analysis_args.graph_distance == 'adjusted_rand_index':
-                    distance = adjusted_rand_score(graph_list[base_index],graph_list[i])
+                    distance = adjusted_mutual_info_score(graph_list[base_index],graph_list[i])
                 elif self._analysis_args.graph_distance == 'edit':
                     distance = simple_distance(
                         graph_list[base_index], graph_list[i])
