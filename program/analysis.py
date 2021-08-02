@@ -27,7 +27,8 @@ from sklearn.cluster import (
 from sklearn.metrics import adjusted_rand_score,adjusted_mutual_info_score
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.metrics.pairwise import(
-    cosine_distances
+    cosine_distances,
+    manhattan_distances
 )
 from scipy.sparse.csgraph import shortest_path
 import numpy as np
@@ -570,10 +571,10 @@ class ClusterCompare(object):
                 for j in cluster:
                     if i != j:
                         distance_matrix[i][j] += 1
-        for i in range(len(cluster_list)+1):
-            temp = np.sum(distance_matrix[i],axis=0)
-            if temp != 0:
-                distance_matrix[i] = distance_matrix[i] / temp
+        # for i in range(len(cluster_list)+1):
+        #     temp = np.sum(distance_matrix[i],axis=0)
+        #     if temp != 0:
+        #         distance_matrix[i] = distance_matrix[i] / temp
 
         for cluster in base_cluster_list:
             # if len(cluster) ==  len(cluster_list) + 1:
@@ -582,11 +583,12 @@ class ClusterCompare(object):
                 for j in cluster:
                     if i != j:
                         basic_distance_matrix[i][j] += 1
-        for i in range(len(cluster_list)+1):
-            basic_distance_matrix[i] = basic_distance_matrix[i] / np.sum(basic_distance_matrix[i],axis=0)
+        # for i in range(len(cluster_list)+1):
+        #     basic_distance_matrix[i] = basic_distance_matrix[i] / np.sum(basic_distance_matrix[i],axis=0)
         distance = 0
         for i in range(len(distance_matrix)):
-            distance += cosine_distances(distance_matrix[i].reshape(1,-1), basic_distance_matrix[i].reshape(1,-1))
+            # distance += cosine_distances(distance_matrix[i].reshape(1,-1), basic_distance_matrix[i].reshape(1,-1))
+            distance += manhattan_distances(distance_matrix[i].reshape(1,-1), basic_distance_matrix[i].reshape(1,-1))
         return distance[0][0]
      
 
