@@ -8,7 +8,7 @@ import numpy as np
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import cosine_distances, cosine_similarity
-from sklearn.metrics import adjusted_rand_score
+from sklearn.metrics import adjusted_rand_score, davies_bouldin_score, calinski_harabasz_score
 import seaborn as sns
 import pandas as pd
 import joblib
@@ -90,7 +90,7 @@ def temp():
 def build_baseline(data_type, label_type):
     data_map = BaselineArticleMap() if data_type=='article' else TwitterMap()
     label_list = list(data_map.name_to_dataset.keys())
-
+    from sklearn.metrics import silhouette_score, silhouette_samples
     data = list()
     data_temp = dict()
     with open('./analysis/baseline/baseline_'+label_type+'_'+data_type+'.csv', mode='r', encoding='utf8') as fp:
@@ -103,8 +103,9 @@ def build_baseline(data_type, label_type):
             data.append(data_temp[k])
         except:
             print(k)
+
     analyzer = AgglomerativeClustering(
-        n_clusters=3, compute_distances=True, affinity='cosine', linkage='complete')
+        n_clusters=5, compute_distances=True, affinity='euclidean', linkage='ward')
     # analyzer = KMeans(n_clusters=3)
     cluster_result = dict()
     clusters = analyzer.fit(data)
@@ -113,7 +114,6 @@ def build_baseline(data_type, label_type):
         if label not in cluster_result:
             cluster_result[label] = list()
         cluster_result[label].append(label_list[i])
-
     if not os.path.exists('./log/baseline/model/'):
         os.makedirs('./log/baseline/model/')
     model_file = './log/baseline/model/baseline_'+label_type+'_'+data_type+'.c'
@@ -125,12 +125,12 @@ def build_baseline(data_type, label_type):
     plt.savefig(plt_file, bbox_inches='tight')
     plt.close()
 
-    # data = cosine_similarity(data)
-    # data = pd.DataFrame(data,columns=label_list,index=label_list)
-    # sns.heatmap(data)
-    # plt_file = './analysis/baseline/baseline_'+data_type+'_heat.png'
-    # plt.savefig(plt_file, bbox_inches='tight')
-    # plt.close()
+    data = cosine_similarity(data)
+    data = pd.DataFrame(data,columns=label_list,index=label_list)
+    sns.heatmap(data)
+    plt_file = './analysis/baseline/baseline_'+data_type+'_heat.png'
+    plt.savefig(plt_file, bbox_inches='tight')
+    plt.close()
 
 
 
