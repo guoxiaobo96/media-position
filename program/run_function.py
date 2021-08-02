@@ -390,7 +390,7 @@ def label_score_analysis(
         if misc_args.global_debug and index > 100:
             break
     analysis_data['media_average'] = dict()
-    print("The total number is {}".format(index))
+
 
     # analysis_data['concatenate'] = dict()
     # for k, v in analysis_data.items():
@@ -473,7 +473,7 @@ def label_score_analysis(
                 average_distance_matrix[j][i] = average_distance / \
                     len(encoded_a)
         analysis_data['media_average'] = average_distance_matrix
-        print("Combine cluster analyze")
+
         model, cluster_result, _, _ = analysis_model.analyze(
             analysis_data['media_average'], 'media_average', analysis_args, encode=False, dataset_list=list(data_map.dataset_list))
         model_list['media_average'] = model
