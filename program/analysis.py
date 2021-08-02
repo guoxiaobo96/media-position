@@ -24,6 +24,7 @@ from sklearn.cluster import (
     DBSCAN,
     OPTICS,
     Birch)
+from sklearn.metrics import adjusted_rand_score
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.metrics.pairwise import(
     cosine_distances
@@ -123,7 +124,7 @@ class ClusterAnalysis(BaseAnalysis):
         elif cluster_method == "AgglomerativeClustering":
             # self._analyser =  AgglomerativeClustering(n_clusters=2, compute_distances=True)
             self._analyser = AgglomerativeClustering(
-                n_clusters=2, compute_distances=True, affinity='cosine', linkage='single')
+                n_clusters=5, compute_distances=True, affinity='cosine', linkage='single')
         elif cluster_method == "DBSCAN":
             self._analyser = DBSCAN(eps=0.5, min_samples=2)
         elif cluster_method == "OPTICS":
@@ -174,9 +175,6 @@ class ClusterAnalysis(BaseAnalysis):
 
 
 def plot_dendrogram(model, **kwargs):
-    # Create linkage matrix and then plot the dendrogram
-
-    # create the counts of samples under each node
     counts = np.zeros(model.children_.shape[0])
     n_samples = len(model.labels_)
     for i, merge in enumerate(model.children_):
@@ -477,10 +475,12 @@ class ClusterCompare(object):
 
     def _build_graph(self, model, label_list=None) -> None:
         if self._analysis_args.graph_kernel == 'cluster':
-            if self._analysis_args.graph_distance not in ['count','co_occurance']:
-                return self._calculate_leaf_distance(model)
-            else:
+            if self._analysis_args.graph_distance in ['count','co_occurance']:
                 return self._cluster_generate(model)
+            elif self._analysis_args.graph_distance in ['adjusted_rand_index']:
+                return model.labels_
+            else:
+                return self._calculate_leaf_distance(model)
         elif self._analysis_args.graph_kernel == 'tree':
             return self._tree_generate(model)
         else:
@@ -546,6 +546,8 @@ class ClusterCompare(object):
                     distance = count / (len(graph_list[base_index]) - 1)
                 elif self._analysis_args.graph_distance == 'co_occurance':
                     distance = self._co_occurance_distance(graph_list[i],graph_list[base_index])
+                elif self._analysis_args.graph_distance == 'adjusted_rand_index':
+                    distance = adjusted_rand_score(graph_list[base_index],graph_list[i])
                 elif self._analysis_args.graph_distance == 'edit':
                     distance = simple_distance(
                         graph_list[base_index], graph_list[i])
