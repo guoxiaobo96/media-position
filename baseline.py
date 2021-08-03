@@ -117,10 +117,10 @@ def build_baseline(data_type, label_type):
     score = davies_bouldin_score(data,labels)
     print(score)
 
-    # if not os.path.exists('./log/baseline/model/'):
-    #     os.makedirs('./log/baseline/model/')
-    # model_file = './log/baseline/model/baseline_'+label_type+'_'+data_type+'.c'
-    # joblib.dump(analyzer, model_file)
+    if not os.path.exists('./log/baseline/model/'):
+        os.makedirs('./log/baseline/model/')
+    model_file = './log/baseline/model/baseline_'+label_type+'_'+data_type+'.c'
+    joblib.dump(analyzer, model_file)
     plt.title('Baseline')
     plot_dendrogram(analyzer, orientation='right',
                     labels=label_list)
