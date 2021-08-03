@@ -1,4 +1,10 @@
+from nltk import tokenize
 from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.stem.porter import PorterStemmer
+from numpy.lib.function_base import copy
+from copy import deepcopy
+
+from sklearn.feature_extraction.text import CountVectorizer
 from .analysis import ClusterAnalysis, DistanceAnalysis, ClusterCompare
 from .masked_token_util import MaskedTokenLabeller
 from .baseline import BaselineCalculator
@@ -91,6 +97,38 @@ def train_classifier(
     model.train(train_dataset, eval_dataset)
 
 
+# def label_masked_token(
+#         misc_args: MiscArgument,
+#         model_args: ModelArguments,
+#         data_args: DataArguments,
+#         training_args: TrainingArguments):
+#     "This is the version which use BERT atttntion for masking labeled token"
+#     original_sentence_list = list()
+
+#     original_sentence_file = os.path.join(data_args.data_path, 'en.valid')
+#     with open(original_sentence_file, mode='r', encoding='utf8') as fp:
+#         for line in fp.readlines():
+#             item = json.loads(line.strip())
+#             original_sentence_list.append(item)
+
+#     model = MaskedTokenLabeller(
+#         misc_args, data_args, model_args, training_args)
+    
+#     if misc_args.global_debug:
+#         original_sentence_list = original_sentence_list[:1000]
+
+#     masked_sentence_list = list()
+#     for item in tqdm(original_sentence_list):
+#         label, probability, sentence_set = model.label_sentence(
+#             item['sentence'])
+#         if probability > 0.7 and label == item['label']:
+#             masked_sentence_list.append({'original_sentence':item['sentence'],'masked_sentence':list(sentence_set)})
+#     masked_sentence_file = os.path.join(data_args.data_path, 'en.masked')
+#     with open(masked_sentence_file, mode='w',encoding='utf8') as fp:
+#         for item in masked_sentence_list:
+#             fp.write(json.dumps(item,ensure_ascii=False)+'\n')
+
+
 def label_masked_token(
         misc_args: MiscArgument,
         model_args: ModelArguments,
@@ -103,24 +141,107 @@ def label_masked_token(
         for line in fp.readlines():
             item = json.loads(line.strip())
             original_sentence_list.append(item)
-
-    model = MaskedTokenLabeller(
-        misc_args, data_args, model_args, training_args)
+    masked_sentence_list = list()
     
     if misc_args.global_debug:
         original_sentence_list = original_sentence_list[:1000]
 
-    masked_sentence_list = list()
-    for item in tqdm(original_sentence_list):
-        label, probability, sentence_set = model.label_sentence(
-            item['sentence'])
-        if probability > 0.7 and label == item['label']:
-            masked_sentence_list.append({'original_sentence':item['sentence'],'masked_sentence':list(sentence_set)})
-    masked_sentence_file = os.path.join(data_args.data_path, 'en.masked')
+    if data_args.label_method == 'trigram':
+        stemmer = PorterStemmer()
+        count_vectorize = CountVectorizer(min_df=5,ngram_range=(3,3),stop_words="english")
+        tokenizer = count_vectorize.build_tokenizer()
+        raw_data = list()
+
+        for item in original_sentence_list:
+            sentence = ' '.join([stemmer.stem(word) for word in tokenizer(item['sentence'])])
+            raw_data.append(sentence)
+
+
+        count_vectorize.fit_transform(raw_data)
+        tokenizer = count_vectorize.build_tokenizer()
+
+        for sentence in original_sentence_list:
+            splited_sentence = tokenizer(sentence['sentence'])
+
+        word_list = count_vectorize.get_feature_names()
+
+
+        for sentence in tqdm(original_sentence_list):
+            writted_item = {"original_sentence":sentence["sentence"],"masked_sentence":list()}
+            splited_sentence = tokenizer(sentence["sentence"])
+            for index in range(len(splited_sentence)-2):
+                phrase = ''
+                count = 0
+                while len(phrase.split(' '))<3:
+                    if count+index < len(splited_sentence):
+                        stemmed_word = stemmer.stem(splited_sentence[count+index])
+                        phrase = phrase + ' '+ stemmed_word
+                        phrase = phrase.strip()
+                        count += 1
+                    else:
+                        break
+                if len(phrase.split(' ')) < 3:
+                    break
+                if phrase in word_list:
+                    full_phrase = splited_sentence[index:index+count]
+                    for i in range(len(full_phrase)):
+                        masked_phrase = deepcopy(full_phrase)
+                        masked_phrase[i] = '[MASK]'
+                        masked_sentence = splited_sentence[:index]+masked_phrase+splited_sentence[index+count:]
+                        masked_sentence = ' '.join(masked_sentence)
+                        writted_item["masked_sentence"].append(masked_sentence)
+                    masked_sentence_list.append(writted_item)
+    elif data_args.label_method == "bigram":
+        stemmer = PorterStemmer()
+        count_vectorize = CountVectorizer(min_df=5,ngram_range=(2,2),stop_words="english")
+        tokenizer = count_vectorize.build_tokenizer()
+        raw_data = list()
+        for item in original_sentence_list:
+            sentence = ' '.join([stemmer.stem(word) for word in tokenizer(item['sentence'])])
+            raw_data.append(sentence)
+        count_vectorize.fit_transform(raw_data)
+        tokenizer = count_vectorize.build_tokenizer()
+        for sentence in original_sentence_list:
+            splited_sentence = tokenizer(sentence['sentence'])
+        word_list = count_vectorize.get_feature_names()
+        for sentence in tqdm(original_sentence_list):
+            writted_item = {"original_sentence":sentence["sentence"],"masked_sentence":list()}
+            splited_sentence = tokenizer(sentence["sentence"])
+            for index in range(len(splited_sentence)-1):
+                phrase = ''
+                count = 0
+                while len(phrase.split(' '))<2:
+                    if count+index < len(splited_sentence):
+                        stemmed_word = stemmer.stem(splited_sentence[count+index])
+                        phrase = phrase + ' '+ stemmed_word
+                        phrase = phrase.strip()
+                        count += 1
+                    else:
+                        break
+                if len(phrase.split(' ')) < 2:
+                    break
+                if phrase in word_list:
+                    full_phrase = splited_sentence[index:index+count]
+                    for i in range(len(full_phrase)):
+                        masked_phrase = deepcopy(full_phrase)
+                        masked_phrase[i] = '[MASK]'
+                        masked_sentence = splited_sentence[:index]+masked_phrase+splited_sentence[index+count:]
+                        masked_sentence = ' '.join(masked_sentence)
+                        writted_item["masked_sentence"].append(masked_sentence)
+                    masked_sentence_list.append(writted_item)
+    elif data_args.label_method == 'bert':
+        model = MaskedTokenLabeller(
+            misc_args, data_args, model_args, training_args)
+        for item in tqdm(original_sentence_list):
+            label, probability, sentence_set = model.label_sentence(
+                item['sentence'])
+            if probability > 0.7 and label == item['label']:
+                masked_sentence_list.append({'original_sentence':item['sentence'],'masked_sentence':list(sentence_set)})        
+
+    masked_sentence_file = os.path.join(data_args.data_path, 'en.masked.'+data_args.label_method)
     with open(masked_sentence_file, mode='w',encoding='utf8') as fp:
         for item in masked_sentence_list:
             fp.write(json.dumps(item,ensure_ascii=False)+'\n')
-
 
 def analysis(
     misc_args: MiscArgument,
@@ -278,7 +399,7 @@ def label_score_predict(
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    log_dir = os.path.join(os.path.join(log_dir, training_args.loss_type),data_args.data_type)
+    log_dir = os.path.join(os.path.join(os.path.join(log_dir, training_args.loss_type),data_args.label_method),data_args.data_type)
 
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
@@ -291,7 +412,7 @@ def label_score_predict(
     masked_sentence_list = list()
     masked_sentence_dict = dict()
 
-    masked_sentence_file = os.path.join(os.path.join(os.path.join(data_args.data_dir,'all'),'original'),'en.masked')
+    masked_sentence_file = os.path.join(os.path.join(os.path.join(data_args.data_dir,'all'),'original'),'en.masked.'+data_args.label_method)
     with open(masked_sentence_file,mode='r',encoding='utf8') as fp:
         for line in fp.readlines():
             item = json.loads(line.strip())

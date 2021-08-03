@@ -156,6 +156,9 @@ class DataArguments:
     overwrite_cache: bool = field(
         default=False, metadata={"help": "Overwrite the cached training and evaluation sets"}
     )
+    label_method: str = field(
+        default='trigram', metadata={"help": "The method for labelling the masked token"}
+    )    
 
 @dataclass
 class DataAugArguments:
