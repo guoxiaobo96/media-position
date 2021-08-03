@@ -533,6 +533,8 @@ def label_score_analysis(
         method = analysis_args.analysis_cluster_method
         analysis_model = ClusterAnalysis(
             misc_args, model_args, data_args, training_args, analysis_args)
+        precomputed_analysis_model = ClusterAnalysis(
+            misc_args, model_args, data_args, training_args, analysis_args,pre_computer=True)
     elif analysis_args.analysis_compare_method == 'distance':
         method = analysis_args.analysis_distance_method
         analysis_model = DistanceAnalysis(
@@ -604,7 +606,7 @@ def label_score_analysis(
                     len(encoded_a)
         analysis_data['media_average'] = average_distance_matrix
 
-        model, cluster_result, _, _ = analysis_model.analyze(
+        model, cluster_result, _, _ = precomputed_analysis_model.analyze(
             analysis_data['media_average'], 'media_average', analysis_args, encode=False, dataset_list=list(data_map.dataset_list))
         model_list['media_average'] = model
 

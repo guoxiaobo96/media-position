@@ -106,13 +106,14 @@ class BaseAnalysis(ABC):
 
 
 class ClusterAnalysis(BaseAnalysis):
-    def __init__(self, misc_args: MiscArgument, model_args: ModelArguments, data_args: DataArguments, training_args: TrainingArguments, config: AnalysisArguments) -> None:
+    def __init__(self, misc_args: MiscArgument, model_args: ModelArguments, data_args: DataArguments, training_args: TrainingArguments, config: AnalysisArguments, pre_computer=False) -> None:
         super().__init__(misc_args, model_args, data_args, training_args, config)
-        self._load_analysis_model(self._config.analysis_cluster_method)
+        self._load_analysis_model(self._config.analysis_cluster_method, pre_computer)
 
     def _load_analysis_model(
         self,
-        cluster_method: str
+        cluster_method: str,
+        pre_computer
     ):
         if cluster_method == "KMeans":
             self._analyser = KMeans()
@@ -124,8 +125,12 @@ class ClusterAnalysis(BaseAnalysis):
             self._analyser = SpectralClustering()
         elif cluster_method == "AgglomerativeClustering":
             # self._analyser =  AgglomerativeClustering(n_clusters=2, compute_distances=True)
-            self._analyser = AgglomerativeClustering(
-                n_clusters=2, compute_distances=True, affinity='cosine', linkage='complete')
+            if not pre_computer:
+                self._analyser = AgglomerativeClustering(
+                    n_clusters=2, compute_distances=True, affinity='cosine', linkage='complete')
+            else:
+                self._analyser = AgglomerativeClustering(
+                    n_clusters=2, compute_distances=True, affinity='precomputed', linkage='complete')                
         elif cluster_method == "DBSCAN":
             self._analyser = DBSCAN(eps=0.5, min_samples=2)
         elif cluster_method == "OPTICS":
