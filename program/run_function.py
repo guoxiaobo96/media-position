@@ -167,7 +167,7 @@ def label_masked_token(
 
 
         for sentence in tqdm(original_sentence_list):
-            writted_item = {"original_sentence":sentence["sentence"],"masked_sentence":list()}
+            written_item = {"original_sentence":sentence["sentence"],"masked_sentence":list()}
             splited_sentence = tokenizer(sentence["sentence"])
             for index in range(len(splited_sentence)-2):
                 phrase = ''
@@ -189,22 +189,22 @@ def label_masked_token(
                         masked_phrase[i] = '[MASK]'
                         masked_sentence = splited_sentence[:index]+masked_phrase+splited_sentence[index+count:]
                         masked_sentence = ' '.join(masked_sentence)
-                        writted_item["masked_sentence"].append(masked_sentence)
-                    masked_sentence_list.append(writted_item)
-    elif data_args.label_method == "bigram":
+                        written_item["masked_sentence"].append(masked_sentence)
+                    masked_sentence_list.append(written_item)
+    elif data_args.label_method == "bigram_outer":
         stemmer = PorterStemmer()
-        count_vectorize = CountVectorizer(min_df=20,ngram_range=(2,2),stop_words="english")
+        count_vectorize = CountVectorizer(min_df=10,ngram_range=(2,2),stop_words="english")
         tokenizer = count_vectorize.build_tokenizer()
-        raw_data = list()
-        for item in original_sentence_list:
+        raw_data = ['' for _ in range(10)]
+        for item in tqdm(original_sentence_list,desc="load data"):
             sentence = ' '.join([stemmer.stem(word) for word in tokenizer(item['sentence'])])
-            raw_data.append(sentence)
+            raw_data[item["label"]] = raw_data[item["label"]] + ' '+sentence
         count_vectorize.fit_transform(raw_data)
         for sentence in original_sentence_list:
             splited_sentence = tokenizer(sentence['sentence'])
         word_list = count_vectorize.get_feature_names()
         for sentence in tqdm(original_sentence_list):
-            writted_item = {"original_sentence":sentence["sentence"],"masked_sentence":list()}
+            written_item = {"original_sentence":sentence["sentence"],"masked_sentence":list()}
             splited_sentence = tokenizer(sentence["sentence"])
             for index in range(len(splited_sentence)-1):
                 phrase = ''
@@ -221,13 +221,18 @@ def label_masked_token(
                     break
                 if phrase in word_list:
                     full_phrase = splited_sentence[index:index+count]
-                    for i in range(len(full_phrase)):
-                        masked_phrase = deepcopy(full_phrase)
-                        masked_phrase[i] = '[MASK]'
-                        masked_sentence = splited_sentence[:index]+masked_phrase+splited_sentence[index+count:]
-                        masked_sentence = ' '.join(masked_sentence)
-                        writted_item["masked_sentence"].append(masked_sentence)
-                    masked_sentence_list.append(writted_item)
+                    pre_masked_sentence = None
+                    post_masked_sentence = None
+                    if index != 0:
+                        pre_masked_sentence = splited_sentence[:index-1]+['[MASK]']+splited_sentence[index:]
+                        pre_masked_sentence = ' '.join(pre_masked_sentence)
+                        written_item["masked_sentence"].append(pre_masked_sentence)
+                    if index + count <(len(splited_sentence)-1):
+                        post_masked_sentence = splited_sentence[:index+count]+['[MASK]']+splited_sentence[index+count+1:]
+                        post_masked_sentence = ' '.join(post_masked_sentence)
+                        written_item["masked_sentence"].append(post_masked_sentence)
+                    masked_sentence_list.append(written_item)
+
     elif data_args.label_method == 'bert':
         model = MaskedTokenLabeller(
             misc_args, data_args, model_args, training_args)
