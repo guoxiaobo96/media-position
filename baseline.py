@@ -101,7 +101,7 @@ def build_baseline(data_type, label_type):
             print(k)
 
     analyzer = AgglomerativeClustering(
-        n_clusters=5, compute_distances=True, affinity='cosine', linkage='complete')
+        n_clusters=2, compute_distances=True, affinity='cosine', linkage='complete')
     # analyzer = KMeans(n_clusters=3)
     cluster_result = dict()
     clusters = analyzer.fit(data)

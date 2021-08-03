@@ -644,13 +644,13 @@ def label_score_analysis(
         if not os.path.exists(result_path):
             os.makedirs(result_path)
         result_file = os.path.join(result_path, analysis_args.analysis_encode_method +
-                                   '_'+method+'_'+analysis_args.graph_kernel+'_sort.json')
+                                   '_'+method+'_'+analysis_args.graph_kernel+'_sort'+base_line+'.json')
         with open(result_file, mode='w', encoding='utf8') as fp:
             for k, v in analysis_result.items():
                 fp.write(json.dumps(v, ensure_ascii=False)+'\n')
 
         result_file = os.path.join(result_path, analysis_args.analysis_encode_method +
-                                   '_'+method+'_'+analysis_args.graph_kernel+'_sentence.json')
+                                   '_'+method+'_'+analysis_args.graph_kernel+'_sentence'+base_line+'.json')
         with open(result_file, mode='w', encoding='utf8') as fp:
             for k, v in result.items():
                 v['sentence'] = k
