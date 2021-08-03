@@ -105,7 +105,7 @@ def build_baseline(data_type, label_type):
             print(k)
 
     analyzer = AgglomerativeClustering(
-        n_clusters=2, compute_distances=True, affinity='cosine', linkage='complete')
+        n_clusters=2, compute_distances=True, affinity='euclidean', linkage='complete')
     # analyzer = KMeans(n_clusters=3)
     cluster_result = dict()
     clusters = analyzer.fit(data)
@@ -117,16 +117,16 @@ def build_baseline(data_type, label_type):
     score = davies_bouldin_score(data,labels)
     print(score)
 
-    # if not os.path.exists('./log/baseline/model/'):
-    #     os.makedirs('./log/baseline/model/')
-    # model_file = './log/baseline/model/baseline_'+label_type+'_'+data_type+'.c'
-    # joblib.dump(analyzer, model_file)
-    # plt.title('Baseline')
-    # plot_dendrogram(analyzer, orientation='right',
-    #                 labels=label_list)
-    # plt_file = './analysis/baseline/baseline_'+label_type+'_'+data_type+'.png'
-    # plt.savefig(plt_file, bbox_inches='tight')
-    # plt.close()
+    if not os.path.exists('./log/baseline/model/'):
+        os.makedirs('./log/baseline/model/')
+    model_file = './log/baseline/model/baseline_'+label_type+'_'+data_type+'.c'
+    joblib.dump(analyzer, model_file)
+    plt.title('Baseline')
+    plot_dendrogram(analyzer, orientation='right',
+                    labels=label_list)
+    plt_file = './analysis/baseline/baseline_'+label_type+'_'+data_type+'.png'
+    plt.savefig(plt_file, bbox_inches='tight')
+    plt.close()
 
     # data = cosine_similarity(data)
     # data = pd.DataFrame(data,columns=label_list,index=label_list)

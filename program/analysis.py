@@ -28,6 +28,7 @@ from sklearn.metrics import adjusted_rand_score,adjusted_mutual_info_score
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.metrics.pairwise import(
     cosine_distances,
+    euclidean_distances,
     manhattan_distances
 )
 from scipy.sparse.csgraph import shortest_path
@@ -127,7 +128,7 @@ class ClusterAnalysis(BaseAnalysis):
             # self._analyser =  AgglomerativeClustering(n_clusters=2, compute_distances=True)
             if not pre_computer:
                 self._analyser = AgglomerativeClustering(
-                    n_clusters=2, compute_distances=True, affinity='cosine', linkage='complete')
+                    n_clusters=2, compute_distances=True, affinity='euclidean', linkage='complete')
             else:
                 self._analyser = AgglomerativeClustering(
                     n_clusters=2, compute_distances=True, affinity='precomputed', linkage='complete')                
