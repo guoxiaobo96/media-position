@@ -125,7 +125,7 @@ class ClusterAnalysis(BaseAnalysis):
         elif cluster_method == "AgglomerativeClustering":
             # self._analyser =  AgglomerativeClustering(n_clusters=2, compute_distances=True)
             self._analyser = AgglomerativeClustering(
-                n_clusters=5, compute_distances=True, affinity='euclidean', linkage='complete')
+                n_clusters=2, compute_distances=True, affinity='cosine', linkage='complete')
         elif cluster_method == "DBSCAN":
             self._analyser = DBSCAN(eps=0.5, min_samples=2)
         elif cluster_method == "OPTICS":
@@ -565,8 +565,8 @@ class ClusterCompare(object):
         basic_distance_matrix = np.zeros((len(cluster_list)+1,len(cluster_list)+1))
 
         for cluster in cluster_list:
-            # if len(cluster) ==  len(cluster_list) + 1:
-            #     continue
+            if len(cluster) ==  len(cluster_list) + 1:
+                continue
             for i in cluster:
                 for j in cluster:
                     if i != j:
@@ -577,8 +577,8 @@ class ClusterCompare(object):
         #         distance_matrix[i] = distance_matrix[i] / temp
 
         for cluster in base_cluster_list:
-            # if len(cluster) ==  len(cluster_list) + 1:
-            #     continue
+            if len(cluster) ==  len(cluster_list) + 1:
+                continue
             for i in cluster:
                 for j in cluster:
                     if i != j:

@@ -16,7 +16,7 @@ from .data import get_dataset, get_analysis_data, get_label_data, get_mask_score
 from .model import MLMModel, SentenceReplacementModel, NERModel, ClassifyModel
 from .config import BaselineArguments, DataArguments, DataAugArguments, FullArticleMap, MiscArgument, ModelArguments, TrainingArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap, BaselineArticleMap
 from tqdm import tqdm
-from sklearn.metrics.pairwise import euclidean_distances
+from sklearn.metrics.pairwise import euclidean_distances, cosine_distances
 import numpy as np
 from matplotlib import pyplot as plt
 from os import path
@@ -592,7 +592,7 @@ def label_score_analysis(
                 encoded_b = analysis_data['media_average'][dataset_name_b]
                 for k in range(len(encoded_a)):
                     if k in analysis_result and (analysis_result[k] < analysis_args.analysis_threshold or analysis_args.analysis_threshold == -1):
-                        average_distance += euclidean_distances(
+                        average_distance += cosine_distances(
                             encoded_a[k].reshape(1, -1), encoded_b[k].reshape(1, -1))[0][0]
                 average_distance_matrix[i][j] = average_distance / \
                     len(encoded_a)
@@ -644,13 +644,13 @@ def label_score_analysis(
         if not os.path.exists(result_path):
             os.makedirs(result_path)
         result_file = os.path.join(result_path, analysis_args.analysis_encode_method +
-                                   '_'+method+'_'+analysis_args.graph_kernel+'_sort.json')
+                                   '_'+method+'_'+analysis_args.graph_kernel+'_sort_'+base_line+'.json')
         with open(result_file, mode='w', encoding='utf8') as fp:
             for k, v in analysis_result.items():
                 fp.write(json.dumps(v, ensure_ascii=False)+'\n')
 
         result_file = os.path.join(result_path, analysis_args.analysis_encode_method +
-                                   '_'+method+'_'+analysis_args.graph_kernel+'_sentence.json')
+                                   '_'+method+'_'+analysis_args.graph_kernel+'_sentence_'+base_line+'.json')
         with open(result_file, mode='w', encoding='utf8') as fp:
             for k, v in result.items():
                 v['sentence'] = k
