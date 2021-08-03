@@ -15,5 +15,5 @@ log/*/*/model/*
 *.csv
 transformers/*
 log/obamacare/*/*/*/*/*
-analysis/*/*/*/*/*/*/*/*.json
 log/obamacare/*/*/*/*
+analysis/*/*/*/*/*/*/*/*.json
