@@ -587,8 +587,8 @@ class ClusterCompare(object):
         #     basic_distance_matrix[i] = basic_distance_matrix[i] / np.sum(basic_distance_matrix[i],axis=0)
         distance = 0
         for i in range(len(distance_matrix)):
-            # distance += cosine_distances(distance_matrix[i].reshape(1,-1), basic_distance_matrix[i].reshape(1,-1))
-            distance += manhattan_distances(distance_matrix[i].reshape(1,-1), basic_distance_matrix[i].reshape(1,-1))
+            distance += cosine_distances(distance_matrix[i].reshape(1,-1), basic_distance_matrix[i].reshape(1,-1))
+            # distance += manhattan_distances(distance_matrix[i].reshape(1,-1), basic_distance_matrix[i].reshape(1,-1))
         return distance[0][0]
      
 
