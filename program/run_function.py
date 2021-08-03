@@ -193,14 +193,13 @@ def label_masked_token(
                     masked_sentence_list.append(writted_item)
     elif data_args.label_method == "bigram":
         stemmer = PorterStemmer()
-        count_vectorize = CountVectorizer(min_df=5,ngram_range=(2,2),stop_words="english")
+        count_vectorize = CountVectorizer(min_df=20,ngram_range=(2,2),stop_words="english")
         tokenizer = count_vectorize.build_tokenizer()
         raw_data = list()
         for item in original_sentence_list:
             sentence = ' '.join([stemmer.stem(word) for word in tokenizer(item['sentence'])])
             raw_data.append(sentence)
         count_vectorize.fit_transform(raw_data)
-        tokenizer = count_vectorize.build_tokenizer()
         for sentence in original_sentence_list:
             splited_sentence = tokenizer(sentence['sentence'])
         word_list = count_vectorize.get_feature_names()

@@ -4,6 +4,7 @@ from scipy.spatial.kdtree import distance_matrix
 from sklearn.cluster import AgglomerativeClustering
 from matplotlib import pyplot as plt
 import csv
+from copy import deepcopy
 import numpy as np
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.cluster import KMeans
@@ -68,12 +69,12 @@ def distance_calculate(cluster_list):
                     distance_matrix[i][j] += 1
     return distance_matrix
 
-def temp():
-    source_model = '/home/xiaobo/media-position/log/baseline/model/baseline_source_article.c'
-    trust_model = '/home/xiaobo/media-position/log/baseline/model/baseline_trust_article.c'
+def temp(source_model, trust_model):
+    # source_model = '/home/xiaobo/media-position/log/baseline/model/baseline_source_article.c'
+    # trust_model = '/home/xiaobo/media-position/log/baseline/model/baseline_trust_article.c'
 
-    source_model = joblib.load(source_model)
-    trust_model = joblib.load(trust_model)
+    # source_model = joblib.load(source_model)
+    # trust_model = joblib.load(trust_model)
     source_cluster_list = cluster_generate(source_model)
     trust_cluser_list = cluster_generate(trust_model)
     source_distance = distance_calculate(source_cluster_list)
@@ -96,7 +97,10 @@ def build_baseline(data_type, label_type):
             data_temp[row[0]] = [float(x.strip()) for x in row[1:]]
     for k, _ in data_map.name_to_dataset.items():
         try:
-            data.append(data_temp[k])
+            data_item = deepcopy(data_temp[k])
+            for i in range(1,len(data_item)):
+                data_item[i] /= data_item[0]
+            data.append(data_item)
         except:
             print(k)
 
@@ -110,10 +114,13 @@ def build_baseline(data_type, label_type):
         if label not in cluster_result:
             cluster_result[label] = list()
         cluster_result[label].append(label_list[i])
-    if not os.path.exists('./log/baseline/model/'):
-        os.makedirs('./log/baseline/model/')
-    model_file = './log/baseline/model/baseline_'+label_type+'_'+data_type+'.c'
-    joblib.dump(analyzer, model_file)
+    score = davies_bouldin_score(data,labels)
+    print(score)
+
+    # if not os.path.exists('./log/baseline/model/'):
+    #     os.makedirs('./log/baseline/model/')
+    # model_file = './log/baseline/model/baseline_'+label_type+'_'+data_type+'.c'
+    # joblib.dump(analyzer, model_file)
     plt.title('Baseline')
     plot_dendrogram(analyzer, orientation='right',
                     labels=label_list)
@@ -127,14 +134,15 @@ def build_baseline(data_type, label_type):
     # plt_file = './analysis/baseline/baseline_'+data_type+'_heat.png'
     # plt.savefig(plt_file, bbox_inches='tight')
     # plt.close()
+    return analyzer
 
 
 
 
 def main():
     for data_type in ['article']:
-        for label_type in ['source', 'trust']:
-            build_baseline(data_type, label_type)
-    temp()
+        source_model = build_baseline(data_type,'source')
+        trust_model = build_baseline(data_type,'trust')
+    temp(source_model, trust_model)
 if __name__ == '__main__':
     main()
