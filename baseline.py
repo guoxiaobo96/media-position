@@ -60,14 +60,12 @@ def distance_calculate(cluster_list):
     distance_matrix = np.zeros((len(cluster_list)+1,len(cluster_list)+1))
 
     for cluster in cluster_list:
-        # if len(cluster) ==  len(cluster_list) + 1:
-        #     continue
+        if len(cluster) ==  len(cluster_list) + 1:
+            continue
         for i in cluster:
             for j in cluster:
                 if i != j:
                     distance_matrix[i][j] += 1
-    for i in range(len(cluster_list)+1):
-        distance_matrix[i] = distance_matrix[i] / np.sum(distance_matrix[i],axis=0)
     return distance_matrix
 
 def temp():
@@ -76,8 +74,6 @@ def temp():
 
     source_model = joblib.load(source_model)
     trust_model = joblib.load(trust_model)
-    score = adjusted_rand_score(source_model.labels_,trust_model.labels_)
-    print(score)
     source_cluster_list = cluster_generate(source_model)
     trust_cluser_list = cluster_generate(trust_model)
     source_distance = distance_calculate(source_cluster_list)
@@ -105,7 +101,7 @@ def build_baseline(data_type, label_type):
             print(k)
 
     analyzer = AgglomerativeClustering(
-        n_clusters=5, compute_distances=True, affinity='euclidean', linkage='complete')
+        n_clusters=5, compute_distances=True, affinity='cosine', linkage='complete')
     # analyzer = KMeans(n_clusters=3)
     cluster_result = dict()
     clusters = analyzer.fit(data)
@@ -125,12 +121,12 @@ def build_baseline(data_type, label_type):
     plt.savefig(plt_file, bbox_inches='tight')
     plt.close()
 
-    data = cosine_similarity(data)
-    data = pd.DataFrame(data,columns=label_list,index=label_list)
-    sns.heatmap(data)
-    plt_file = './analysis/baseline/baseline_'+data_type+'_heat.png'
-    plt.savefig(plt_file, bbox_inches='tight')
-    plt.close()
+    # data = cosine_similarity(data)
+    # data = pd.DataFrame(data,columns=label_list,index=label_list)
+    # sns.heatmap(data)
+    # plt_file = './analysis/baseline/baseline_'+data_type+'_heat.png'
+    # plt.savefig(plt_file, bbox_inches='tight')
+    # plt.close()
 
 
 
