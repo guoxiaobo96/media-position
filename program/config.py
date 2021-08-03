@@ -405,10 +405,10 @@ def get_config() -> Tuple:
             model_args.model_name_or_path = model_args.load_model_dir
                 
 
-        analysis_args.analysis_data_dir = os.path.join(os.path.join(os.path.join(
-            os.path.join(analysis_args.analysis_data_dir,data_args.dataset),training_args.loss_type),data_args.data_type), 'json')
-        analysis_args.analysis_result_dir = os.path.join(os.path.join(os.path.join(os.path.join(
-            analysis_args.analysis_result_dir,data_args.dataset),training_args.loss_type),data_args.data_type), analysis_args.analysis_compare_method)
+        analysis_args.analysis_data_dir = os.path.join(os.path.join(os.path.join(os.path.join(
+            os.path.join(analysis_args.analysis_data_dir,data_args.dataset),training_args.loss_type),data_args.label_method),data_args.data_type), 'json')
+        analysis_args.analysis_result_dir = os.path.join(os.path.join(os.path.join(os.path.join(os.path.join(
+            analysis_args.analysis_result_dir,data_args.dataset),training_args.loss_type),data_args.label_method),data_args.data_type), analysis_args.analysis_compare_method)
 
         training_args.disable_tqdm = False
         
