@@ -358,7 +358,8 @@ def label_score_analysis(
     model_args: ModelArguments,
     data_args: DataArguments,
     training_args: TrainingArguments,
-    analysis_args: AnalysisArguments
+    analysis_args: AnalysisArguments,
+    base_line: str
 ) -> Dict:
     data_map = BaselineArticleMap()
     analysis_result = dict()
@@ -448,10 +449,15 @@ def label_score_analysis(
             plt.savefig(plt_file, bbox_inches='tight')
             plt.close()
     else:
-        base_model = joblib.load('log/baseline/model/baseline_trust_article.c')
+        if base_line == 'source':
+            distance_base = 'trust'
+        else:
+            distance_base = 'source'
+
+        base_model = joblib.load('log/baseline/model/baseline_'+base_line+'_article.c')
         model_list['base'] = base_model
         base_model = joblib.load(
-            'log/baseline/model/baseline_source_article.c')
+            'log/baseline/model/baseline_'+distance_base+'_article.c')
         model_list['distance_base'] = base_model
         cluster_compare = ClusterCompare(misc_args, analysis_args)
         analysis_result = cluster_compare.compare(model_list)
