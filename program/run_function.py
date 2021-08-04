@@ -146,7 +146,7 @@ def label_masked_token(
     if misc_args.global_debug:
         original_sentence_list = original_sentence_list[:1000]
 
-    if data_args.label_method == 'trigram':
+    if data_args.label_method == 'trigram_inner':
         stemmer = PorterStemmer()
         count_vectorize = CountVectorizer(min_df=5,ngram_range=(3,3),stop_words="english")
         tokenizer = count_vectorize.build_tokenizer()
@@ -155,6 +155,7 @@ def label_masked_token(
         for item in original_sentence_list:
             sentence = ' '.join([stemmer.stem(word) for word in tokenizer(item['sentence'])])
             raw_data.append(sentence)
+
 
 
         count_vectorize.fit_transform(raw_data)
@@ -190,7 +191,64 @@ def label_masked_token(
                         masked_sentence = splited_sentence[:index]+masked_phrase+splited_sentence[index+count:]
                         masked_sentence = ' '.join(masked_sentence)
                         written_item["masked_sentence"].append(masked_sentence)
-                    masked_sentence_list.append(written_item)
+            if written_item["masked_sentence"] != []:
+                masked_sentence_list.append(written_item)
+    elif data_args.label_method == 'bigram_inner':
+        stemmer = PorterStemmer()
+
+        count_vectorize = CountVectorizer(min_df=10,ngram_range=(2,2),stop_words="english")
+        exclude_vectorize = CountVectorizer(min_df=10,ngram_range=(2,2),stop_words="english")
+
+        tokenizer = count_vectorize.build_tokenizer()
+        raw_data = list()
+        media_data = ['' for _ in range(10)]
+
+        for item in tqdm(original_sentence_list,desc="load data"):
+            sentence = ' '.join([stemmer.stem(word) for word in tokenizer(item['sentence'])])
+            raw_data.append(sentence)
+            media_data[item["label"]] = media_data[item["label"]] + ' '+sentence
+
+
+        count_vectorize.fit_transform(raw_data)
+        exclude_vectorize.fit_transform(media_data)
+        tokenizer = count_vectorize.build_tokenizer()
+
+        for sentence in original_sentence_list:
+            splited_sentence = tokenizer(sentence['sentence'])
+
+        word_list = count_vectorize.get_feature_names()
+        exclude_list = exclude_vectorize.get_feature_names()
+
+        word_list = set(word_list) - set(exclude_list)
+        word_list = list(word_list)
+
+
+        for sentence in tqdm(original_sentence_list):
+            written_item = {"original_sentence":sentence["sentence"],"masked_sentence":list()}
+            splited_sentence = tokenizer(sentence["sentence"])
+            for index in range(len(splited_sentence)-1):
+                phrase = ''
+                count = 0
+                while len(phrase.split(' '))<2:
+                    if count+index < len(splited_sentence):
+                        stemmed_word = stemmer.stem(splited_sentence[count+index])
+                        phrase = phrase + ' '+ stemmed_word
+                        phrase = phrase.strip()
+                        count += 1
+                    else:
+                        break
+                if len(phrase.split(' ')) < 2:
+                    break
+                if phrase in word_list:
+                    full_phrase = splited_sentence[index:index+count]
+                    for i in range(len(full_phrase)):
+                        masked_phrase = deepcopy(full_phrase)
+                        masked_phrase[i] = '[MASK]'
+                        masked_sentence = splited_sentence[:index]+masked_phrase+splited_sentence[index+count:]
+                        masked_sentence = ' '.join(masked_sentence)
+                        written_item["masked_sentence"].append(masked_sentence)
+            if written_item["masked_sentence"] != []:
+                masked_sentence_list.append(written_item)
     elif data_args.label_method == "bigram_outer":
         stemmer = PorterStemmer()
         count_vectorize = CountVectorizer(min_df=10,ngram_range=(2,2),stop_words="english")
@@ -231,7 +289,8 @@ def label_masked_token(
                         post_masked_sentence = splited_sentence[:index+count]+['[MASK]']+splited_sentence[index+count+1:]
                         post_masked_sentence = ' '.join(post_masked_sentence)
                         written_item["masked_sentence"].append(post_masked_sentence)
-                    masked_sentence_list.append(written_item)
+            if written_item["masked_sentence"] != []:
+                masked_sentence_list.append(written_item)
 
     elif data_args.label_method == 'bert':
         model = MaskedTokenLabeller(
@@ -246,137 +305,6 @@ def label_masked_token(
     with open(masked_sentence_file, mode='w',encoding='utf8') as fp:
         for item in masked_sentence_list:
             fp.write(json.dumps(item,ensure_ascii=False)+'\n')
-
-def analysis(
-    misc_args: MiscArgument,
-    model_args: ModelArguments,
-    data_args: DataArguments,
-    training_args: TrainingArguments,
-    analysis_args: AnalysisArguments
-) -> Dict:
-    data_map = ArticleMap() if data_args.data_type == 'article' else TwitterMap()
-    analysis_result = dict()
-    model_list = dict()
-    analysis_data = dict()
-    analysis_data_temp = get_analysis_data(analysis_args)
-
-    for k, v in analysis_data_temp.items():
-        analysis_data[k] = dict()
-        for d, _ in data_map.dataset_to_name.items():
-            analysis_data[k][d] = v[d]
-
-    analysis_data['concatenate.json'] = dict()
-    analysis_data['average.json'] = dict()
-    for k, v in analysis_data.items():
-        for media, item in v.items():
-            if media not in analysis_data['concatenate.json']:
-                analysis_data['concatenate.json'][media] = dict()
-            for w, c in item.items():
-                if w not in analysis_data['concatenate.json'][media]:
-                    analysis_data['concatenate.json'][media][w] = c
-                else:
-                    analysis_data['concatenate.json'][media][w] = float(
-                        analysis_data['concatenate.json'][media][w]) + float(c)
-    method = str()
-    if analysis_args.analysis_compare_method == 'cluster':
-        method = analysis_args.analysis_cluster_method
-    elif analysis_args.analysis_compare_method == 'distance':
-        method = analysis_args.analysis_distance_method
-    for k, v in analysis_data.items():
-        if k == 'average.json' or k == 'concatenate.json':
-            continue
-        if analysis_args.analysis_compare_method == 'cluster':
-            analysis_model = ClusterAnalysis(
-                misc_args, model_args, data_args, training_args, analysis_args)
-        elif analysis_args.analysis_compare_method == 'distance':
-            analysis_model = DistanceAnalysis(
-                misc_args, model_args, data_args, training_args, analysis_args)
-        model, cluster_result, dataset_list, encoded_list = analysis_model.analyze(
-            v, k.split('.')[0], analysis_args)
-        analysis_result[k] = cluster_result
-        model_list[k] = model
-        for i, encoded_data in enumerate(encoded_list):
-            if dataset_list[i] not in analysis_data['average.json']:
-                analysis_data['average.json'][dataset_list[i]] = list()
-            analysis_data['average.json'][dataset_list[i]].append(encoded_data)
-    average_distance_matrix = np.zeros(
-        (len(data_map.dataset_list), len(data_map.dataset_list)))
-
-    for i, dataset_name_a in enumerate(data_map.dataset_list):
-        for j, dataset_name_b in enumerate(data_map.dataset_list):
-            if i == j:
-                continue
-            average_distance = 0
-            encoded_a = analysis_data['average.json'][dataset_name_a]
-            encoded_b = analysis_data['average.json'][dataset_name_b]
-            for k in range(len(analysis_data) - 2):
-                average_distance += euclidean_distances(
-                    encoded_a[k].reshape(1, -1), encoded_b[k].reshape(1, -1))[0][0]
-            average_distance_matrix[i][j] = average_distance
-    analysis_data['average.json'] = average_distance_matrix
-    model, cluster_result, _, _ = analysis_model.analyze(
-        analysis_data['average.json'], 'average', analysis_args, encode=False, dataset_list=list(data_map.dataset_list))
-    model_list['average.json'] = model
-    analysis_result['average.json'] = cluster_result
-    conclusion = dict()
-    # for k, v in analysis_result.items():
-    #     analysis_file = os.path.join(analysis_args.analysis_result_dir, k.split('.')[0])
-    #     with open(analysis_file, mode='a',encoding='utf8') as fp:
-    #         fp.write(json.dumps({'encode': analysis_args.analysis_encode_method,'method':method, 'result':v},ensure_ascii=False)+'\n')
-    #     for country, distance in v.items():
-    #         if country not in conclusion:
-    #             conclusion[country] = dict()
-    #         conclusion[country][k] = distance
-    if analysis_args.analysis_compare_method == 'distance':
-        for k, v in analysis_result.items():
-            label_list, data = v
-            _draw_heatmap(data, label_list, label_list)
-            # data = pd.DataFrame(v,columns=k,index=k)
-            # sns.heatmap(data)
-            plt_file = os.path.join(analysis_args.analysis_result_dir,
-                                    analysis_args.analysis_encode_method+'_'+method+'_' + k.split('.')[0]+'.png')
-            plt.savefig(plt_file, bbox_inches='tight')
-            plt.close()
-        # with open(os.path.join(analysis_args.analysis_result_dir, analysis_args.analysis_encode_method+'_'+method+'.csv'), mode='w',encoding='utf8') as fp:
-        #     title = 'country,'
-        #     for i in range(len(analysis_result)):
-        #         title = title + str(i+1)+','
-        #     fp.write(title+'\n')
-        #     for country, distance_list in conclusion.items():
-        #         record = country+','
-        #         for i in range(len(distance_list)):
-        #             record = record+str(distance_list[str(i+1)+'.json'])+','
-        #         fp.write(record+'\n')
-    else:
-        base_model = joblib.load(
-            'log/baseline/model/baseline_trust_'+data_args.data_type+'.c')
-        model_list['base'] = base_model
-        base_model = joblib.load(
-            'log/baseline/model/baseline_source_'+data_args.data_type+'.c')
-        model_list['distance_base'] = base_model
-        cluster_compare = ClusterCompare(misc_args, analysis_args)
-
-        label_list = []
-        for name in data_map.dataset_list:
-            if name in data_map.left_dataset_list:
-                label_list.append(1)
-            else:
-                label_list.append(0)
-
-        analysis_result = cluster_compare.compare(model_list)
-        analysis_result = sorted(analysis_result.items(), key=lambda x: x[1])
-        analysis_result = {k: v for k, v in analysis_result}
-
-        result_path = os.path.join(
-            analysis_args.analysis_result_dir, analysis_args.graph_distance)
-        if not os.path.exists(result_path):
-            os.makedirs(result_path)
-        result_file = os.path.join(
-            result_path, analysis_args.analysis_encode_method+'_'+method+'_'+analysis_args.graph_kernel+'.txt')
-        with open(result_file, mode='w', encoding='utf8') as fp:
-            for k, v in analysis_result.items():
-                fp.write(k+' : '+str(v)+'\n')
-    return analysis_result
 
 
 def label_score_predict(
