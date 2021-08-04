@@ -132,7 +132,7 @@ def label_masked_token(
                 masked_sentence_list.append(
                     {'original_sentence': item['sentence'], 'masked_sentence': list(sentence_set)})
     elif data_args.label_method == 'random':
-        masked_sentence_list = random_label(original_sentence_list, 0.1, 0.1)
+        masked_sentence_list = random_label(original_sentence_list, 0.5, 0.2)
     masked_sentence_file = os.path.join(
         data_args.data_path, 'en.masked.'+data_args.label_method)
     with open(masked_sentence_file, mode='w', encoding='utf8') as fp:
