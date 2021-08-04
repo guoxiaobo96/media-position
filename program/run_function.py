@@ -389,7 +389,7 @@ def label_score_predict(
                 round(item["score"], 3))
             word_set.add(item["token_str"])
 
-    with open(log_file, mode='a', encoding='utf8') as fp:
+    with open(log_file, mode='w', encoding='utf8') as fp:
         for _, item in record_dict.items():
             fp.write(json.dumps(item, ensure_ascii=False)+'\n')
 
