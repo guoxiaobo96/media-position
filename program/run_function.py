@@ -121,7 +121,7 @@ def label_masked_token(
             original_sentence_list, n_gram=3, min_df=10)
     elif data_args.label_method == "bigram_outer":
         masked_sentence_list = ngram_outer_label(
-            original_sentence_list, n_gram=3, min_df=10)
+            original_sentence_list, n_gram=2, min_df=10)
     elif data_args.label_method == 'bert':
         model = MaskedTokenLabeller(
             misc_args, data_args, model_args, training_args)

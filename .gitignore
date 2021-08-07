@@ -17,3 +17,7 @@ transformers/*
 log/obamacare/*/*/*/*/*
 log/obamacare/*/*/*/*
 analysis/*/*/*/*/*/*/*/*.json
+log/drug-policy/*/*/*/*/*
+log/drug-policy/*/*/*/*
+log/climate-change/*/*/*/*/*
+log/climate-change/*/*/*/*

@@ -134,6 +134,7 @@ def ngram_outer_label(original_sentence_list, n_gram, min_df):
                     written_item["masked_sentence"].append(post_masked_sentence)
         if written_item["masked_sentence"] != []:
             masked_sentence_list.append(written_item)
+    return masked_sentence_list
 
 def ngram_inner_label(original_sentence_list, n_gram, min_df):
     masked_sentence_list = list()
