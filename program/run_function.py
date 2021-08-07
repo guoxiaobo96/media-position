@@ -121,7 +121,7 @@ def label_masked_token(
             original_sentence_list, n_gram=3, min_df=10)
     elif data_args.label_method == "bigram_outer":
         masked_sentence_list = ngram_outer_label(
-            original_sentence_list, n_gram=3, min_df=10)
+            original_sentence_list, n_gram=2, min_df=10)
     elif data_args.label_method == 'bert':
         model = MaskedTokenLabeller(
             misc_args, data_args, model_args, training_args)
@@ -255,6 +255,10 @@ def label_score_analysis(
 
     if not os.path.exists(analysis_args.analysis_result_dir):
         os.makedirs(analysis_args.analysis_result_dir)
+    analysis_record_file = '/'.join(analysis_args.analysis_result_dir.split('/')[:4])
+    if not os.path.exists(analysis_record_file):
+        os.makedirs(analysis_record_file)
+    analysis_record_file = os.path.join(analysis_record_file,'record')
 
     error_count = 0
     analysis_data_temp = get_label_data(misc_args, analysis_args, data_args)
@@ -426,6 +430,9 @@ def label_score_analysis(
                 v['sentence'] = k
                 fp.write(json.dumps(v, ensure_ascii=False)+'\n')
 
+        record_item = {'baseline':base_line,'augmentation_method':data_args.data_type.split('/')[0],'cluster_performance':round(result['media_average'][-2][0],2)}
+        with open(analysis_record_file,mode='a',encoding='utf8') as fp:
+            fp.write(json.dumps(record_item,ensure_ascii=False))
     print("The basic distance is {}".format(result['distance_base'][-2][0]))
     print("The cluster average performance is {}".format(
         result['cluster_average'][-2][0]))
