@@ -15,7 +15,7 @@ from numpy.lib.function_base import copy
 from copy import deepcopy
 from sklearn.feature_extraction.text import CountVectorizer
 from tqdm import tqdm
-from sklearn.metrics.pairwise import euclidean_distances, cosine_distances
+from sklearn.metrics.pairwise import euclidean_distances, cosine_distances, manhattan_distances
 import numpy as np
 from matplotlib import pyplot as plt
 from os import path
@@ -248,6 +248,22 @@ def label_score_analysis(
     base_line: str
 ) -> Dict:
     data_map = BaselineArticleMap()
+    bias_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)))
+    distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
+    for i,media_a in enumerate(data_map.dataset_list):
+        temp_distance = list()
+        for j,media_b in enumerate(data_map.dataset_list):
+            bias_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
+            temp_distance.append(abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
+        order_list = np.argsort(temp_distance)
+        order_list = order_list.tolist()
+        for j in range(len(data_map.dataset_list)):
+            order = order_list.index(j)
+            distance_order_matrix[i][j] = order
+        
+
+
+
     analysis_result = dict()
     model_list = dict()
     analysis_data = dict()
@@ -393,6 +409,23 @@ def label_score_analysis(
         sentence_position_data['distance_base'] = {
             'sentence': 'distance_base', 'position': -2, 'word': 'distance_base'}
 
+        media_distance = analysis_data["media_average"]
+        media_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
+
+        for i,media_a in enumerate(data_map.dataset_list):
+            temp_distance = list()
+            for j,media_b in enumerate(data_map.dataset_list):
+                temp_distance.append(media_distance[i][j])
+            order_list = np.argsort(temp_distance)
+            order_list = order_list.tolist()
+            for j in range(len(data_map.dataset_list)):
+                order = order_list.index(j)
+                media_distance_order_matrix[i][j] = order
+        sort_distance = 0
+        for i in range(len(data_map.dataset_list)):
+            sort_distance += manhattan_distances(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
+        sort_distance /= len(data_map.dataset_list)
+
         result = dict()
         average_distance = dict()
         for k, v in tqdm(analysis_result, desc="Combine cluster analyze"):
@@ -430,14 +463,15 @@ def label_score_analysis(
                 v['sentence'] = k
                 fp.write(json.dumps(v, ensure_ascii=False)+'\n')
 
-        record_item = {'baseline':base_line,'augmentation_method':data_args.data_type.split('/')[0],'cluster_performance':round(result['media_average'][-2][0],2)}
+        record_item = {'baseline':base_line,'augmentation_method':data_args.data_type.split('/')[0],'cluster_performance':round(result['media_average'][-2][0],2),'sort_performance':round(sort_distance[0][0],2)}
         with open(analysis_record_file,mode='a',encoding='utf8') as fp:
             fp.write(json.dumps(record_item,ensure_ascii=False)+'\n')
     print("The basic distance is {}".format(result['distance_base'][-2][0]))
     print("The cluster average performance is {}".format(
         result['cluster_average'][-2][0]))
-    print("The media average performance is {}".format(
-        result['media_average'][-2][0]))
+    print("The order distance is {}".format(round(sort_distance[0][0],2)))
+    # print("The media average performance is {}".format(
+    #     result['media_average'][-2][0]))
 
     print("Analysis finish")
     return analysis_result

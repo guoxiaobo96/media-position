@@ -1,4 +1,5 @@
 import os
+from numpy.core.fromnumeric import shape
 from numpy.lib.utils import source
 from scipy.spatial.kdtree import distance_matrix
 from sklearn.cluster import AgglomerativeClustering
@@ -8,7 +9,7 @@ from copy import deepcopy
 import numpy as np
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.cluster import KMeans
-from sklearn.metrics.pairwise import cosine_distances, cosine_similarity
+from sklearn.metrics.pairwise import cosine_distances, cosine_similarity, manhattan_distances
 from sklearn.metrics import adjusted_rand_score, davies_bouldin_score, calinski_harabasz_score
 import seaborn as sns
 import pandas as pd
@@ -86,6 +87,23 @@ def temp(source_model, trust_model):
 
 def build_baseline(data_type, label_type):
     data_map = BaselineArticleMap() if data_type=='article' else TwitterMap()
+
+    data_map = BaselineArticleMap()
+    bias_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)))
+    distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
+    for i,media_a in enumerate(data_map.dataset_list):
+        temp_distance = list()
+        for j,media_b in enumerate(data_map.dataset_list):
+            bias_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
+            temp_distance.append(abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
+        order_list = np.argsort(temp_distance)
+        order_list = order_list.tolist()
+        for j in range(len(data_map.dataset_list)):
+            order = order_list.index(j)
+            distance_order_matrix[i][j] = order
+
+
+
     label_list = list(data_map.name_to_dataset.keys())
     from sklearn.metrics import silhouette_score, silhouette_samples
     data = list()
@@ -103,6 +121,24 @@ def build_baseline(data_type, label_type):
             data.append(data_item)
         except:
             print(k)
+    media_distance = np.zeros(shape=(len(data_map.dataset_list),len(data_map.dataset_list)))
+    for i,data_i in enumerate(data):
+        for j, data_j in enumerate(data):
+            media_distance[i][j] = manhattan_distances(np.array(data_i).reshape(1,-1),np.array(data_j).reshape(1,-1))
+    media_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
+    for i,media_a in enumerate(data_map.dataset_list):
+        temp_distance = list()
+        for j,media_b in enumerate(data_map.dataset_list):
+            temp_distance.append(media_distance[i][j])
+        order_list = np.argsort(temp_distance)
+        order_list = order_list.tolist()
+        for j in range(len(data_map.dataset_list)):
+            order = order_list.index(j)
+            media_distance_order_matrix[i][j] = order
+    sort_distance = 0
+    for i in range(len(data_map.dataset_list)):
+        sort_distance += manhattan_distances(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
+    sort_distance /= len(data_map.dataset_list)
 
     analyzer = AgglomerativeClustering(
         n_clusters=2, compute_distances=True, affinity='euclidean', linkage='complete')
