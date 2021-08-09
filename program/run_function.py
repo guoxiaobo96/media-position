@@ -467,11 +467,11 @@ def label_score_analysis(
         with open(analysis_record_file,mode='a',encoding='utf8') as fp:
             fp.write(json.dumps(record_item,ensure_ascii=False)+'\n')
     print("The basic distance is {}".format(result['distance_base'][-2][0]))
-    print("The cluster average performance is {}".format(
-        result['cluster_average'][-2][0]))
+    # print("The cluster average performance is {}".format(
+    #     result['cluster_average'][-2][0]))
     print("The order distance is {}".format(round(sort_distance[0][0],2)))
-    # print("The media average performance is {}".format(
-    #     result['media_average'][-2][0]))
+    print("The media average performance is {}".format(
+        result['media_average'][-2][0]))
 
     print("Analysis finish")
     return analysis_result
