@@ -9,7 +9,7 @@ from copy import deepcopy
 import numpy as np
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.cluster import KMeans
-from sklearn.metrics.pairwise import cosine_distances, cosine_similarity, manhattan_distances
+from sklearn.metrics.pairwise import cosine_distances, cosine_similarity, euclidean_distances, manhattan_distances
 from sklearn.metrics import adjusted_rand_score, davies_bouldin_score, calinski_harabasz_score
 import seaborn as sns
 import pandas as pd
@@ -124,7 +124,7 @@ def build_baseline(data_type, label_type):
     media_distance = np.zeros(shape=(len(data_map.dataset_list),len(data_map.dataset_list)))
     for i,data_i in enumerate(data):
         for j, data_j in enumerate(data):
-            media_distance[i][j] = manhattan_distances(np.array(data_i).reshape(1,-1),np.array(data_j).reshape(1,-1))
+            media_distance[i][j] = euclidean_distances(np.array(data_i).reshape(1,-1),np.array(data_j).reshape(1,-1))
     media_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
     for i,media_a in enumerate(data_map.dataset_list):
         temp_distance = list()
@@ -137,7 +137,7 @@ def build_baseline(data_type, label_type):
             media_distance_order_matrix[i][j] = order
     sort_distance = 0
     for i in range(len(data_map.dataset_list)):
-        sort_distance += manhattan_distances(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
+        sort_distance += euclidean_distances(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
     sort_distance /= len(data_map.dataset_list)
 
     analyzer = AgglomerativeClustering(

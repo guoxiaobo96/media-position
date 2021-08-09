@@ -423,7 +423,7 @@ def label_score_analysis(
                 media_distance_order_matrix[i][j] = order
         sort_distance = 0
         for i in range(len(data_map.dataset_list)):
-            sort_distance += manhattan_distances(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
+            sort_distance += euclidean_distances(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
         sort_distance /= len(data_map.dataset_list)
 
         result = dict()
