@@ -2,3 +2,4 @@
 {"baseline": "source", "augmentation_method": "sentence_order_replacement", "cluster_performance": 5.79, "sort_performance": 26.2}
 {"baseline": "trust", "augmentation_method": "span_cutoff", "cluster_performance": 4.22, "sort_performance": 26.0}
 {"baseline": "source", "augmentation_method": "span_cutoff", "cluster_performance": 4.32, "sort_performance": 26.0}
+{"baseline": "trust", "augmentation_method": "word_order_replacement", "cluster_performance": 5.08, "sort_performance": 27.6}
