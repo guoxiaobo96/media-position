@@ -9,3 +9,6 @@
 {"baseline": "trust", "augmentation_method": "no_augmentation", "cluster_performance": 4.7, "sort_performance": 11.78}
 {"baseline": "source", "augmentation_method": "no_augmentation", "cluster_performance": 4.74, "sort_performance": 11.78}
 {"baseline": "trust", "augmentation_method": "duplicate", "cluster_performance": 4.85, "sort_performance": 11.09}
+{"baseline": "source", "augmentation_method": "duplicate", "cluster_performance": 4.9, "sort_performance": 11.09}
+{"baseline": "trust", "augmentation_method": "sentence_replacement", "cluster_performance": 5.06, "sort_performance": 10.83}
+{"baseline": "source", "augmentation_method": "sentence_replacement", "cluster_performance": 5.18, "sort_performance": 10.83}

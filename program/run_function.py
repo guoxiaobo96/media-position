@@ -450,25 +450,24 @@ def label_score_analysis(
             analysis_args.analysis_result_dir, analysis_args.graph_distance)
         if not os.path.exists(result_path):
             os.makedirs(result_path)
-        result_file = os.path.join(result_path, analysis_args.analysis_encode_method +
-                                   '_'+method+'_'+analysis_args.graph_kernel+'_sort_'+base_line+'.json')
-        with open(result_file, mode='w', encoding='utf8') as fp:
-            for k, v in analysis_result.items():
-                fp.write(json.dumps(v, ensure_ascii=False)+'\n')
 
-        result_file = os.path.join(result_path, analysis_args.analysis_encode_method +
-                                   '_'+method+'_'+analysis_args.graph_kernel+'_sentence_'+base_line+'.json')
-        with open(result_file, mode='w', encoding='utf8') as fp:
-            for k, v in result.items():
-                v['sentence'] = k
-                fp.write(json.dumps(v, ensure_ascii=False)+'\n')
+        # result_file = os.path.join(result_path, analysis_args.analysis_encode_method +
+        #                            '_'+method+'_'+analysis_args.graph_kernel+'_sort_'+base_line+'.json')
+        # with open(result_file, mode='w', encoding='utf8') as fp:
+        #     for k, v in analysis_result.items():
+        #         fp.write(json.dumps(v, ensure_ascii=False)+'\n')
 
-        record_item = {'baseline':base_line,'augmentation_method':data_args.data_type.split('/')[0],'cluster_performance':round(result['media_average'][-2][0],2),'sort_performance':round(sort_distance[0][0],2)}
-        with open(analysis_record_file,mode='a',encoding='utf8') as fp:
-            fp.write(json.dumps(record_item,ensure_ascii=False)+'\n')
+        # result_file = os.path.join(result_path, analysis_args.analysis_encode_method +
+        #                            '_'+method+'_'+analysis_args.graph_kernel+'_sentence_'+base_line+'.json')
+        # with open(result_file, mode='w', encoding='utf8') as fp:
+        #     for k, v in result.items():
+        #         v['sentence'] = k
+        #         fp.write(json.dumps(v, ensure_ascii=False)+'\n')
+
+        # record_item = {'baseline':base_line,'augmentation_method':data_args.data_type.split('/')[0],'cluster_performance':round(result['media_average'][-2][0],2),'sort_performance':round(sort_distance[0][0],2)}
+        # with open(analysis_record_file,mode='a',encoding='utf8') as fp:
+        #     fp.write(json.dumps(record_item,ensure_ascii=False)+'\n')
     print("The basic distance is {}".format(result['distance_base'][-2][0]))
-    # print("The cluster average performance is {}".format(
-    #     result['cluster_average'][-2][0]))
     print("The order distance is {}".format(round(sort_distance[0][0],2)))
     print("The media average performance is {}".format(
         result['media_average'][-2][0]))
