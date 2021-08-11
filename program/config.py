@@ -274,7 +274,7 @@ class BaselineArticleMap:
     dataset_to_name: Dict = field(default_factory=lambda: {'Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
     name_to_dataset: Dict = field(init=False)
     dataset_list: List[str] = field(init=False)
-    dataset_bias: Dict = field(default_factory=lambda:{'Breitbart':2,'CBS':-1,'CNN':-2,'Fox':2,'HuffPost':-2,'NPR':0,'NYtimes':-1,'usatoday':-1,'wallstreet':0,'washington':-1})
+    dataset_bias: Dict = field(default_factory=lambda:{'Breitbart':2,'CBS':-1,'CNN':-5/3,'Fox':5/3,'HuffPost':-2,'NPR':-0.5,'NYtimes':-1.5,'usatoday':-1,'wallstreet':0.5,'washington':-1})
     left_dataset_list: List[str] = field(default_factory=lambda:['Breitbart', 'Fox', 'sean','rushlimbaugh.com'])
 
     def __post_init__(self):
