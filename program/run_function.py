@@ -115,10 +115,10 @@ def label_masked_token(
 
     if data_args.label_method == 'trigram_inner':
         masked_sentence_list = ngram_inner_label(
-            original_sentence_list, n_gram=2, min_df=5)
+            original_sentence_list, n_gram=3, min_df=5)
     elif data_args.label_method == 'bigram_inner':
         masked_sentence_list = ngram_inner_label(
-            original_sentence_list, n_gram=3, min_df=10)
+            original_sentence_list, n_gram=2, min_df=5)
     elif data_args.label_method == "bigram_outer":
         masked_sentence_list = ngram_outer_label(
             original_sentence_list, n_gram=2, min_df=10)
