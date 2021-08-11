@@ -161,6 +161,7 @@ def label_score_predict(
 
     log_dir = os.path.join(
         misc_args.log_dir, data_args.data_dir.split('_')[1].split('/')[0])
+    log_dir = os.path.join(log_dir,str(training_args.seed))
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 

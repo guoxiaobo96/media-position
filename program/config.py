@@ -387,7 +387,7 @@ def get_config() -> Tuple:
             data_args.data_type = os.path.join(aug_args.augment_type, str(aug_args.multiple_number))
         elif data_args.data_type=='':
             data_args.data_type = 'original'
-
+        data_args.data_dir = os.path.join(data_args.data_dir,str(training_args.seed))
         data_args.data_path = os.path.join(
             data_args.data_dir, os.path.join(data_args.dataset, data_args.data_type))
         if 'mlm' in training_args.loss_type or 'class' in training_args.loss_type:
