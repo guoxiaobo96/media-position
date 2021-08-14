@@ -169,15 +169,16 @@ class ClusterAnalysis(BaseAnalysis):
                             labels=dataset_list)
             plt_file = os.path.join(analysis_args.analysis_result_dir, analysis_args.analysis_encode_method +
                                     '_'+analysis_args.analysis_cluster_method+'_'+sentence_number+'.png')
-            model_path = os.path.join(os.path.join(os.path.join(
-                self._misc_args.log_dir, self._data_args.dataset), self._data_args.data_type+'-'+self._training_args.loss_type), 'model')
+            data_file = os.path.join(analysis_args.analysis_result_dir, analysis_args.analysis_encode_method +
+                                    '_'+sentence_number+'_distance.npy')
+            model_path = analysis_args.analysis_result_dir
             if not os.path.exists(model_path):
                 os.makedirs(model_path)
-            model_file = os.path.join(model_path, analysis_args.analysis_encode_method +
-                                      '_'+analysis_args.analysis_cluster_method+'_'+sentence_number+'.c')
+            model_file = os.path.join(model_path, 'model.c')
             joblib.dump(self._analyser, model_file)
             plt.savefig(plt_file, bbox_inches='tight')
             plt.close()
+            np.save(data_file, data)
         return clusters, cluster_result, dataset_list, encoded_list
 
 

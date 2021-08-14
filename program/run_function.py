@@ -16,6 +16,7 @@ from copy import deepcopy
 from sklearn.feature_extraction.text import CountVectorizer
 from tqdm import tqdm
 from sklearn.metrics.pairwise import euclidean_distances, cosine_distances, manhattan_distances
+from scipy.stats import kendalltau
 import numpy as np
 from matplotlib import pyplot as plt
 from os import path
@@ -256,11 +257,12 @@ def label_score_analysis(
         for j,media_b in enumerate(data_map.dataset_list):
             bias_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
             temp_distance.append(abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
-        order_list = np.argsort(temp_distance)
-        order_list = order_list.tolist()
-        for j in range(len(data_map.dataset_list)):
-            order = order_list.index(j)
-            distance_order_matrix[i][j] = order
+        distance_set = set(temp_distance)
+        distance_set = sorted(list(distance_set))
+        for o, d_o in enumerate(distance_set):
+            for j,d_j in enumerate(temp_distance):
+                if d_o == d_j:
+                    distance_order_matrix[i][j] = o
         
 
 
@@ -425,8 +427,10 @@ def label_score_analysis(
         sort_distance = 0
         for i in range(len(data_map.dataset_list)):
             # sort_distance += euclidean_distances(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
-            sort_distance += manhattan_distances(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
+            tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
+            sort_distance += tau
         sort_distance /= len(data_map.dataset_list)
+
 
         result = dict()
         average_distance = dict()
@@ -466,11 +470,11 @@ def label_score_analysis(
                 v['sentence'] = k
                 fp.write(json.dumps(v, ensure_ascii=False)+'\n')
 
-        record_item = {'baseline':base_line,'augmentation_method':data_args.data_type.split('/')[0],'cluster_performance':round(result['media_average'][-2][0],2),'sort_performance':round(sort_distance[0][0],2)}
+        record_item = {'baseline':base_line,'augmentation_method':data_args.data_type.split('/')[0],'cluster_performance':round(result['media_average'][-2][0],2),'sort_performance':round(sort_distance,2)}
         with open(analysis_record_file,mode='a',encoding='utf8') as fp:
             fp.write(json.dumps(record_item,ensure_ascii=False)+'\n')
     print("The basic distance is {}".format(result['distance_base'][-2][0]))
-    print("The order distance is {}".format(round(sort_distance[0][0],2)))
+    print("The order distance is {}".format(round(sort_distance,2)))
     print("The media average performance is {}".format(
         result['media_average'][-2][0]))
 

@@ -1,3 +1,4 @@
+import enum
 import os
 from numpy.core.fromnumeric import shape
 from numpy.lib.utils import source
@@ -14,6 +15,7 @@ from sklearn.metrics import adjusted_rand_score, davies_bouldin_score, calinski_
 import seaborn as sns
 import pandas as pd
 import joblib
+from scipy.stats import kendalltau
 
 from program.config import ArticleMap, TwitterMap, FullArticleMap, BaselineArticleMap
 
@@ -96,11 +98,12 @@ def build_baseline(data_type, label_type):
         for j,media_b in enumerate(data_map.dataset_list):
             bias_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
             temp_distance.append(abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
-        order_list = np.argsort(temp_distance)
-        order_list = order_list.tolist()
-        for j in range(len(data_map.dataset_list)):
-            order = order_list.index(j)
-            distance_order_matrix[i][j] = order
+        distance_set = set(temp_distance)
+        distance_set = sorted(list(distance_set))
+        for o, d_o in enumerate(distance_set):
+            for j,d_j in enumerate(temp_distance):
+                if d_o == d_j:
+                    distance_order_matrix[i][j] = o
 
 
 
@@ -137,7 +140,8 @@ def build_baseline(data_type, label_type):
             media_distance_order_matrix[i][j] = order
     sort_distance = 0
     for i in range(len(data_map.dataset_list)):
-        sort_distance += euclidean_distances(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
+        tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1),variant='c')
+        sort_distance += tau
     sort_distance /= len(data_map.dataset_list)
 
     analyzer = AgglomerativeClustering(
