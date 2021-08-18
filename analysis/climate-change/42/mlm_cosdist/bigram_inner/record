@@ -1,0 +1,2 @@
+{"baseline": "trust", "augmentation_method": "sentence_order_replacement", "cluster_performance": 4.76, "sort_performance": 0.25}
+{"baseline": "source", "augmentation_method": "sentence_order_replacement", "cluster_performance": 4.76, "sort_performance": 0.25}

@@ -139,7 +139,7 @@ class SelfDataAugmentor(BasicDataAugementor):
             else:
                 model = None
 
-            for index, paragraph in enumerate(train_data):
+            for index, paragraph in enumerate(tqdm.tqdm(train_data)):
                 if paragraph == '':
                     continue
                 item = {'original': paragraph, 'augmented': list()}
@@ -336,9 +336,13 @@ class DataAugmentor(object):
             splited_paragraph = deepcopy(original_splited_paragraph)
             replace_position = random.randint(0, length-1)
             replaced_word = splited_paragraph[replace_position]
+            count = 0
             while replaced_word in stopwords.words('english'):
                 replace_position = random.randint(0, length-1)
                 replaced_word = splited_paragraph[replace_position]
+                count += 1
+                if count > 2*length:
+                    return paragraph
             splited_paragraph[replace_position] = model.wv.most_similar(
                 replaced_word, topn=1)[0][0]
         return ' '.join(splited_paragraph)
