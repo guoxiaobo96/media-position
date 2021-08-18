@@ -274,7 +274,7 @@ def label_score_analysis(
 
     if not os.path.exists(analysis_args.analysis_result_dir):
         os.makedirs(analysis_args.analysis_result_dir)
-    analysis_record_file = '/'.join(analysis_args.analysis_result_dir.split('/')[:4])
+    analysis_record_file = '/'.join(analysis_args.analysis_result_dir.split('/')[:5])
     if not os.path.exists(analysis_record_file):
         os.makedirs(analysis_record_file)
     analysis_record_file = os.path.join(analysis_record_file,'record')
