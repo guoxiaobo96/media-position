@@ -4,3 +4,7 @@
 {"baseline": "source", "augmentation_method": "span_cutoff", "cluster_performance": 4.87, "sort_performance": 0.26}
 {"baseline": "trust", "augmentation_method": "word_order_replacement", "cluster_performance": 5.26, "sort_performance": 0.32}
 {"baseline": "source", "augmentation_method": "word_order_replacement", "cluster_performance": 5.26, "sort_performance": 0.32}
+{"baseline": "trust", "augmentation_method": "word_replacement", "cluster_performance": 5.41, "sort_performance": 0.28}
+{"baseline": "source", "augmentation_method": "word_replacement", "cluster_performance": 5.43, "sort_performance": 0.28}
+{"baseline": "trust", "augmentation_method": "sentence_replacement", "cluster_performance": 5.4, "sort_performance": 0.3}
+{"baseline": "source", "augmentation_method": "sentence_replacement", "cluster_performance": 5.41, "sort_performance": 0.3}
