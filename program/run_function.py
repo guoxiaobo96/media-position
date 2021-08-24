@@ -127,6 +127,8 @@ def label_masked_token(
         model = MaskedTokenLabeller(
             misc_args, data_args, model_args, training_args)
         for item in tqdm(original_sentence_list):
+            if item['sentence'] == '':
+                continue
             label, probability, sentence_set = model.label_sentence(
                 item['sentence'])
             if probability > 0.7 and label == item['label']:

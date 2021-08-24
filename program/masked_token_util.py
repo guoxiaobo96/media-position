@@ -79,6 +79,8 @@ def random_label(original_sentence_list, sentence_percent, word_percent):
     chosen_sentence_list = sample(original_sentence_list,chosen_sentence_number)
 
     for sentence in tqdm(chosen_sentence_list):
+        if sentence['sentence'] == '':
+            continue
         written_item = {"original_sentence":sentence["sentence"],"masked_sentence":list()}
         splited_sentence = tokenizer(sentence["sentence"])
         token_index_list = [i for i in range(len(splited_sentence))]
