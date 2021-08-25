@@ -13,18 +13,14 @@ log/*/*/dict/*
 log/*/*/model/*
 *.csv
 transformers/*
-log/obamacare/*/*/*/*/*
-log/obamacare/*/*/*/*
+
+analysis/*/*/*/*/*/*/*/*/*/*.json
 analysis/*/*/*/*/*/*/*/*/*.json
-analysis/*/*/*/*/*/*/*/*.json
+analysis/*/*/*/*/*/*/*/*/*/*.c
 analysis/*/*/*/*/*/*/*/*/*.c
-analysis/*/*/*/*/*/*/*/*.c
-log/drug-policy/*/*/*/*/*
-log/drug-policy/*/*/*/*
-log/climate-change/*/*/*/*/*
-log/climate-change/*/*/*/*
-log/gay-marriage/*/*/*/*/*
-log/gay-marriage/*/*/*/*
+
+log/*/*/*/*/*/*
+log/*/*/*/*/*
 
 log_*/*/*/*/*/*/*
 log_*/*/*/*/*/*
