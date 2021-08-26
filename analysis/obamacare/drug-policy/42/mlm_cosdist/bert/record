@@ -8,4 +8,3 @@
 {"baseline": "source", "augmentation_method": "sentence_order_replacement", "cluster_performance": 4.94, "allsides_performance": 0.24, "pew_performance": 0.24}
 {"baseline": "source", "augmentation_method": "word_order_replacement", "cluster_performance": 4.7, "allsides_performance": 0.15, "pew_performance": 0.12}
 {"baseline": "source", "augmentation_method": "span_cutoff", "cluster_performance": 5.66, "allsides_performance": 0.18, "pew_performance": 0.15}
-
