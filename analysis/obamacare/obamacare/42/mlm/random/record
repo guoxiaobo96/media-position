@@ -1,0 +1,14 @@
+{"baseline": "trust", "augmentation_method": "word_order_replacement", "cluster_performance": 5.3, "allsides_performance": 0.35, "pew_performance": 0.28}
+{"baseline": "trust", "augmentation_method": "sentence_replacement", "cluster_performance": 5.26, "allsides_performance": 0.35, "pew_performance": 0.33}
+{"baseline": "trust", "augmentation_method": "word_replacement", "cluster_performance": 3.68, "allsides_performance": 0.39, "pew_performance": 0.36}
+{"baseline": "trust", "augmentation_method": "duplicate", "cluster_performance": 4.84, "allsides_performance": 0.32, "pew_performance": 0.32}
+{"baseline": "trust", "augmentation_method": "no_augmentation", "cluster_performance": 5.56, "allsides_performance": 0.3, "pew_performance": 0.3}
+{"baseline": "trust", "augmentation_method": "sentence_order_replacement", "cluster_performance": 5.26, "allsides_performance": 0.4, "pew_performance": 0.34}
+{"baseline": "trust", "augmentation_method": "span_cutoff", "cluster_performance": 4.81, "allsides_performance": 0.38, "pew_performance": 0.33}
+{"baseline": "source", "augmentation_method": "sentence_replacement", "cluster_performance": 5.26, "allsides_performance": 0.35, "pew_performance": 0.31}
+{"baseline": "source", "augmentation_method": "duplicate", "cluster_performance": 4.83, "allsides_performance": 0.32, "pew_performance": 0.3}
+{"baseline": "source", "augmentation_method": "word_order_replacement", "cluster_performance": 5.31, "allsides_performance": 0.35, "pew_performance": 0.28}
+{"baseline": "source", "augmentation_method": "no_augmentation", "cluster_performance": 5.57, "allsides_performance": 0.3, "pew_performance": 0.3}
+{"baseline": "source", "augmentation_method": "word_replacement", "cluster_performance": 3.78, "allsides_performance": 0.39, "pew_performance": 0.35}
+{"baseline": "source", "augmentation_method": "sentence_order_replacement", "cluster_performance": 5.26, "allsides_performance": 0.4, "pew_performance": 0.35}
+{"baseline": "source", "augmentation_method": "span_cutoff", "cluster_performance": 4.81, "allsides_performance": 0.38, "pew_performance": 0.32}

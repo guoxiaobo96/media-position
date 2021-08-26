@@ -1,0 +1,14 @@
+{"baseline": "trust", "augmentation_method": "word_replacement", "cluster_performance": 5.17, "allsides_performance": 0.2, "pew_performance": 0.17}
+{"baseline": "trust", "augmentation_method": "span_cutoff", "cluster_performance": 4.71, "allsides_performance": 0.24, "pew_performance": 0.16}
+{"baseline": "trust", "augmentation_method": "word_order_replacement", "cluster_performance": 4.8, "allsides_performance": 0.16, "pew_performance": 0.13}
+{"baseline": "trust", "augmentation_method": "sentence_order_replacement", "cluster_performance": 5.77, "allsides_performance": 0.2, "pew_performance": 0.19}
+{"baseline": "trust", "augmentation_method": "no_augmentation", "cluster_performance": 5.0, "allsides_performance": 0.16, "pew_performance": 0.16}
+{"baseline": "trust", "augmentation_method": "sentence_replacement", "cluster_performance": 4.02, "allsides_performance": 0.23, "pew_performance": 0.2}
+{"baseline": "trust", "augmentation_method": "duplicate", "cluster_performance": 5.1, "allsides_performance": 0.23, "pew_performance": 0.18}
+{"baseline": "source", "augmentation_method": "word_replacement", "cluster_performance": 5.23, "allsides_performance": 0.2, "pew_performance": 0.2}
+{"baseline": "source", "augmentation_method": "word_order_replacement", "cluster_performance": 4.82, "allsides_performance": 0.16, "pew_performance": 0.12}
+{"baseline": "source", "augmentation_method": "span_cutoff", "cluster_performance": 4.75, "allsides_performance": 0.24, "pew_performance": 0.18}
+{"baseline": "source", "augmentation_method": "sentence_order_replacement", "cluster_performance": 5.8, "allsides_performance": 0.2, "pew_performance": 0.18}
+{"baseline": "source", "augmentation_method": "no_augmentation", "cluster_performance": 5.02, "allsides_performance": 0.16, "pew_performance": 0.15}
+{"baseline": "source", "augmentation_method": "sentence_replacement", "cluster_performance": 4.14, "allsides_performance": 0.23, "pew_performance": 0.21}
+{"baseline": "source", "augmentation_method": "duplicate", "cluster_performance": 5.25, "allsides_performance": 0.23, "pew_performance": 0.2}
