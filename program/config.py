@@ -179,7 +179,12 @@ class ModelArguments:
     """
     Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch.
     """
-
+    model_dataset: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "The dataset for training the model"
+        },
+    )
     model_name_or_path: Optional[str] = field(
         default=None,
         metadata={
@@ -382,6 +387,10 @@ def get_config() -> Tuple:
         analysis_args: AnalysisArguments,
         baseline_args: BaselineArguments
     ) -> None:
+
+        misc_args.log_dir = os.path.join(misc_args.log_dir,model_args.model_dataset)
+        analysis_args.analysis_data_dir = os.path.join(analysis_args.analysis_data_dir,model_args.model_dataset)
+        analysis_args.analysis_result_dir = os.path.join(analysis_args.analysis_result_dir,model_args.model_dataset)
 
         if aug_args.augment_type != 'original':
             data_args.data_type = os.path.join(aug_args.augment_type, str(aug_args.multiple_number))

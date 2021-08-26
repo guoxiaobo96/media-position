@@ -140,7 +140,7 @@ def build_baseline(data_type, label_type):
             media_distance_order_matrix[i][j] = order
     sort_distance = 0
     for i in range(len(data_map.dataset_list)):
-        tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1),variant='c')
+        tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
         sort_distance += tau
     sort_distance /= len(data_map.dataset_list)
 
@@ -160,6 +160,8 @@ def build_baseline(data_type, label_type):
     if not os.path.exists('./log/baseline/model/'):
         os.makedirs('./log/baseline/model/')
     model_file = './log/baseline/model/baseline_'+label_type+'_'+data_type+'.c'
+    distance_file = './log/baseline/model/baseline_'+label_type+'_'+data_type+'.npy'
+    np.save(distance_file,media_distance)
     joblib.dump(analyzer, model_file)
     plt.title('Baseline')
     plot_dendrogram(analyzer, orientation='right',

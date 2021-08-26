@@ -253,7 +253,7 @@ def label_score_analysis(
 ) -> Dict:
     data_map = BaselineArticleMap()
     bias_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)))
-    distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
+    allsides_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
     for i,media_a in enumerate(data_map.dataset_list):
         temp_distance = list()
         for j,media_b in enumerate(data_map.dataset_list):
@@ -264,7 +264,27 @@ def label_score_analysis(
         for o, d_o in enumerate(distance_set):
             for j,d_j in enumerate(temp_distance):
                 if d_o == d_j:
-                    distance_order_matrix[i][j] = o
+                    allsides_distance_order_matrix[i][j] = o
+                    
+    if base_line == 'source':
+        distance_base = 'trust'
+    else:
+        distance_base = 'source'
+
+    baseline_model = joblib.load(
+        'log/baseline/model/baseline_'+base_line+'_article.c')
+    base_model = joblib.load(
+        'log/baseline/model/baseline_'+distance_base+'_article.c')
+    baseline_distance = np.load('log/baseline/model/baseline_'+base_line+'_article.npy')
+    pew_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
+    for i,media_a in enumerate(data_map.dataset_list):
+        temp_distance = baseline_distance[i]
+        distance_set = set(temp_distance)
+        distance_set = sorted(list(distance_set))
+        for o, d_o in enumerate(distance_set):
+            for j,d_j in enumerate(temp_distance):
+                if d_o == d_j:
+                    pew_distance_order_matrix[i][j] = o
         
 
 
@@ -276,7 +296,7 @@ def label_score_analysis(
 
     if not os.path.exists(analysis_args.analysis_result_dir):
         os.makedirs(analysis_args.analysis_result_dir)
-    analysis_record_file = '/'.join(analysis_args.analysis_result_dir.split('/')[:5])
+    analysis_record_file = '/'.join(analysis_args.analysis_result_dir.split('/')[:6])
     if not os.path.exists(analysis_record_file):
         os.makedirs(analysis_record_file)
     analysis_record_file = os.path.join(analysis_record_file,'record')
@@ -362,16 +382,7 @@ def label_score_analysis(
             plt.savefig(plt_file, bbox_inches='tight')
             plt.close()
     else:
-        if base_line == 'source':
-            distance_base = 'trust'
-        else:
-            distance_base = 'source'
-
-        base_model = joblib.load(
-            'log/baseline/model/baseline_'+base_line+'_article.c')
-        model_list['base'] = base_model
-        base_model = joblib.load(
-            'log/baseline/model/baseline_'+distance_base+'_article.c')
+        model_list['base'] = baseline_model
         model_list['distance_base'] = base_model
         cluster_compare = ClusterCompare(misc_args, analysis_args)
         analysis_result = cluster_compare.compare(model_list)
@@ -426,12 +437,19 @@ def label_score_analysis(
             for j in range(len(data_map.dataset_list)):
                 order = order_list.index(j)
                 media_distance_order_matrix[i][j] = order
-        sort_distance = 0
+        allsides_distance = 0
         for i in range(len(data_map.dataset_list)):
             # sort_distance += euclidean_distances(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
-            tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
-            sort_distance += tau
-        sort_distance /= len(data_map.dataset_list)
+            tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(1,-1), allsides_distance_order_matrix[i].reshape(1,-1))
+            allsides_distance += tau
+        allsides_distance /= len(data_map.dataset_list)
+
+        pew_distance = 0
+        for i in range(len(data_map.dataset_list)):
+            # sort_distance += euclidean_distances(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
+            tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(1,-1), pew_distance_order_matrix[i].reshape(1,-1))
+            pew_distance += tau
+        pew_distance /= len(data_map.dataset_list)
 
 
         result = dict()
@@ -472,11 +490,12 @@ def label_score_analysis(
                 v['sentence'] = k
                 fp.write(json.dumps(v, ensure_ascii=False)+'\n')
 
-        record_item = {'baseline':base_line,'augmentation_method':data_args.data_type.split('/')[0],'cluster_performance':round(result['media_average'][-2][0],2),'sort_performance':round(sort_distance,2)}
+        record_item = {'baseline':base_line,'augmentation_method':data_args.data_type.split('/')[0],'cluster_performance':round(result['media_average'][-2][0],2),'allsides_performance':round(allsides_distance,2),'pew_performance':round(pew_distance,2)}
         with open(analysis_record_file,mode='a',encoding='utf8') as fp:
             fp.write(json.dumps(record_item,ensure_ascii=False)+'\n')
     print("The basic distance is {}".format(result['distance_base'][-2][0]))
-    print("The order distance is {}".format(round(sort_distance,2)))
+    print("The allsides distance is {}".format(round(allsides_distance,2)))
+    print("The pew distance is {}".format(round(pew_distance,2)))
     print("The media average performance is {}".format(
         result['media_average'][-2][0]))
 
