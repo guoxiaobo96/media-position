@@ -1,0 +1,10 @@
+{"baseline": "trust", "augmentation_method": "sentence_order_replacement", "cluster_performance": 5.54, "allsides_performance": 0.31, "pew_performance": 0.33}
+{"baseline": "trust", "augmentation_method": "span_cutoff", "cluster_performance": 4.74, "allsides_performance": 0.26, "pew_performance": 0.29}
+{"baseline": "trust", "augmentation_method": "word_order_replacement", "cluster_performance": 5.26, "allsides_performance": 0.32, "pew_performance": 0.29}
+{"baseline": "trust", "augmentation_method": "word_replacement", "cluster_performance": 5.41, "allsides_performance": 0.28, "pew_performance": 0.31}
+{"baseline": "trust", "augmentation_method": "sentence_replacement", "cluster_performance": 5.4, "allsides_performance": 0.3, "pew_performance": 0.36}
+{"baseline": "source", "augmentation_method": "span_cutoff", "cluster_performance": 4.87, "allsides_performance": 0.26, "pew_performance": 0.28}
+{"baseline": "source", "augmentation_method": "word_order_replacement", "cluster_performance": 5.26, "allsides_performance": 0.32, "pew_performance": 0.28}
+{"baseline": "source", "augmentation_method": "sentence_order_replacement", "cluster_performance": 5.54, "allsides_performance": 0.31, "pew_performance": 0.31}
+{"baseline": "source", "augmentation_method": "sentence_replacement", "cluster_performance": 5.41, "allsides_performance": 0.3, "pew_performance": 0.33}
+{"baseline": "source", "augmentation_method": "word_replacement", "cluster_performance": 5.43, "allsides_performance": 0.28, "pew_performance": 0.3}
