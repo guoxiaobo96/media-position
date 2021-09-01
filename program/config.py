@@ -26,7 +26,7 @@ class MiscArgument:
         default='/home/xiaobo/media-position', metadata={"help": "The relative path to the root dir"}
     )
     log_dir: Optional[str] = field(
-        default='log', metadata={"help": "The relative path to the log dir"}
+        default='/data/xiaobo/media-position/log', metadata={"help": "The relative path to the log dir"}
     )
     gpu_id: str = field(
         default='0', metadata={"help": "The id of gpu which runs the work"}
