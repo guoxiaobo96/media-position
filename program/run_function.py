@@ -15,7 +15,7 @@ from numpy.lib.function_base import copy
 from copy import deepcopy
 from sklearn.feature_extraction.text import CountVectorizer
 from tqdm import tqdm
-from sklearn.metrics.pairwise import euclidean_distances, cosine_distances, manhattan_distances
+from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances, cosine_distances, manhattan_distances
 from scipy.stats import kendalltau
 import numpy as np
 from matplotlib import pyplot as plt
@@ -193,7 +193,7 @@ def label_score_predict(
             for masked_sentence in masked_sentences:
                 masked_sentence_dict[masked_sentence] = original_sentence
 
-    batch_size = 64
+    batch_size = 32
     index = 0
     while (index < len(masked_sentence_list)):
         batched_masked_sentence_list.append(
@@ -272,13 +272,13 @@ def label_score_analysis(
         distance_base = 'source'
 
     baseline_model = joblib.load(
-        'log/baseline/model/baseline_'+base_line+'_article.c')
+        '/data/xiaobo/media-position/log/baseline/model/baseline_'+base_line+'_article.c')
     base_model = joblib.load(
-        'log/baseline/model/baseline_'+distance_base+'_article.c')
-    baseline_distance = np.load('log/baseline/model/baseline_'+base_line+'_article.npy')
+        '/data/xiaobo/media-position/log/baseline/model/baseline_'+distance_base+'_article.c')
+    pew_distance_matrix = np.load('/data/xiaobo/media-position/log/baseline/model/baseline_'+base_line+'_article.npy')
     pew_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
     for i,media_a in enumerate(data_map.dataset_list):
-        temp_distance = baseline_distance[i]
+        temp_distance = pew_distance_matrix[i]
         distance_set = set(temp_distance)
         distance_set = sorted(list(distance_set))
         for o, d_o in enumerate(distance_set):
@@ -437,19 +437,27 @@ def label_score_analysis(
             for j in range(len(data_map.dataset_list)):
                 order = order_list.index(j)
                 media_distance_order_matrix[i][j] = order
-        allsides_distance = 0
+        allsides_rank_similarity = 0
         for i in range(len(data_map.dataset_list)):
             # sort_distance += euclidean_distances(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
             tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(1,-1), allsides_distance_order_matrix[i].reshape(1,-1))
-            allsides_distance += tau
-        allsides_distance /= len(data_map.dataset_list)
+            allsides_rank_similarity += tau
+        allsides_rank_similarity /= len(data_map.dataset_list)
 
-        pew_distance = 0
+        pew_rank_similarity = 0
         for i in range(len(data_map.dataset_list)):
             # sort_distance += euclidean_distances(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
             tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(1,-1), pew_distance_order_matrix[i].reshape(1,-1))
-            pew_distance += tau
-        pew_distance /= len(data_map.dataset_list)
+            pew_rank_similarity += tau
+        pew_rank_similarity /= len(data_map.dataset_list)
+
+        pew_cosine_similarity = 0
+        for i,media_a in enumerate(data_map.dataset_list):
+            distance = cosine_similarity(pew_distance_matrix[i].reshape(1,-1),media_distance[i].reshape(1,-1))
+            pew_cosine_similarity += distance[0][0]
+        pew_cosine_similarity /= len(data_map.dataset_list)
+
+
 
 
         result = dict()
@@ -490,12 +498,13 @@ def label_score_analysis(
                 v['sentence'] = k
                 fp.write(json.dumps(v, ensure_ascii=False)+'\n')
 
-        record_item = {'baseline':base_line,'augmentation_method':data_args.data_type.split('/')[0],'cluster_performance':round(result['media_average'][-2][0],2),'allsides_performance':round(allsides_distance,2),'pew_performance':round(pew_distance,2)}
+        record_item = {'baseline':base_line,'augmentation_method':data_args.data_type.split('/')[0],'cluster_performance':round(result['media_average'][-2][0],2),'allsides_rank_similarity':round(allsides_rank_similarity,2),'pew_rank_similarity':round(pew_rank_similarity,2),'pew_cosine_similarity':round(pew_cosine_similarity,2)}
         with open(analysis_record_file,mode='a',encoding='utf8') as fp:
             fp.write(json.dumps(record_item,ensure_ascii=False)+'\n')
-    print("The basic distance is {}".format(result['distance_base'][-2][0]))
-    print("The allsides distance is {}".format(round(allsides_distance,2)))
-    print("The pew distance is {}".format(round(pew_distance,2)))
+    # print("The basic distance is {}".format(result['distance_base'][-2][0]))
+    print("The allsides rank similarity is {}".format(round(allsides_rank_similarity,2)))
+    print("The pew rank similarity is {}".format(round(pew_rank_similarity,2)))
+    print("The pew cosine similarity is {}".format(round(pew_cosine_similarity,2)))
     print("The media average performance is {}".format(
         result['media_average'][-2][0]))
 

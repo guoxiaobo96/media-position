@@ -216,7 +216,7 @@ class ModelArguments:
 @dataclass
 class AnalysisArguments:
     analysis_data_dir: str = field(
-        default="log", metadata={"help": "The dir of analysis data"}
+        default="/data/xiaobo/media-position/log", metadata={"help": "The dir of analysis data"}
     )
     analysis_result_dir: str = field(
         default="analysis", metadata={"help": "The dir of analysis result"}
