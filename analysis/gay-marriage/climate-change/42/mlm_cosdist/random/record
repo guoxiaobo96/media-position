@@ -1,0 +1,10 @@
+{"baseline": "trust", "augmentation_method": "word_order_replacement", "cluster_performance": 4.63, "allsides_rank_similarity": 0.24, "pew_rank_similarity": 0.2, "pew_cosine_similarity": 0.8}
+{"baseline": "trust", "augmentation_method": "sentence_replacement", "cluster_performance": 3.42, "allsides_rank_similarity": 0.22, "pew_rank_similarity": 0.26, "pew_cosine_similarity": 0.8}
+{"baseline": "trust", "augmentation_method": "sentence_order_replacement", "cluster_performance": 4.15, "allsides_rank_similarity": 0.15, "pew_rank_similarity": 0.19, "pew_cosine_similarity": 0.8}
+{"baseline": "trust", "augmentation_method": "span_cutoff", "cluster_performance": 4.48, "allsides_rank_similarity": 0.19, "pew_rank_similarity": 0.2, "pew_cosine_similarity": 0.8}
+{"baseline": "trust", "augmentation_method": "word_replacement", "cluster_performance": 4.57, "allsides_rank_similarity": 0.22, "pew_rank_similarity": 0.25, "pew_cosine_similarity": 0.8}
+{"baseline": "source", "augmentation_method": "sentence_order_replacement", "cluster_performance": 4.29, "allsides_rank_similarity": 0.15, "pew_rank_similarity": 0.14, "pew_cosine_similarity": 0.84}
+{"baseline": "source", "augmentation_method": "word_order_replacement", "cluster_performance": 4.75, "allsides_rank_similarity": 0.24, "pew_rank_similarity": 0.18, "pew_cosine_similarity": 0.83}
+{"baseline": "source", "augmentation_method": "span_cutoff", "cluster_performance": 4.61, "allsides_rank_similarity": 0.19, "pew_rank_similarity": 0.17, "pew_cosine_similarity": 0.83}
+{"baseline": "source", "augmentation_method": "sentence_replacement", "cluster_performance": 3.57, "allsides_rank_similarity": 0.22, "pew_rank_similarity": 0.22, "pew_cosine_similarity": 0.84}
+{"baseline": "source", "augmentation_method": "word_replacement", "cluster_performance": 4.7, "allsides_rank_similarity": 0.22, "pew_rank_similarity": 0.24, "pew_cosine_similarity": 0.84}
