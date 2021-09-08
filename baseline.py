@@ -39,7 +39,7 @@ def plot_dendrogram(model, **kwargs):
                                       counts]).astype(float)
 
     # Plot the corresponding dendrogram
-    dendrogram(linkage_matrix, **kwargs)
+    dendrogram(linkage_matrix, color_threshold=0, **kwargs)
 
 
 def cluster_generate(model: AgglomerativeClustering, label_list = None):
