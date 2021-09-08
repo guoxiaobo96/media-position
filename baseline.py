@@ -164,6 +164,7 @@ def build_baseline(data_type, label_type):
     np.save(distance_file,media_distance)
     joblib.dump(analyzer, model_file)
     plt.title('Baseline')
+    label_list = ["Breitbart", "CBS","CNN","Fox","Huffpost","NPR","NYtimes","usatoday","wallstreet","washington"]
     plot_dendrogram(analyzer, orientation='right',
                     labels=label_list)
     plt_file = './analysis/baseline/baseline_'+label_type+'_'+data_type+'.png'
@@ -185,6 +186,6 @@ def main():
     for data_type in ['article']:
         source_model = build_baseline(data_type,'source')
         trust_model = build_baseline(data_type,'trust')
-    temp(source_model, trust_model)
+    # temp(source_model, trust_model)
 if __name__ == '__main__':
     main()
