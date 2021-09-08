@@ -1,0 +1,10 @@
+{"baseline": "source", "cluster_performance": 6.46, "allsides_rank_similarity": 0.19, "pew_rank_similarity": 0.23, "pew_cosine_similarity": 0.77}
+{"baseline": "source", "cluster_performance": 5.46, "allsides_rank_similarity": 0.29, "pew_rank_similarity": 0.23, "pew_cosine_similarity": 0.73}
+{"baseline": "source", "cluster_performance": 5.19, "allsides_rank_similarity": 0.25, "pew_rank_similarity": 0.2, "pew_cosine_similarity": 0.76}
+{"baseline": "source", "cluster_performance": 5.21, "allsides_rank_similarity": 0.16, "pew_rank_similarity": 0.19, "pew_cosine_similarity": 0.76}
+{"baseline": "source", "cluster_performance": 6.39, "allsides_rank_similarity": 0.21, "pew_rank_similarity": 0.19, "pew_cosine_similarity": 0.79}
+{"baseline": "trust", "cluster_performance": 6.22, "allsides_rank_similarity": 0.19, "pew_rank_similarity": 0.2, "pew_cosine_similarity": 0.73}
+{"baseline": "trust", "cluster_performance": 5.68, "allsides_rank_similarity": 0.29, "pew_rank_similarity": 0.2, "pew_cosine_similarity": 0.7}
+{"baseline": "trust", "cluster_performance": 5.23, "allsides_rank_similarity": 0.25, "pew_rank_similarity": 0.19, "pew_cosine_similarity": 0.73}
+{"baseline": "trust", "cluster_performance": 5.25, "allsides_rank_similarity": 0.16, "pew_rank_similarity": 0.16, "pew_cosine_similarity": 0.73}
+{"baseline": "trust", "cluster_performance": 6.48, "allsides_rank_similarity": 0.21, "pew_rank_similarity": 0.21, "pew_cosine_similarity": 0.76}
