@@ -163,7 +163,10 @@ def build_baseline(data_type, label_type):
     distance_file = './log/baseline/model/baseline_'+label_type+'_'+data_type+'.npy'
     np.save(distance_file,media_distance)
     joblib.dump(analyzer, model_file)
-    plt.title('Baseline')
+    if label_type == 'source':
+        plt.title('SoA-source')
+    else:
+        plt.title('SoA-trust')
     label_list = ["Breitbart", "CBS","CNN","Fox","Huffpost","NPR","NYtimes","usatoday","wallstreet","washington"]
     plot_dendrogram(analyzer, orientation='right',
                     labels=label_list)
