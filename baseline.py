@@ -52,7 +52,7 @@ def plot_dendrogram(model, **kwargs):
                                       counts]).astype(float)
 
     # Plot the corresponding dendrogram
-    dendrogram(linkage_matrix, **kwargs)
+    dendrogram(linkage_matrix, color_threshold=0, **kwargs)
 
 
 def cluster_generate(model: AgglomerativeClustering, label_list = None):
@@ -176,7 +176,11 @@ def build_baseline(data_type, label_type):
     distance_file = './log/baseline/model/baseline_'+label_type+'_'+data_type+'.npy'
     np.save(distance_file,media_distance)
     joblib.dump(analyzer, model_file)
-    plt.title('Baseline')
+    if label_type == 'source':
+        plt.title('SoA-source')
+    else:
+        plt.title('SoA-trust')
+    label_list = ["Breitbart", "CBS","CNN","Fox","Huffpost","NPR","NYtimes","usatoday","wallstreet","washington"]
     plot_dendrogram(analyzer, orientation='right',
                     labels=label_list)
     plt_file = './analysis/baseline/baseline_'+label_type+'_'+data_type+'.png'
@@ -195,10 +199,9 @@ def build_baseline(data_type, label_type):
 
 
 def main():
-    print_figure()
-    # for data_type in ['article']:
-    #     source_model = build_baseline(data_type,'source')
-    #     trust_model = build_baseline(data_type,'trust')
+    for data_type in ['article']:
+        source_model = build_baseline(data_type,'source')
+        trust_model = build_baseline(data_type,'trust')
     # temp(source_model, trust_model)
 if __name__ == '__main__':
     main()
