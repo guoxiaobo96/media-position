@@ -23,12 +23,12 @@ from program.config import ArticleMap, TwitterMap, FullArticleMap, BaselineArtic
 
 def print_figure():
     label_list = ["Breitbart", "CBS","CNN","Fox","Huffpost","NPR","NYtimes","usatoday","wallstreet","washington"]
-    model_file = '/home/xiaobo/media-position/analysis/obamacare/obamacare/42/mlm/bigram_outer/sentence_replacement/5/cluster/model.c'
+    model_file = '/home/xiaobo/media-position/analysis/obamacare/obamacare/42/mlm/bigram_outer/sentence_order_replacement/4/cluster/model.c'
     model = joblib.load(model_file)
-    plt.title('Ours (MLM-SR)')
+    plt.title('Ours')
     plot_dendrogram(model, orientation='right',
                     labels=label_list)
-    plt_file = '.temp.png'
+    plt_file = 'temp.png'
     plt.savefig(plt_file, bbox_inches='tight')
     plt.close()
 
@@ -199,9 +199,10 @@ def build_baseline(data_type, label_type):
 
 
 def main():
-    for data_type in ['article']:
-        source_model = build_baseline(data_type,'source')
-        trust_model = build_baseline(data_type,'trust')
+    print_figure()
+    # for data_type in ['article']:
+    #     source_model = build_baseline(data_type,'source')
+    #     trust_model = build_baseline(data_type,'trust')
     # temp(source_model, trust_model)
 if __name__ == '__main__':
     main()
