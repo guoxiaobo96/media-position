@@ -574,8 +574,8 @@ def encode_media(
     )
     model.train(train_dataset, eval_dataset)
 
-    model._model = transformers.BertModel.from_pretrained(model_args.model_name_or_path,
-                    from_tf=bool(".ckpt" in model_args.model_name_or_path),
+    model._model = transformers.BertModel.from_pretrained(training_args.output_dir,
+                    from_tf=bool(".ckpt" in training_args.output_dir),
                     config=model._config,
                     cache_dir=model._model_args.cache_dir,
                 )
@@ -595,7 +595,7 @@ def encode_media(
         index += batch_size
 
     results = dict()
-    for batch_sentence in tqdm(batched_sentence_list[:10]):
+    for batch_sentence in tqdm(batched_sentence_list):
         result = model.encode(batch_sentence)
         results.update(result)
     encode_result = list()
