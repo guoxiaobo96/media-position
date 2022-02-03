@@ -608,4 +608,3 @@ def encode_media(
         os.makedirs(saved_file)
     saved_file = os.path.join(saved_file,training_args.loss_type+'.npy')
     np.save(saved_file,encode_result)
-    print('test')
