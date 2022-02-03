@@ -18,14 +18,15 @@ from tqdm import tqdm
 from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances, cosine_distances, manhattan_distances
 from scipy.stats import kendalltau
 import numpy as np
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, transforms
 from os import path
 from typing import Dict, List
 import json
 import os
 import joblib
 import matplotlib
-from transformers.utils.dummy_pt_objects import BertForSequenceClassification
+import transformers
+
 matplotlib.use('Agg')
 
 
@@ -554,11 +555,57 @@ def _draw_heatmap(data, x_list, y_list):
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
              rotation_mode="anchor")
 
-    # Loop over data dimensions and create text annotations.
-    # for i in range(len(x_list)):
-    #     for j in range(len(y_list)):
-    #         text = ax.text(j, i, data[i, j],
-    #                     ha="center", va="center", color="w")
-    # ax.set_title("Harvest of local farmers (in tons/year)")
-    # fig.tight_layout()
-    # plt.show()
+def encode_media(
+    misc_args: MiscArgument,
+    model_args: ModelArguments,
+    data_args: DataArguments,
+    training_args: TrainingArguments,
+) -> Dict:
+    model = MLMModel(model_args, data_args, training_args)
+    train_dataset = (
+        get_dataset(training_args, data_args, model_args, tokenizer=model.tokenizer,
+                    cache_dir=model_args.cache_dir) if training_args.do_train else None
+    )
+    eval_dataset = (
+        get_dataset(training_args, data_args, model_args, tokenizer=model.tokenizer,
+                    evaluate=True, cache_dir=model_args.cache_dir)
+        if training_args.do_eval
+        else None
+    )
+    model.train(train_dataset, eval_dataset)
+
+    model._model = transformers.BertModel.from_pretrained(model_args.model_name_or_path,
+                    from_tf=bool(".ckpt" in model_args.model_name_or_path),
+                    config=model._config,
+                    cache_dir=model._model_args.cache_dir,
+                )
+
+    batch_size = 32
+    index = 0
+    sentence_list = list()
+    batched_sentence_list = list()
+    with open(data_args.train_data_file,mode='r',encoding='utf8') as fp:
+        for line in fp.readlines():
+            item = json.loads(line.strip())
+            sentence_list.append(item['original'])
+        
+
+    while (index < len(sentence_list)):
+        batched_sentence_list.append(sentence_list[index:index+batch_size])
+        index += batch_size
+
+    results = dict()
+    for batch_sentence in tqdm(batched_sentence_list[:10]):
+        result = model.encode(batch_sentence)
+        results.update(result)
+    encode_result = list()
+    for _, v in results.items():
+        encode_result.append(v[0])
+    encode_result = np.array(encode_result)
+    encode_result = encode_result.mean(axis=0)
+    saved_file = os.path.join(os.path.join(misc_args.log_dir),data_args.dataset)
+    if not os.path.exists(saved_file):
+        os.makedirs(saved_file)
+    saved_file = os.path.join(saved_file,training_args.loss_type+'.npy')
+    np.save(saved_file,encode_result)
+    print('test')

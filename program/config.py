@@ -403,12 +403,18 @@ def get_config() -> Tuple:
             data_args.mlm = True
         training_args.output_dir = os.path.join(os.path.join(training_args.output_dir,training_args.loss_type),data_args.data_type)
         
-        if training_args.do_train:
+        if misc_args.task != "encode_media":
+            if training_args.do_train:
+                data_args.train_data_file = os.path.join(
+                    data_args.data_path, 'en.train')
+            if training_args.do_eval:
+                data_args.eval_data_file = os.path.join(
+                    data_args.data_path, 'en.valid')
+        else:
             data_args.train_data_file = os.path.join(
-                data_args.data_path, 'en.train')
-        if training_args.do_eval:
+                data_args.data_path, 'en.full')
             data_args.eval_data_file = os.path.join(
-                data_args.data_path, 'en.valid')
+                    data_args.data_path, 'en.full')
         if misc_args.load_model:
             model_args.load_model_dir = os.path.join(os.path.join(
                 model_args.load_model_dir,training_args.loss_type),data_args.data_type)
