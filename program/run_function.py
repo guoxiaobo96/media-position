@@ -597,7 +597,7 @@ def encode_media(
         results.update(result)
     encode_result = list()
     for _, v in results.items():
-        encode_result.append(v[0])
+        encode_result.append(v)
     encode_result = np.array(encode_result)
     encode_result = encode_result.mean(axis=0)
     saved_file = os.path.join(os.path.join(misc_args.log_dir),data_args.dataset)

@@ -302,10 +302,8 @@ class MLMModel(DeepModel):
         result_dict = dict()
         # inputs = self.tokenizer(sentence_list,padding=True)
         results = self._fill_mask(sentence_list)
-        if len(sentence_list) == 1:
-            results = [results]
         for i, sentence in enumerate(sentence_list):
-            result_dict[sentence] = results[i]
+            result_dict[sentence] = results[i][0]
         return result_dict
 
 
