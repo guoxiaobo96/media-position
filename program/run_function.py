@@ -566,13 +566,8 @@ def encode_media(
         get_dataset(training_args, data_args, model_args, tokenizer=model.tokenizer,
                     cache_dir=model_args.cache_dir) if training_args.do_train else None
     )
-    eval_dataset = (
-        get_dataset(training_args, data_args, model_args, tokenizer=model.tokenizer,
-                    evaluate=True, cache_dir=model_args.cache_dir)
-        if training_args.do_eval
-        else None
-    )
-    # model.train(train_dataset, eval_dataset)
+    if training_args.do_train:
+        model.train(train_dataset, train_dataset)
 
     model._model = transformers.BertModel.from_pretrained(training_args.output_dir,
                     from_tf=bool(".ckpt" in training_args.output_dir),
