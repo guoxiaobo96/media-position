@@ -199,10 +199,10 @@ def build_baseline(data_type, label_type):
 
 
 def main():
-    print_figure()
-    # for data_type in ['article']:
-    #     source_model = build_baseline(data_type,'source')
-    #     trust_model = build_baseline(data_type,'trust')
+    # print_figure()
+    for data_type in ['article']:
+        source_model = build_baseline(data_type,'source')
+        trust_model = build_baseline(data_type,'trust')
     # temp(source_model, trust_model)
 if __name__ == '__main__':
     main()

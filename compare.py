@@ -241,6 +241,32 @@ def tfidf_baseline(mean_method):
         distance_dict[topic] = distance_matrix
     return distance_dict
 
+
+def class_baseline():
+    data_path = "/home/xiaobo/data/media-position/log/"
+    topic_list = ["obamacare","gay-marriage","drug-policy","corporate-tax","climate-change"]
+    # topic_list = ["obamacare"]
+    distance_dict = dict()
+    for topic in topic_list:
+        outlets_vec_list = list()
+        for outlet in outlets_list:
+            file = os.path.join(os.path.join(os.path.join(data_path,topic),outlet),"class.npy")
+            data = np.load(file)
+            outlets_vec_list.append(data.reshape(1, -1))
+
+        distance_matrix = []
+        for i, outlets_a_vec in enumerate(outlets_vec_list):
+            d_list = [0 for _ in range(len(outlets_vec_list))]
+            for j, outlets_b_vec  in enumerate(outlets_vec_list):
+                if i!=j:
+                    # disance = entropy(topic_b_vec,topic_a_vec)
+                    disance = cosine_distances(outlets_b_vec,outlets_a_vec)
+                    d_list[j] = disance[0][0]
+            distance_matrix.append(np.array(d_list))
+        distance_matrix = np.array(distance_matrix)
+        distance_dict[topic] = distance_matrix
+    return distance_dict
+
 def get_baseline(base_line):
     data_map = BaselineArticleMap()
     bias_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)))
@@ -262,13 +288,11 @@ def get_baseline(base_line):
     else:
         distance_base = 'source'
 
-    baseline_model = joblib.load(
-        'E:/media-position/log/baseline/model/baseline_'+base_line+'_article.c')
     base_model = joblib.load(
-        'E:/media-position/log/baseline/model/baseline_'+distance_base+'_article.c')
+        './log/baseline/model/baseline_'+distance_base+'_article.c')
 
     base_cluster_list = _cluster_generate(base_model)
-    pew_distance_matrix = np.load('E:/media-position/log/baseline/model/baseline_'+base_line+'_article.npy')
+    pew_distance_matrix = np.load('./log/baseline/model/baseline_'+base_line+'_article.npy')
     pew_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int32)
     for i,media_a in enumerate(data_map.dataset_list):
         temp_distance = pew_distance_matrix[i]
@@ -280,7 +304,8 @@ def get_baseline(base_line):
                     pew_distance_order_matrix[i][j] = o
     
     # baseline_matrix_list = lda_baseline('combine')
-    baseline_matrix_list = tfidf_baseline('average')
+    # baseline_matrix_list = tfidf_baseline('average')
+    baseline_matrix_list = class_baseline()
     baseline_file = 'baseline.json'
     for topic, media_distance in baseline_matrix_list.items():
         analyzer = AgglomerativeClustering(
@@ -329,7 +354,7 @@ def get_baseline(base_line):
         cluster_performance = _co_occurance_distance(cluster_list,base_cluster_list)
 
 
-        record_item = {'baseline':base_line,'cluster_performance':round(cluster_performance,2),'allsides_rank_similarity':round(allsides_rank_similarity,2),'pew_rank_similarity':round(pew_rank_similarity,2),'pew_cosine_similarity':round(pew_cosine_similarity,2)}
+        record_item = {'topic':topic,'baseline':base_line,'cluster_performance':round(cluster_performance,2),'allsides_rank_similarity':round(allsides_rank_similarity,2),'pew_rank_similarity':round(pew_rank_similarity,2),'pew_cosine_similarity':round(pew_cosine_similarity,2)}
 
         with open(baseline_file,mode='a',encoding='utf8') as fp:
             fp.write(json.dumps(record_item,ensure_ascii=False)+'\n')
@@ -412,9 +437,9 @@ def baseline_difference():
 
 
 def main():
-    # get_baseline('source')
-    # get_baseline('trust')
-    baseline_difference()
+    get_baseline('source')
+    get_baseline('trust')
+    # baseline_difference()
 
 if __name__ == '__main__':
     main()
