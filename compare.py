@@ -267,6 +267,33 @@ def class_baseline():
         distance_dict[topic] = distance_matrix
     return distance_dict
 
+
+def mlm_baseline():
+    # data_path = "/home/xiaobo/data/media-position/log/"
+    data_path = "/data/xiaobo/media-position/log/"
+    # topic_list = ["obamacare","gay-marriage","drug-policy","corporate-tax","climate-change"]
+    topic_list = ["obamacare"]
+    distance_dict = dict()
+    for topic in topic_list:
+        outlets_vec_list = list()
+        for outlet in outlets_list:
+            file = os.path.join(os.path.join(os.path.join(data_path,topic),outlet),"mlm.npy")
+            data = np.load(file)
+            outlets_vec_list.append(data.reshape(1, -1))
+
+        distance_matrix = []
+        for i, outlets_a_vec in enumerate(outlets_vec_list):
+            d_list = [0 for _ in range(len(outlets_vec_list))]
+            for j, outlets_b_vec  in enumerate(outlets_vec_list):
+                if i!=j:
+                    # disance = entropy(topic_b_vec,topic_a_vec)
+                    disance = cosine_distances(outlets_b_vec,outlets_a_vec)
+                    d_list[j] = disance[0][0]
+            distance_matrix.append(np.array(d_list))
+        distance_matrix = np.array(distance_matrix)
+        distance_dict[topic] = distance_matrix
+    return distance_dict
+
 def get_baseline(base_line):
     data_map = BaselineArticleMap()
     bias_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)))
@@ -305,7 +332,8 @@ def get_baseline(base_line):
     
     # baseline_matrix_list = lda_baseline('combine')
     # baseline_matrix_list = tfidf_baseline('average')
-    baseline_matrix_list = class_baseline()
+    # baseline_matrix_list = class_baseline()
+    baseline_matrix_list = mlm_baseline()
     baseline_file = 'baseline.json'
     for topic, media_distance in baseline_matrix_list.items():
         analyzer = AgglomerativeClustering(
