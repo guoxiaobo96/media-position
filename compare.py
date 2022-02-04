@@ -269,10 +269,10 @@ def class_baseline():
 
 
 def mlm_baseline():
-    # data_path = "/home/xiaobo/data/media-position/log/"
-    data_path = "/data/xiaobo/media-position/log/"
-    # topic_list = ["obamacare","gay-marriage","drug-policy","corporate-tax","climate-change"]
-    topic_list = ["obamacare"]
+    data_path = "/home/xiaobo/data/media-position/log/"
+    # data_path = "/data/xiaobo/media-position/log/"
+    topic_list = ["gay-marriage","drug-policy","corporate-tax","climate-change"]
+    # topic_list = ["obamacare"]
     distance_dict = dict()
     for topic in topic_list:
         outlets_vec_list = list()
