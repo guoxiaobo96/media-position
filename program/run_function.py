@@ -572,7 +572,7 @@ def encode_media(
         if training_args.do_eval
         else None
     )
-    model.train(train_dataset, eval_dataset)
+    # model.train(train_dataset, eval_dataset)
 
     model._model = transformers.BertModel.from_pretrained(training_args.output_dir,
                     from_tf=bool(".ckpt" in training_args.output_dir),
@@ -587,6 +587,8 @@ def encode_media(
     with open(data_args.train_data_file,mode='r',encoding='utf8') as fp:
         for line in fp.readlines():
             item = json.loads(line.strip())
+            if len(item['original']) > 500:
+                item['original'] = item['original'][:500]
             sentence_list.append(item['original'])
         
 
