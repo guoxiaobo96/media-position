@@ -273,10 +273,10 @@ def label_score_analysis(
         distance_base = 'source'
 
     baseline_model = joblib.load(
-        '/data/xiaobo/media-position/log/baseline/model/baseline_'+base_line+'_article.c')
+        './log/baseline/model/baseline_'+base_line+'_article.c')
     base_model = joblib.load(
-        '/data/xiaobo/media-position/log/baseline/model/baseline_'+distance_base+'_article.c')
-    pew_distance_matrix = np.load('/data/xiaobo/media-position/log/baseline/model/baseline_'+base_line+'_article.npy')
+        './log/baseline/model/baseline_'+distance_base+'_article.c')
+    pew_distance_matrix = np.load('./log/baseline/model/baseline_'+base_line+'_article.npy')
     pew_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
     for i,media_a in enumerate(data_map.dataset_list):
         temp_distance = pew_distance_matrix[i]

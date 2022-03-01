@@ -1,4 +1,6 @@
 import os
+import string
+import numpy as np
 
 def get_result_old():
 
@@ -58,10 +60,11 @@ def get_result():
 
     result_dir = "/home/xiaobo/data/media-position/"
 
-    topic_list = ["climate-change","corporate-tax","drug-policy","gay-marriage"]
+    topic_list = ["obamacare","climate-change","corporate-tax","drug-policy","gay-marriage"]
 
     loss_type = "mlm"
-    augmentation_list = ["no_augmentation", "duplicate","sentence_order_replacement","span_cutoff","word_order_replacement", "word_replacement","sentence_replacement"]
+    # augmentation_list = ["no_augmentation", "duplicate","sentence_order_replacement","span_cutoff","word_order_replacement", "word_replacement","sentence_replacement"]
+    augmentation_list = ["no_augmentation", "sentence_order_replacement"]
     
 
     for topic in topic_list:
@@ -97,14 +100,19 @@ def get_result():
                         print(model)
 
         with open('./'+topic+'.csv',mode='w',encoding='utf8') as fp:
-            item = 'loss,augmentation,multi_number,'+','.join(model_list)
+            item = 'loss,augmentation,multi_number,'+','.join(model_list)+',avg,'
             fp.write(item+'\n')
             item = str()
             for loss_type, loss_result in result.items():
                 for augmetation_type, augmentation_result in loss_result.items():
                     for multi_numer, result_list in augmentation_result.items():
+                        avg = 0
+                        std = 0
+                        d = [float(i) for i in result_list]
+                        avg = round(np.mean(d),2)
+                        std = round(np.std(d,ddof=1),2)
                         item = loss_type+','+augmetation_type+','+multi_numer+','
-                        item = item +','.join(result_list)
+                        item = item +','.join(result_list) + ","+str(avg)+"("+str(std)+")"
                         fp.write(item+'\n')
 
 
