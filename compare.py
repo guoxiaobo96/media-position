@@ -97,7 +97,8 @@ def lda_baseline(mean_method):
             outlets_text_list = [[] for _ in range(10)]
             topic_path = os.path.join(data_path,'data_'+topic)
             topic_path = topic_path + '/42/all/original'
-            for file_path in ['en.train','en.valid']:
+            # for file_path in ['en.train','en.valid']:
+            for file_path in ['en.valid']:
                 file = topic_path+'/'+file_path
                 with open(file,mode='r',encoding='utf8') as fp:
                     for line in fp.readlines():
@@ -169,9 +170,10 @@ def lda_baseline(mean_method):
             d_list = [0 for _ in range(len(outlets_vec_list))]
             for j, outlets_b_vec  in enumerate(outlets_vec_list):
                 if i!=j:
-                    # disance = entropy(topic_b_vec,topic_a_vec)
-                    disance = bd(outlets_b_vec,outlets_a_vec)
-                    d_list[j] = disance
+                    # distance = entropy(topic_b_vec,topic_a_vec)
+                    # distance = bd(outlets_b_vec,outlets_a_vec)
+                    distance = cosine_distances(outlets_b_vec,outlets_a_vec)
+                    d_list[j] = distance
             distance_matrix.append(np.array(d_list))
         distance_matrix = np.array(distance_matrix)
         distance_dict[topic] = distance_matrix
@@ -294,7 +296,7 @@ def mlm_baseline():
         distance_dict[topic] = distance_matrix
     return distance_dict
 
-def get_baseline(base_line):
+def get_baseline(base_line, method, combine_method):
     data_map = BaselineArticleMap()
     bias_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)))
     allsides_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int32)
@@ -330,11 +332,13 @@ def get_baseline(base_line):
                 if d_o == d_j:
                     pew_distance_order_matrix[i][j] = o
     
-    # baseline_matrix_list = lda_baseline('combine')
-    # baseline_matrix_list = tfidf_baseline('average')
-    # baseline_matrix_list = class_baseline()
-    baseline_matrix_list = mlm_baseline()
-    baseline_file = 'baseline.json'
+    if method == "tdidf":
+        baseline_matrix_list = tfidf_baseline(combine_method)
+    elif method == "lda":
+        baseline_matrix_list = lda_baseline(combine_method)
+    elif method == "mlm":
+        baseline_matrix_list = mlm_baseline()
+    baseline_file = 'baseline_'+method+'_'+combine_method+'.json'
     for topic, media_distance in baseline_matrix_list.items():
         analyzer = AgglomerativeClustering(
             n_clusters=2, compute_distances=True, affinity='euclidean', linkage='complete')
@@ -465,8 +469,10 @@ def baseline_difference():
 
 
 def main():
-    get_baseline('source')
-    get_baseline('trust')
+    for method in ["lda","tfidf"]:
+        for combine_method in ["combine","average"]:
+            get_baseline('source',method, combine_method)
+            get_baseline('trust',method, combine_method)
     # baseline_difference()
 
 if __name__ == '__main__':

@@ -26,4 +26,4 @@ log_*/*/*/*/*/*
 
 
 env/
-analysis_back/
+analysis_*/
