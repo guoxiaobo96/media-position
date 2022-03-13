@@ -252,6 +252,7 @@ def label_score_analysis(
     base_line: str
 ) -> Dict:
     data_map = BaselineArticleMap()
+    ground_truth_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.float32)
     bias_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)))
     allsides_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
     for i,media_a in enumerate(data_map.dataset_list):
@@ -259,6 +260,7 @@ def label_score_analysis(
         for j,media_b in enumerate(data_map.dataset_list):
             bias_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
             temp_distance.append(abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
+            ground_truth_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
         distance_set = set(temp_distance)
         distance_set = sorted(list(distance_set))
         for o, d_o in enumerate(distance_set):
