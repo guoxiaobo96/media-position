@@ -252,23 +252,7 @@ def label_score_analysis(
     ground_truth: str
 ) -> Dict:
     data_map = BaselineArticleMap()
-<<<<<<< HEAD
-    ground_truth_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.float32)
-    bias_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)))
-    allsides_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
-    for i,media_a in enumerate(data_map.dataset_list):
-        temp_distance = list()
-        for j,media_b in enumerate(data_map.dataset_list):
-            bias_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
-            temp_distance.append(abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
-            ground_truth_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
-        distance_set = set(temp_distance)
-        distance_set = sorted(list(distance_set))
-        for o, d_o in enumerate(distance_set):
-            for j,d_j in enumerate(temp_distance):
-                if d_o == d_j:
-                    allsides_distance_order_matrix[i][j] = o
-=======
+
     ground_truth_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
     if ground_truth == "MBR":
         ground_truth_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.float32)
@@ -297,7 +281,6 @@ def label_score_analysis(
                 for j,d_j in enumerate(temp_distance):
                     if d_o == d_j:
                         ground_truth_distance_order_matrix[i][j] = o
->>>>>>> 275ecfefe8664a60ff8fe75eb19166375f08ee27
                     
 
 
@@ -546,7 +529,26 @@ def label_score_analysis(
         sort_result_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_sort_'+ground_truth+'.json')
 
         sentence_result_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_sentence_'+ground_truth+'.json')
-        plt.title('Distribution of Tau ', fontsize=20)
+        g = ""
+        if ground_truth == 'source':
+            g = 'SoA-s'
+        elif ground_truth == 'trust':
+            g = 'SoA-t'
+        else:
+            g = 'MBR'
+
+        d = ""
+        if data_args.dataset == "climate-change":
+            d = "Climate Change"
+        elif data_args.dataset == "corporate-tax":
+            d = "Corporate Tax"
+        elif data_args.dataset == "drug-policy":
+            d = "Drug Policy"
+        elif data_args.dataset == "gay-marriage":
+            d = "Gay Marriage"
+        elif data_args.dataset == "obamacare":
+            d = "Obamacare"
+        plt.title('Distribution of {} with {} '.format(d,g), fontsize=20)
         plt_file = os.path.join(result_path, data_args.dataset+'_'+analysis_args.analysis_encode_method +'_distribution_'+ground_truth+'.jpg')
         plt.plot(x_list[start_index:end_index+1], distribution[start_index:end_index+1],linewidth=2)
         plt.xticks(fontsize=20)
