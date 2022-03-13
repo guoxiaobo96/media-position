@@ -340,6 +340,8 @@ def label_score_analysis(
         try:
             model, result, dataset_list, encoded_list = analysis_model.analyze(
                 v, str(k), analysis_args, keep_result=False,data_map=data_map)
+            if model is None:
+                continue
             analysis_result[k] = result
             model_list[k] = model
             for i, encoded_data in enumerate(encoded_list):
@@ -508,6 +510,8 @@ def label_score_analysis(
                 continue
 
         distribution = np.array(distribution) / np.sum(distribution)
+        mean_performance = np.nanmean(performance_average)
+        median_performance = np.nanmedian(performance_average)
 
         start_index = 0
         end_index = 0
@@ -524,11 +528,17 @@ def label_score_analysis(
         sort_result_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_sort_'+ground_truth+'.json')
 
         sentence_result_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_sentence_'+ground_truth+'.json')
-        plt.title('Distribution of Tau For '+ground_truth)
-        plt_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_distribution_'+ground_truth+'.jpg')
-        plt.plot(x_list[start_index:end_index+1], distribution[start_index:end_index+1])
-        plt.vlines(performance,0,np.max(distribution)+0.1, colors='r', label="The performance is "+ str(round(performance,2)))
-        plt.legend()
+        plt.title('Distribution of Tau ', fontsize=20)
+        plt_file = os.path.join(result_path, data_args.dataset+'_'+analysis_args.analysis_encode_method +'_distribution_'+ground_truth+'.jpg')
+        plt.plot(x_list[start_index:end_index+1], distribution[start_index:end_index+1],linewidth=2)
+        plt.xticks(fontsize=20)
+        plt.xlabel("Kendall rank correlation coefficients", fontsize=20)
+        plt.ylabel("Percent of Instances", fontsize=20)
+
+        # plt.vlines(performance,0,np.max(distribution)+0.1, colors='r', label="The model performance is "+ str(round(performance,2)))
+        # plt.vlines(mean_performance,0,np.max(distribution)+0.1, colors='g', label="The mean performance is "+ str(round(mean_performance,2)))
+        # plt.vlines(median_performance,0,np.max(distribution)+0.1, colors='b', label="The median performance is "+ str(round(median_performance,2)))
+
         plt.savefig(plt_file,bbox_inches='tight')
         plt.close()
 

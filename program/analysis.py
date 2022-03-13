@@ -1,6 +1,8 @@
 from curses import keyname
+import imp
 import keyword
 import os
+from random import random
 from matplotlib import pyplot as plt
 import csv
 from dataclasses import dataclass, field
@@ -17,6 +19,7 @@ from grakel.graph_kernels import *
 from copy import deepcopy
 from zss import simple_distance, Node
 from scipy.stats import kendalltau
+import random
 
 from sklearn.cluster import (
     KMeans,
@@ -264,13 +267,26 @@ class CorrelationAnalysis(BaseAnalysis):
         media_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
         for i,media_a in enumerate(data_map.dataset_list):
             temp_distance = list()
+            distance_map = list()
             for j,media_b in enumerate(data_map.dataset_list):
-                temp_distance.append(distance_matrix[i][j])
+                # temp_distance.append(distance_matrix[i][j])
+                distance_map.append((j,distance_matrix[i][j]))
+            random.shuffle(distance_map)
+            for item in distance_map:
+                temp_distance.append(item[1])
+            if temp_distance.count(0) > 1:
+                return None
             order_list = np.argsort(temp_distance)
             order_list = order_list.tolist()
-            for j in range(len(data_map.dataset_list)):
-                order = order_list.index(j)
-                media_distance_order_matrix[i][j] = order
+            
+            for order, v in enumerate(order_list):
+                media_distance_order_matrix[i][distance_map[v][0]] = order
+
+            # order_list = np.argsort(temp_distance)
+            # order_list = order_list.tolist()
+            # for j in range(len(data_map.dataset_list)):
+            #     order = distance_map[order_list.index(j)][1]
+            #     media_distance_order_matrix[i][j] = order
         return media_distance_order_matrix
 
 
