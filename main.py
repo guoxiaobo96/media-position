@@ -1,7 +1,7 @@
 from program.config import AnalysisArguments, get_config, DataArguments, MiscArgument, ModelArguments,TrainingArguments, DataAugArguments, BaselineArguments
 from program.data import extract_data
 from program.util import prepare_dirs_and_logger, save_config
-from program.run_function import train_lm, label_score_predict, label_score_analysis, data_augemnt, train_mask_score_model, eval_lm,  generate_baseline, train_classifier, label_masked_token
+from program.run_function import train_lm, label_score_predict, label_score_analysis, data_augemnt, train_mask_score_model, eval_lm,  generate_baseline, train_classifier, label_masked_token, encode_media
 from program.data_collect import twitter_collect, article_collect, data_collect
 
 
@@ -37,11 +37,15 @@ def main(
                              data_args, training_args, analysis_args,'trust')
         label_score_analysis(misc_args, model_args,
                              data_args, training_args, analysis_args,'source')
+        label_score_analysis(misc_args, model_args,
+                             data_args, training_args, analysis_args,'MBR')
     elif misc_args.task == "data_collect":
         if aug_args.augment_type == 'original':
             data_collect(misc_args, data_args)
         else:
             data_augemnt(misc_args, data_args, aug_args)
+    elif misc_args.task == "encode_media":
+        encode_media(misc_args, model_args, data_args, training_args)
 
 if __name__ == '__main__':
     misc_args, model_args, data_args, aug_args, training_args, analysis_args, baseline_args = get_config()

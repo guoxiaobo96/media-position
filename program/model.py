@@ -294,6 +294,18 @@ class MLMModel(DeepModel):
             result_dict[sentence] = results[i]
         return result_dict
 
+    def encode(self, sentence_list, batch_size=64) -> Dict:
+        if self._fill_mask is None:
+            self._model.eval()
+            self._fill_mask = pipeline(task="feature-extraction", model=self._model,
+                                tokenizer=self.tokenizer, device=0)
+        result_dict = dict()
+        # inputs = self.tokenizer(sentence_list,padding=True)
+        results = self._fill_mask(sentence_list)
+        for i, sentence in enumerate(sentence_list):
+            result_dict[sentence] = results[i][0]
+        return result_dict
+
 
 class ClassifyModel(DeepModel):
     def __init__(

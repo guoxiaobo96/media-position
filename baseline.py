@@ -20,6 +20,19 @@ from scipy.stats import kendalltau
 from program.config import ArticleMap, TwitterMap, FullArticleMap, BaselineArticleMap
 
 
+
+def print_figure():
+    label_list = ["Breitbart", "CBS","CNN","Fox","Huffpost","NPR","NYtimes","usatoday","wallstreet","washington"]
+    model_file = '/home/xiaobo/media-position/analysis/obamacare/obamacare/42/mlm/bigram_outer/sentence_order_replacement/4/cluster/model.c'
+    model = joblib.load(model_file)
+    plt.title('Ours')
+    plot_dendrogram(model, orientation='right',
+                    labels=label_list)
+    plt_file = 'temp.png'
+    plt.savefig(plt_file, bbox_inches='tight')
+    plt.close()
+
+
 def plot_dendrogram(model, **kwargs):
     # Create linkage matrix and then plot the dendrogram
 
@@ -164,9 +177,9 @@ def build_baseline(data_type, label_type):
     np.save(distance_file,media_distance)
     joblib.dump(analyzer, model_file)
     if label_type == 'source':
-        plt.title('SoA-source')
+        plt.title('SoA-s')
     else:
-        plt.title('SoA-trust')
+        plt.title('SoA-t')
     label_list = ["Breitbart", "CBS","CNN","Fox","Huffpost","NPR","NYtimes","usatoday","wallstreet","washington"]
     plot_dendrogram(analyzer, orientation='right',
                     labels=label_list)
@@ -186,6 +199,7 @@ def build_baseline(data_type, label_type):
 
 
 def main():
+    # print_figure()
     for data_type in ['article']:
         source_model = build_baseline(data_type,'source')
         trust_model = build_baseline(data_type,'trust')
