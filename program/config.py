@@ -236,6 +236,9 @@ class AnalysisArguments:
     analysis_distance_method: Optional[str] = field(
         default="Cosine", metadata={"help": "The method for calculating distance"}
     )
+    analysis_correlation_method: Optional[str] = field(
+        default="tau", metadata={"help": "The method for analysis when coducting ranking"}
+    )
     graph_distance: Optional[str] = field(
         default="", metadata={"help": "The distance used for creating graph"}
     )

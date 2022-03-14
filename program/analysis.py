@@ -1,4 +1,8 @@
+from curses import keyname
+import imp
+import keyword
 import os
+from random import random
 from matplotlib import pyplot as plt
 import csv
 from dataclasses import dataclass, field
@@ -14,6 +18,8 @@ from grakel import Graph, graph
 from grakel.graph_kernels import *
 from copy import deepcopy
 from zss import simple_distance, Node
+from scipy.stats import kendalltau
+import random
 
 from sklearn.cluster import (
     KMeans,
@@ -240,6 +246,79 @@ class DistanceAnalysis(BaseAnalysis):
         return exclusive_dataset_list, distance_list
 
 
+class CorrelationAnalysis(BaseAnalysis):
+    def __init__(self,  misc_args: MiscArgument, model_args: ModelArguments, data_args: DataArguments, training_args: TrainingArguments, config: AnalysisArguments) -> None:
+        super().__init__(misc_args, model_args, data_args, training_args, config)
+        self._load_analysis_model(self._config.analysis_correlation_method)
+
+    def _load_analysis_model(
+        self,
+        method: str
+    ):
+        if method == "tau":
+            self._analyser = self._rank_distance
+        elif method == 'pearson':
+            self._analyser = cosine_distances
+
+
+
+    def _rank_distance(self,data,data_map):
+        distance_matrix = cosine_distances(data)
+        media_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
+        for i,media_a in enumerate(data_map.dataset_list):
+            temp_distance = list()
+            distance_map = list()
+            for j,media_b in enumerate(data_map.dataset_list):
+                # temp_distance.append(distance_matrix[i][j])
+                distance_map.append((j,distance_matrix[i][j]))
+            random.shuffle(distance_map)
+            for item in distance_map:
+                temp_distance.append(item[1])
+            if temp_distance.count(0) > 1:
+                return None
+            order_list = np.argsort(temp_distance)
+            order_list = order_list.tolist()
+            
+            for order, v in enumerate(order_list):
+                media_distance_order_matrix[i][distance_map[v][0]] = order
+
+            # order_list = np.argsort(temp_distance)
+            # order_list = order_list.tolist()
+            # for j in range(len(data_map.dataset_list)):
+            #     order = distance_map[order_list.index(j)][1]
+            #     media_distance_order_matrix[i][j] = order
+        return media_distance_order_matrix
+
+
+    
+
+    def analyze(
+        self,
+        data,
+        sentence_number: str,
+        analysis_args: AnalysisArguments,
+        keep_result=True,
+        encode: bool = True,
+        dataset_list: List = [],
+        data_map = None,
+
+    ) -> Dict[int, Set[str]]:
+        cluster_result = dict()
+        if encode:
+            if 'vanilla' in data:
+                data.pop('vanilla')
+            dataset_list, encoded_list = self._encode_data(data)
+        else:
+            encoded_list = data
+        if self._config.analysis_correlation_method == 'tau':
+            media_distance_matrix = self._analyser(encoded_list,data_map)
+        elif self._config.analysis_correlation_method == 'pearson':
+            media_distance_matrix = self._analyser(encoded_list)
+        return media_distance_matrix, media_distance_matrix, dataset_list, encoded_list
+
+
+
+
 class TermEncoder(object):
     def __init__(self) -> None:
         self._term_dict = dict()
@@ -373,6 +452,39 @@ class Word2VecEncoder(object):
             encode_result[dataset] = np.sum(term_encode.T, axis=0)
         return encode_result
 
+class CorrelationCompare(object):
+    def __init__(self, misc_args: MiscArgument, analysis_args: AnalysisArguments) -> None:
+        super().__init__()
+        self. _result_path = os.path.join(os.path.join(
+            analysis_args.analysis_result_dir, analysis_args.graph_distance), analysis_args.graph_kernel)
+        self._analysis_args = analysis_args
+    def compare(self, model_dict):
+        name_list = list()
+        model_list = list()
+        result_dict = dict()
+
+        for name, model in model_dict.items():
+            name_list.append(name)
+            model_list.append(model)
+
+        base_index = name_list.index('base')
+        step_size = 0.05
+        distribution = [0 for _ in range(int(2/step_size) + 1)]
+        for k, name in enumerate(tqdm(name_list,desc="Calculate distance")):
+            if k == base_index:
+                continue
+            performance = 0
+            if  self._analysis_args.analysis_correlation_method == 'tau':
+                for i in range(len(model_list[base_index])):
+                    tau, p_value = kendalltau(model_list[k][i].reshape(1,-1), model_list[base_index][i].reshape(1,-1))
+                    performance += tau
+            elif self._analysis_args.analysis_correlation_method == 'pearson':
+                for i in range(len(model_list[base_index])):
+                    pearson = np.corrcoef(model_list[k][i].reshape(1,-1),model_list[base_index][i].reshape(1,-1))
+                    performance += pearson[0][1]
+            performance /= len(model_list[base_index])
+            result_dict[name] = performance
+        return result_dict
 
 class ClusterCompare(object):
     def __init__(self, misc_args: MiscArgument, analysis_args: AnalysisArguments) -> None:
