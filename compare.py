@@ -2,7 +2,6 @@ from json.decoder import JSONDecodeError
 import os
 from posixpath import join
 import json
-from tkinter import E
 from typing_extensions import final
 from gensim import corpora, models
 from gensim.test.utils import common_texts
@@ -307,6 +306,8 @@ def get_baseline(ground_truth_list, file_list, method, combine_method):
         baseline_matrix_list = lda_baseline(combine_method,file_list)
     elif method == "mlm":
         baseline_matrix_list = mlm_baseline()
+    elif method == "class":
+        baseline_matrix_list = class_baseline()
 
     for ground_truth in ground_truth_list:
         if ground_truth == "mbr":
@@ -325,7 +326,7 @@ def get_baseline(ground_truth_list, file_list, method, combine_method):
                         if d_o == d_j:
                             ground_truth_distance_order_matrix[i][j] = o
         elif ground_truth in ['source','trust']:
-            ground_truth_distance_matrix = np.load('E:/media-position/log/baseline/model/baseline_'+ground_truth+'_article.npy')
+            ground_truth_distance_matrix = np.load('./log/baseline/model/baseline_'+ground_truth+'_article.npy')
             ground_truth_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int32)
             for i,media_a in enumerate(data_map.dataset_list):
                 temp_distance = ground_truth_distance_matrix[i]
@@ -418,14 +419,14 @@ def baseline_difference():
                     allsides_distance_order_matrix[i][j] = o
 
     trust_baseline_model = joblib.load(
-        'E:/media-position/log/baseline/model/baseline_trust_article.c')
+        './log/baseline/model/baseline_trust_article.c')
     source_baseline_model = joblib.load(
-        'E:/media-position/log/baseline/model/baseline_source_article.c')
+        './log/baseline/model/baseline_source_article.c')
 
     trust_cluster_list = _cluster_generate(trust_baseline_model)       
     source_cluster_list = _cluster_generate(source_baseline_model)       
 
-    trust_pew_distance_matrix = np.load('E:/media-position/log/baseline/model/baseline_trust_article.npy')
+    trust_pew_distance_matrix = np.load('./log/baseline/model/baseline_trust_article.npy')
     trust_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int32)
     for i,media_a in enumerate(data_map.dataset_list):
         temp_distance = trust_pew_distance_matrix[i]
@@ -436,7 +437,7 @@ def baseline_difference():
                 if d_o == d_j:
                     trust_distance_order_matrix[i][j] = o
 
-    source_pew_distance_matrix = np.load('E:/media-position/log/baseline/model/baseline_source_article.npy')
+    source_pew_distance_matrix = np.load('./log/baseline/model/baseline_source_article.npy')
     source_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int32)
     for i,media_a in enumerate(data_map.dataset_list):
         temp_distance = source_pew_distance_matrix[i]
@@ -479,11 +480,11 @@ def baseline_difference():
 
 def main():
     for file_list in [['en.valid'],['en.train'],['en.valid','en.train']]:
-        for method in ["tfidf","lda"]:
+        for method in ["class"]:
         # for method in ["lda"]:
             for combine_method in ["average"]:
                 # get_baseline(['trust','source','mbr'], file_list, method, combine_method)
-                get_baseline(['human'], file_list, method, combine_method)
+                get_baseline(['human','trust','source','mbr'], file_list, method, combine_method)
     # baseline_difference()
 
 if __name__ == '__main__':
