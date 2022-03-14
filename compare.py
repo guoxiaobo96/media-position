@@ -39,7 +39,7 @@ aug_method_list = ["no_augmentation", "duplicate","sentence_order_replacement","
 
 human_media_list = [0,1,2,3,8]
 
-chosen_media_order = [[0,3,4,1,2],[4,0,1,3,2],[4,1,0,3,2],[1,3,4,0,2],[4,2,3,1,0]]
+chosen_media_order = [[0,3,4,1,2],[4,0,1,3,2],[4,1,0,3,2],[1,3,4,0,2],[4,1,1,1,0]]
 
 
 def _cluster_generate(model: AgglomerativeClustering, label_list: List[int] = None):
@@ -174,8 +174,8 @@ def lda_baseline(mean_method, file_list):
             for j, outlets_b_vec  in enumerate(outlets_vec_list):
                 if i!=j:
                     # distance = entropy(topic_b_vec,topic_a_vec)
-                    distance = bd(outlets_b_vec,outlets_a_vec)
-                    # distance = cosine_distances(outlets_b_vec.reshape(1, -1),outlets_a_vec.reshape(1, -1))[0][0]
+                    # distance = bd(outlets_b_vec,outlets_a_vec)
+                    distance = cosine_distances(outlets_b_vec.reshape(1, -1),outlets_a_vec.reshape(1, -1))[0][0]
                     d_list[j] = distance
             distance_matrix.append(np.array(d_list))
         distance_matrix = np.array(distance_matrix)
@@ -480,11 +480,12 @@ def baseline_difference():
 
 def main():
     for file_list in [['en.valid'],['en.train'],['en.valid','en.train']]:
-        for method in ["class"]:
-        # for method in ["lda"]:
+        # for method in ["class"]:
+        for method in ['tfidf','lda']:
             for combine_method in ["average"]:
                 # get_baseline(['trust','source','mbr'], file_list, method, combine_method)
-                get_baseline(['human','trust','source','mbr'], file_list, method, combine_method)
+                # get_baseline(['human','trust','source','mbr'], file_list, method, combine_method)
+                get_baseline(['human'], file_list, method, combine_method)
     # baseline_difference()
 
 if __name__ == '__main__':
