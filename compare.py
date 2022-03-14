@@ -39,7 +39,7 @@ aug_method_list = ["no_augmentation", "duplicate","sentence_order_replacement","
 
 human_media_list = [0,1,2,3,8]
 
-chosen_media_order = [[0,3,4,1,2],[4,0,1,3,2],[4,1,0,3,2],[1,3,4,0,2],[4,2,3,1,0]]
+chosen_media_order = [[0,3,4,1,2],[4,0,1,3,2],[4,1,0,3,2],[1,3,4,0,2],[4,1,1,1,0]]
 
 
 def _cluster_generate(model: AgglomerativeClustering, label_list: List[int] = None):
@@ -480,7 +480,7 @@ def baseline_difference():
 
 def main():
     for file_list in [['en.valid'],['en.train'],['en.valid','en.train']]:
-        for method in ["class"]:
+        for method in ["mlm"]:
         # for method in ["lda"]:
             for combine_method in ["average"]:
                 # get_baseline(['trust','source','mbr'], file_list, method, combine_method)
