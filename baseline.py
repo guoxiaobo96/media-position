@@ -1,8 +1,4 @@
-import enum
 import os
-from numpy.core.fromnumeric import shape
-from numpy.lib.utils import source
-from scipy.spatial.kdtree import distance_matrix
 from sklearn.cluster import AgglomerativeClustering
 from matplotlib import pyplot as plt
 import csv
@@ -16,10 +12,21 @@ import seaborn as sns
 import pandas as pd
 import joblib
 from scipy.stats import kendalltau
+from dataclasses import dataclass, field
+from typing import Optional, List, Dict, Tuple, Any, NewType
 
-from program.config import ArticleMap, TwitterMap, FullArticleMap, BaselineArticleMap
 
+@dataclass
+class BaselineArticleMap:
+    dataset_to_name: Dict = field(default_factory=lambda: {'Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
+    name_to_dataset: Dict = field(init=False)
+    dataset_list: List[str] = field(init=False)
+    dataset_bias: Dict = field(default_factory=lambda:{'Breitbart':2,'CBS':-1,'CNN':-5/3,'Fox':5/3,'HuffPost':-2,'NPR':-0.5,'NYtimes':-1.5,'usatoday':-1,'wallstreet':0.5,'washington':-1})
+    left_dataset_list: List[str] = field(default_factory=lambda:['Breitbart', 'Fox', 'sean','rushlimbaugh.com'])
 
+    def __post_init__(self):
+        self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
+        self.dataset_list = [k for k,v in self.dataset_to_name.items()]
 
 def print_figure():
     label_list = ["Breitbart", "CBS","CNN","Fox","Huffpost","NPR","NYtimes","usatoday","wallstreet","washington"]
@@ -101,7 +108,8 @@ def temp(source_model, trust_model):
     print(distance[0][0])
 
 def build_baseline(data_type, label_type):
-    data_map = BaselineArticleMap() if data_type=='article' else TwitterMap()
+    # data_map = BaselineArticleMap() if data_type=='article' else TwitterMap()
+    data_map = BaselineArticleMap()
 
     data_map = BaselineArticleMap()
     bias_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)))
@@ -196,13 +204,62 @@ def build_baseline(data_type, label_type):
     return analyzer
 
 
+def compare_human(ground_truth):
+    human_media_list = [0,1,2,3,8]
+    chosen_media_order = [[0,3,4,1,2],[4,0,1,3,2],[4,1,0,3,2],[1,3,4,0,2],[4,2,3,1,0]]
+    data_map = BaselineArticleMap()
+    bias_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)))
+    if ground_truth == "mbr":
+        ground_truth_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.float32)
+        ground_truth_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int32)
+        for i,media_a in enumerate(data_map.dataset_list):
+            temp_distance = list()
+            for j,media_b in enumerate(data_map.dataset_list):
+                bias_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
+                temp_distance.append(abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
+                ground_truth_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
+            distance_set = set(temp_distance)
+            distance_set = sorted(list(distance_set))
+            for o, d_o in enumerate(distance_set):
+                for j,d_j in enumerate(temp_distance):
+                    if d_o == d_j:
+                        ground_truth_distance_order_matrix[i][j] = o
+    elif ground_truth in ['source','trust']:
+        ground_truth_distance_matrix = np.load('E:/media-position/log/baseline/model/baseline_'+ground_truth+'_article.npy')
+        ground_truth_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int32)
+        for i,media_a in enumerate(data_map.dataset_list):
+            temp_distance = ground_truth_distance_matrix[i]
+            distance_set = set(temp_distance)
+            distance_set = sorted(list(distance_set))
+            for o, d_o in enumerate(distance_set):
+                for j,d_j in enumerate(temp_distance):
+                    if d_o == d_j:
+                        ground_truth_distance_order_matrix[i][j] = o
+    human_distance_order_matrix = np.array(chosen_media_order)
+    human_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int32)
 
+
+    chosen_media_distance_order_matrix = np.zeros(shape=(5,5),dtype=np.int)
+    for i, media_index in enumerate(human_media_list):
+        chosen_media_distance_order_matrix[i] = ground_truth_distance_order_matrix[media_index,human_media_list]
+    ground_truth_distance_order_matrix = chosen_media_distance_order_matrix
+    media_count = 5
+
+    tau_performance = 0
+    for i in range(media_count):
+        tau, p_value = kendalltau(human_distance_order_matrix[i].reshape(1,-1), ground_truth_distance_order_matrix[i].reshape(1,-1))
+        tau_performance += tau
+    tau_performance /= media_count
+
+    print("The performance of {} is {}".format(ground_truth,tau_performance))
 
 def main():
     # print_figure()
-    for data_type in ['article']:
-        source_model = build_baseline(data_type,'source')
-        trust_model = build_baseline(data_type,'trust')
+    # for data_type in ['article']:
+    #     source_model = build_baseline(data_type,'source')
+    #     trust_model = build_baseline(data_type,'trust')
+    for ground_truth in ['source','trust','mbr']:
+        compare_human(ground_truth)
     # temp(source_model, trust_model)
 if __name__ == '__main__':
     main()
