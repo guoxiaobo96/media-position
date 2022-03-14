@@ -252,6 +252,7 @@ def label_score_analysis(
     ground_truth: str
 ) -> Dict:
     data_map = BaselineArticleMap()
+
     ground_truth_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
     if ground_truth == "MBR":
         ground_truth_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.float32)
@@ -340,6 +341,8 @@ def label_score_analysis(
         try:
             model, result, dataset_list, encoded_list = analysis_model.analyze(
                 v, str(k), analysis_args, keep_result=False,data_map=data_map)
+            if model is None:
+                continue
             analysis_result[k] = result
             model_list[k] = model
             for i, encoded_data in enumerate(encoded_list):
@@ -508,6 +511,8 @@ def label_score_analysis(
                 continue
 
         distribution = np.array(distribution) / np.sum(distribution)
+        mean_performance = np.nanmean(performance_average)
+        median_performance = np.nanmedian(performance_average)
 
         start_index = 0
         end_index = 0
@@ -524,16 +529,46 @@ def label_score_analysis(
         sort_result_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_sort_'+ground_truth+'.json')
 
         sentence_result_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_sentence_'+ground_truth+'.json')
-        plt.title('Distribution of Tau For '+ground_truth)
-        plt_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_distribution_'+ground_truth+'.jpg')
-        plt.plot(x_list[start_index:end_index+1], distribution[start_index:end_index+1])
-        plt.vlines(performance,0,np.max(distribution)+0.1, colors='r', label="The performance is "+ str(round(performance,2)))
-        plt.legend()
+        g = ""
+        if ground_truth == 'source':
+            g = 'SoA-s'
+        elif ground_truth == 'trust':
+            g = 'SoA-t'
+        else:
+            g = 'MBR'
+
+        d = ""
+        if data_args.dataset == "climate-change":
+            d = "Climate Change"
+        elif data_args.dataset == "corporate-tax":
+            d = "Corporate Tax"
+        elif data_args.dataset == "drug-policy":
+            d = "Drug Policy"
+        elif data_args.dataset == "gay-marriage":
+            d = "Gay Marriage"
+        elif data_args.dataset == "obamacare":
+            d = "Obamacare"
+        plt.title('Distribution of {} with {} '.format(d,g), fontsize=20)
+        plt_file = os.path.join(result_path, data_args.dataset+'_'+analysis_args.analysis_encode_method +'_distribution_'+ground_truth+'.jpg')
+        plt.plot(x_list[start_index:end_index+1], distribution[start_index:end_index+1],linewidth=2)
+        plt.xticks(fontsize=20)
+        plt.xlabel("Kendall rank correlation coefficients", fontsize=20)
+        plt.ylabel("Percent of Instances", fontsize=20)
+
+        # plt.vlines(performance,0,np.max(distribution)+0.1, colors='r', label="The model performance is "+ str(round(performance,2)))
+        # plt.vlines(mean_performance,0,np.max(distribution)+0.1, colors='g', label="The mean performance is "+ str(round(mean_performance,2)))
+        # plt.vlines(median_performance,0,np.max(distribution)+0.1, colors='b', label="The median performance is "+ str(round(median_performance,2)))
+
         plt.savefig(plt_file,bbox_inches='tight')
         plt.close()
 
 
-
+    media_list = [0,1,2,3,8]
+    chosen_media_distance_order_matrix = np.zeros(shape=(5,5),dtype=np.int)
+    for i, media_index in enumerate(media_list):
+        chosen_media_distance_order_matrix[i] = media_distance_order_matrix[media_index,media_list]
+    order_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_'+ground_truth+'.npy')
+    np.save(order_file,chosen_media_distance_order_matrix)
 
     result = dict()
     average_distance = dict()

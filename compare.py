@@ -2,6 +2,7 @@ from json.decoder import JSONDecodeError
 import os
 from posixpath import join
 import json
+from tkinter import E
 from typing_extensions import final
 from gensim import corpora, models
 from gensim.test.utils import common_texts
@@ -81,14 +82,14 @@ def _co_occurance_distance(cluster_list, base_cluster_list):
 
     return distance[0][0]
 
-def lda_baseline(mean_method):
+def lda_baseline(mean_method, file_list):
     def bd(vector_a, vector_b):
         bc = np.sum(
             np.sqrt(vector_a * vector_b))
         distance = -np.log(bc)
         return distance
     data_path = "e:/media-position/"
-    topic_list = ["obamacare","gay-marriage","drug-policy","corporate-tax","climate-change"]
+    topic_list = ["climate-change", "corporate-tax","drug-policy","gay-marriage","obamacare"]
     # topic_list = ["obamacare"]
     distance_dict = dict()
     for topic in topic_list:
@@ -97,8 +98,7 @@ def lda_baseline(mean_method):
             outlets_text_list = [[] for _ in range(10)]
             topic_path = os.path.join(data_path,'data_'+topic)
             topic_path = topic_path + '/42/all/original'
-            # for file_path in ['en.train','en.valid']:
-            for file_path in ['en.valid']:
+            for file_path in file_list:
                 file = topic_path+'/'+file_path
                 with open(file,mode='r',encoding='utf8') as fp:
                     for line in fp.readlines():
@@ -136,7 +136,7 @@ def lda_baseline(mean_method):
             outlets_text_list = [[] for _ in range(10)]
             topic_path = os.path.join(data_path,'data_'+topic)
             topic_path = topic_path + '/42/all/original'
-            for file_path in ['en.train','en.valid']:
+            for file_path in file_list:
                 file = topic_path+'/'+file_path
                 with open(file,mode='r',encoding='utf8') as fp:
                     for line in fp.readlines():
@@ -172,14 +172,14 @@ def lda_baseline(mean_method):
                 if i!=j:
                     # distance = entropy(topic_b_vec,topic_a_vec)
                     # distance = bd(outlets_b_vec,outlets_a_vec)
-                    distance = cosine_distances(outlets_b_vec,outlets_a_vec)
+                    distance = cosine_distances(outlets_b_vec.reshape(1, -1),outlets_a_vec.reshape(1, -1))[0][0]
                     d_list[j] = distance
             distance_matrix.append(np.array(d_list))
         distance_matrix = np.array(distance_matrix)
         distance_dict[topic] = distance_matrix
     return distance_dict
 
-def tfidf_baseline(mean_method):
+def tfidf_baseline(mean_method, file_list):
     data_path = "e:/media-position/"
     topic_list = ["obamacare","gay-marriage","drug-policy","corporate-tax","climate-change"]
     # topic_list = ["obamacare"]
@@ -190,8 +190,7 @@ def tfidf_baseline(mean_method):
             outlets_text_list = [[] for _ in range(10)]
             topic_path = os.path.join(data_path,'data_'+topic)
             topic_path = topic_path + '/42/all/original'
-            # for file_path in ['en.train','en.valid']:
-            for file_path in ['en.valid']:
+            for file_path in file_list:
                 file = topic_path+'/'+file_path
                 with open(file,mode='r',encoding='utf8') as fp:
                     for line in fp.readlines():
@@ -215,7 +214,7 @@ def tfidf_baseline(mean_method):
             outlets_text_list = [[] for _ in range(10)]
             topic_path = os.path.join(data_path,'data_'+topic)
             topic_path = topic_path + '/42/all/original'
-            for file_path in ['en.train','en.valid']:
+            for file_path in file_list:
                 file = topic_path+'/'+file_path
                 with open(file,mode='r',encoding='utf8') as fp:
                     for line in fp.readlines():
@@ -296,101 +295,98 @@ def mlm_baseline():
         distance_dict[topic] = distance_matrix
     return distance_dict
 
-def get_baseline(base_line, method, combine_method):
+def get_baseline(ground_truth_list, file_list, method, combine_method):
     data_map = BaselineArticleMap()
     bias_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)))
-    allsides_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int32)
-    for i,media_a in enumerate(data_map.dataset_list):
-        temp_distance = list()
-        for j,media_b in enumerate(data_map.dataset_list):
-            bias_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
-            temp_distance.append(abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
-        distance_set = set(temp_distance)
-        distance_set = sorted(list(distance_set))
-        for o, d_o in enumerate(distance_set):
-            for j,d_j in enumerate(temp_distance):
-                if d_o == d_j:
-                    allsides_distance_order_matrix[i][j] = o
-                    
-    if base_line == 'source':
-        distance_base = 'trust'
-    else:
-        distance_base = 'source'
-
-    base_model = joblib.load(
-        './log/baseline/model/baseline_'+distance_base+'_article.c')
-
-    base_cluster_list = _cluster_generate(base_model)
-    pew_distance_matrix = np.load('./log/baseline/model/baseline_'+base_line+'_article.npy')
-    pew_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int32)
-    for i,media_a in enumerate(data_map.dataset_list):
-        temp_distance = pew_distance_matrix[i]
-        distance_set = set(temp_distance)
-        distance_set = sorted(list(distance_set))
-        for o, d_o in enumerate(distance_set):
-            for j,d_j in enumerate(temp_distance):
-                if d_o == d_j:
-                    pew_distance_order_matrix[i][j] = o
-    
-    if method == "tdidf":
-        baseline_matrix_list = tfidf_baseline(combine_method)
+    if method == "tfidf":
+        baseline_matrix_list = tfidf_baseline(combine_method,file_list)
     elif method == "lda":
-        baseline_matrix_list = lda_baseline(combine_method)
+        baseline_matrix_list = lda_baseline(combine_method,file_list)
     elif method == "mlm":
         baseline_matrix_list = mlm_baseline()
-    baseline_file = 'baseline_'+method+'_'+combine_method+'.json'
-    for topic, media_distance in baseline_matrix_list.items():
-        analyzer = AgglomerativeClustering(
-            n_clusters=2, compute_distances=True, affinity='euclidean', linkage='complete')
-        # analyzer = KMeans(n_clusters=3)
-        cluster_result = dict()
-        clusters = analyzer.fit(media_distance)
-        labels = clusters.labels_
-        for i, label in enumerate(labels.tolist()):
-            if label not in cluster_result:
-                cluster_result[label] = list()
-            cluster_result[label].append(data_map.dataset_list)
-        cluster_list = _cluster_generate(clusters)
+
+    for ground_truth in ground_truth_list:
+        if ground_truth == "mbr":
+            ground_truth_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.float32)
+            ground_truth_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int32)
+            for i,media_a in enumerate(data_map.dataset_list):
+                temp_distance = list()
+                for j,media_b in enumerate(data_map.dataset_list):
+                    bias_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
+                    temp_distance.append(abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
+                    ground_truth_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
+                distance_set = set(temp_distance)
+                distance_set = sorted(list(distance_set))
+                for o, d_o in enumerate(distance_set):
+                    for j,d_j in enumerate(temp_distance):
+                        if d_o == d_j:
+                            ground_truth_distance_order_matrix[i][j] = o
+        elif ground_truth in ['source','trust']:
+            ground_truth_distance_matrix = np.load('E:/media-position/log/baseline/model/baseline_'+ground_truth+'_article.npy')
+            ground_truth_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int32)
+            for i,media_a in enumerate(data_map.dataset_list):
+                temp_distance = ground_truth_distance_matrix[i]
+                distance_set = set(temp_distance)
+                distance_set = sorted(list(distance_set))
+                for o, d_o in enumerate(distance_set):
+                    for j,d_j in enumerate(temp_distance):
+                        if d_o == d_j:
+                            ground_truth_distance_order_matrix[i][j] = o
+        
+        baseline_file = 'baseline_'+method+'_'+combine_method+'.json'
+        performace_dict =  {'topic':'average','ground_truth':ground_truth,'tau_performance':[],'pearson_performance':[]}
+        for topic, media_distance in baseline_matrix_list.items():
+            # analyzer = AgglomerativeClustering(
+            #     n_clusters=2, compute_distances=True, affinity='euclidean', linkage='complete')
+            # # analyzer = KMeans(n_clusters=3)
+            # cluster_result = dict()
+            # clusters = analyzer.fit(media_distance)
+            # labels = clusters.labels_
+            # for i, label in enumerate(labels.tolist()):
+            #     if label not in cluster_result:
+            #         cluster_result[label] = list()
+            #     cluster_result[label].append(data_map.dataset_list)
+            # cluster_list = _cluster_generate(clusters)
+
+            media_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int32)
+            for i,media_a in enumerate(data_map.dataset_list):
+                temp_distance = list()
+                for j,media_b in enumerate(data_map.dataset_list):
+                    temp_distance.append(media_distance[i][j])
+                order_list = np.argsort(temp_distance)
+                order_list = order_list.tolist()
+                for j in range(len(data_map.dataset_list)):
+                    order = order_list.index(j)
+                    media_distance_order_matrix[i][j] = order
+            
+            
+            
+            
+            tau_performance = 0
+            for i in range(len(data_map.dataset_list)):
+                tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(1,-1), ground_truth_distance_order_matrix[i].reshape(1,-1))
+                tau_performance += tau
+            tau_performance /= len(data_map.dataset_list)
+
+            pearson_performance = 0
+            for i in range(len(data_map.dataset_list)):
+                # sort_distance += euclidean_distances(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
+                pearson = np.corrcoef(ground_truth_distance_matrix[i].reshape(1,-1),media_distance[i].reshape(1,-1))
+                pearson_performance += pearson[0][1]
+            pearson_performance /= len(data_map.dataset_list)
 
 
-        media_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int32)
-        for i,media_a in enumerate(data_map.dataset_list):
-            temp_distance = list()
-            for j,media_b in enumerate(data_map.dataset_list):
-                temp_distance.append(media_distance[i][j])
-            order_list = np.argsort(temp_distance)
-            order_list = order_list.tolist()
-            for j in range(len(data_map.dataset_list)):
-                order = order_list.index(j)
-                media_distance_order_matrix[i][j] = order
-        allsides_rank_similarity = 0
-        for i in range(len(data_map.dataset_list)):
-            # sort_distance += euclidean_distances(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
-            tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(1,-1), allsides_distance_order_matrix[i].reshape(1,-1))
-            allsides_rank_similarity += tau
-        allsides_rank_similarity /= len(data_map.dataset_list)
+            record_item = {'topic':topic,'ground_truth':ground_truth,'tau_performance':round(tau_performance,2),'pearson_performance':round(pearson_performance,2)}
 
-        pew_rank_similarity = 0
-        for i in range(len(data_map.dataset_list)):
-            # sort_distance += euclidean_distances(media_distance_order_matrix[i].reshape(1,-1), distance_order_matrix[i].reshape(1,-1))
-            tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(1,-1), pew_distance_order_matrix[i].reshape(1,-1))
-            pew_rank_similarity += tau
-        pew_rank_similarity /= len(data_map.dataset_list)
-
-        pew_cosine_similarity = 0
-        for i,media_a in enumerate(data_map.dataset_list):
-            distance = cosine_similarity(pew_distance_matrix[i].reshape(1,-1),media_distance[i].reshape(1,-1))
-            pew_cosine_similarity += distance[0][0]
-        pew_cosine_similarity /= len(data_map.dataset_list)
-
-        cluster_performance = _co_occurance_distance(cluster_list,base_cluster_list)
-
-
-        record_item = {'topic':topic,'baseline':base_line,'cluster_performance':round(cluster_performance,2),'allsides_rank_similarity':round(allsides_rank_similarity,2),'pew_rank_similarity':round(pew_rank_similarity,2),'pew_cosine_similarity':round(pew_cosine_similarity,2)}
-
+            performace_dict['tau_performance'].append(round(tau_performance,2))
+            performace_dict['pearson_performance'].append(round(pearson_performance,2))
+            with open(baseline_file,mode='a',encoding='utf8') as fp:
+                fp.write(json.dumps(record_item,ensure_ascii=False)+'\n')
+        
+        performace_dict['tau_performance'] = str(round(np.mean(performace_dict['tau_performance']),2)) + "("+str(round(np.std(performace_dict['tau_performance'],ddof=1),2))+")"
+        performace_dict['pearson_performance'] = str(round(np.mean(performace_dict['pearson_performance']),2)) + "("+str(round(np.std(performace_dict['pearson_performance'],ddof=1),2))+")"
         with open(baseline_file,mode='a',encoding='utf8') as fp:
-            fp.write(json.dumps(record_item,ensure_ascii=False)+'\n')
-
+            fp.write(json.dumps(performace_dict,ensure_ascii=False)+'\n')
 
 def baseline_difference():
     data_map = BaselineArticleMap()
@@ -469,10 +465,11 @@ def baseline_difference():
 
 
 def main():
-    for method in ["lda","tfidf"]:
-        for combine_method in ["combine","average"]:
-            get_baseline('source',method, combine_method)
-            get_baseline('trust',method, combine_method)
+    for file_list in [['en.valid'],['en.train'],['en.valid','en.train']]:
+        # for method in ["tfidf","lda"]:
+        for method in ["lda"]:
+            for combine_method in ["average"]:
+                get_baseline(['trust','source','mbr'], file_list, method, combine_method)
     # baseline_difference()
 
 if __name__ == '__main__':

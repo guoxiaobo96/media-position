@@ -1,0 +1,6 @@
+{"ground_truth": "trust", "augmentation_method": "no_augmentation", "analysis_compare_method": "correlation", "method": "tau", "performance": 0.3}
+{"ground_truth": "source", "augmentation_method": "no_augmentation", "analysis_compare_method": "correlation", "method": "tau", "performance": 0.28}
+{"ground_truth": "MBR", "augmentation_method": "no_augmentation", "analysis_compare_method": "correlation", "method": "tau", "performance": 0.43}
+{"ground_truth": "trust", "augmentation_method": "no_augmentation", "analysis_compare_method": "correlation", "method": "pearson", "performance": 0.45}
+{"ground_truth": "source", "augmentation_method": "no_augmentation", "analysis_compare_method": "correlation", "method": "pearson", "performance": 0.49}
+{"ground_truth": "MBR", "augmentation_method": "no_augmentation", "analysis_compare_method": "correlation", "method": "pearson", "performance": 0.47}
