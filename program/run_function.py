@@ -563,7 +563,12 @@ def label_score_analysis(
         plt.close()
 
 
-
+    media_list = [0,1,2,3,8]
+    chosen_media_distance_order_matrix = np.zeros(shape=(5,5),dtype=np.int)
+    for i, media_index in enumerate(media_list):
+        chosen_media_distance_order_matrix[i] = media_distance_order_matrix[media_index,media_list]
+    order_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_'+ground_truth+'.npy')
+    np.save(order_file,chosen_media_distance_order_matrix)
 
     result = dict()
     average_distance = dict()
