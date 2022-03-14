@@ -34,6 +34,8 @@ def main(
                             training_args)
     elif misc_args.task == 'label_score_analysis':
         label_score_analysis(misc_args, model_args,
+                             data_args, training_args, analysis_args,'human')
+        label_score_analysis(misc_args, model_args,
                              data_args, training_args, analysis_args,'trust')
         label_score_analysis(misc_args, model_args,
                              data_args, training_args, analysis_args,'source')

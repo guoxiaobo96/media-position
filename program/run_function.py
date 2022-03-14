@@ -281,6 +281,10 @@ def label_score_analysis(
                 for j,d_j in enumerate(temp_distance):
                     if d_o == d_j:
                         ground_truth_distance_order_matrix[i][j] = o
+    elif ground_truth  == 'human':
+        chosen_media_order = [[0,3,4,1,2],[4,0,1,3,2],[4,1,0,3,2],[1,3,4,0,2],[4,2,3,1,0]]
+        ground_truth_distance_order_matrix = np.array(chosen_media_order)
+        ground_truth_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int32)
                     
 
 
@@ -343,6 +347,13 @@ def label_score_analysis(
                 v, str(k), analysis_args, keep_result=False,data_map=data_map)
             if model is None:
                 continue
+            if ground_truth == 'human':
+                human_media_list = [0,1,2,3,8]
+                chosen_media_distance_order_matrix = np.zeros(shape=(5,5),dtype=np.int)
+                for i, media_index in enumerate(human_media_list):
+                    chosen_media_distance_order_matrix[i] = model[media_index,human_media_list]
+                model = chosen_media_distance_order_matrix
+                result = chosen_media_distance_order_matrix
             analysis_result[k] = result
             model_list[k] = model
             for i, encoded_data in enumerate(encoded_list):
@@ -465,6 +476,13 @@ def label_score_analysis(
             order = order_list.index(j)
             media_distance_order_matrix[i][j] = order
 
+    if ground_truth == 'human':
+        media_list = [0,1,2,3,8]
+        chosen_media_distance_order_matrix = np.zeros(shape=(5,5),dtype=np.int)
+        for i, media_index in enumerate(media_list):
+            chosen_media_distance_order_matrix[i] = media_distance_order_matrix[media_index,media_list]
+        media_distance_order_matrix = chosen_media_distance_order_matrix
+
 
 
     if analysis_args.analysis_compare_method == 'distance':
@@ -491,15 +509,15 @@ def label_score_analysis(
         media_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
     elif analysis_args.analysis_compare_method == 'correlation':
         if  method == 'tau':
-            for i in range(len(data_map.dataset_list)):
+            for i in range(len(media_distance_order_matrix)):
                 tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(1,-1), ground_truth_distance_order_matrix[i].reshape(1,-1))
                 performance += tau
-            performance /= len(data_map.dataset_list)
+            performance /= len(media_distance_order_matrix)
         elif method == 'pearson':
-            for i,media_a in enumerate(data_map.dataset_list):
+            for i,media_a in enumerate(media_distance_order_matrix):
                 pearson = np.corrcoef(ground_truth_distance_matrix[i].reshape(1,-1),media_distance[i].reshape(1,-1))
                 performance += pearson[0][1]
-            performance /= len(data_map.dataset_list)
+            performance /= len(media_distance_order_matrix)
 
         step_size = 0.05
         x_list = np.arange(-1,1+step_size,step_size)
@@ -526,6 +544,9 @@ def label_score_analysis(
         if not os.path.exists(result_path):
             os.makedirs(result_path)
 
+        order_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_'+ground_truth+'.npy')
+        np.save(order_file,media_distance_order_matrix)
+
         sort_result_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_sort_'+ground_truth+'.json')
 
         sentence_result_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_sentence_'+ground_truth+'.json')
@@ -534,8 +555,10 @@ def label_score_analysis(
             g = 'SoA-s'
         elif ground_truth == 'trust':
             g = 'SoA-t'
-        else:
+        elif ground_truth == 'MBR':
             g = 'MBR'
+        else:
+            g == 'human'
 
         d = ""
         if data_args.dataset == "climate-change":
@@ -561,14 +584,6 @@ def label_score_analysis(
 
         plt.savefig(plt_file,bbox_inches='tight')
         plt.close()
-
-
-    media_list = [0,1,2,3,8]
-    chosen_media_distance_order_matrix = np.zeros(shape=(5,5),dtype=np.int)
-    for i, media_index in enumerate(media_list):
-        chosen_media_distance_order_matrix[i] = media_distance_order_matrix[media_index,media_list]
-    order_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_'+ground_truth+'.npy')
-    np.save(order_file,chosen_media_distance_order_matrix)
 
     result = dict()
     average_distance = dict()
