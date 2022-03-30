@@ -1,17 +1,14 @@
 program/__pycache__/*
-shell/train_0.sh
 runs/*
 .vscode/*
-shell/*
+shell/
 temp.py
 log/*/json/*.json
 log/*/dict/*
 log/*/model/*
-~/*
 log/*/*/json/*.json
 log/*/*/dict/*
 log/*/*/model/*
-transformers/*
 
 analysis/*/*/*/*/*/*/*/*/*/*.json
 analysis/*/*/*/*/*/*/*/*/*.json
@@ -27,3 +24,4 @@ log_*/*/*/*/*/*
 
 env/
 analysis_*/
+data/
