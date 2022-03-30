@@ -184,8 +184,8 @@ def lda_baseline(mean_method, file_list):
             for j, outlets_b_vec in enumerate(outlets_vec_list):
                 if i != j:
                     # distance = entropy(topic_b_vec,topic_a_vec)
-                    distance = bd(outlets_b_vec, outlets_a_vec)
-                    # distance = cosine_distances(outlets_b_vec.reshape(1, -1),outlets_a_vec.reshape(1, -1))[0][0]
+                    # distance = bd(outlets_b_vec,outlets_a_vec)
+                    distance = cosine_distances(outlets_b_vec.reshape(1, -1),outlets_a_vec.reshape(1, -1))[0][0]
                     d_list[j] = distance
             distance_matrix.append(np.array(d_list))
         distance_matrix = np.array(distance_matrix)
@@ -520,13 +520,13 @@ def baseline_difference():
 
 
 def main():
-    for file_list in [['en.valid'], ['en.train'], ['en.valid', 'en.train']]:
-        for method in ["mlm"]:
-            # for method in ["lda"]:
+    for file_list in [['en.valid'],['en.train'],['en.valid','en.train']]:
+        # for method in ["class"]:
+        for method in ['tfidf','lda']:
             for combine_method in ["average"]:
                 # get_baseline(['trust','source','mbr'], file_list, method, combine_method)
-                get_baseline(['human', 'trust', 'source', 'mbr'],
-                             file_list, method, combine_method)
+                # get_baseline(['human','trust','source','mbr'], file_list, method, combine_method)
+                get_baseline(['human'], file_list, method, combine_method)
     # baseline_difference()
 
 
