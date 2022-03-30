@@ -1,25 +1,14 @@
-from .config import BaselineArguments, DataArguments, DataAugArguments, FullArticleMap, MiscArgument, ModelArguments, TrainingArguments, AnalysisArguments, SourceMap, TrustMap, TwitterMap, ArticleMap, BaselineArticleMap
-from .model import MLMModel, SentenceReplacementModel, NERModel, ClassifyModel
-from .data import get_dataset, get_analysis_data, get_label_data, get_mask_score_data
-from .ner_util import NERDataset
-from .predict_util import MaksedPredictionDataset
-from .data_augment_util import SelfDataAugmentor, CrossDataAugmentor
-from .fine_tune_util import DataCollatorForLanguageModelingConsistency
-from .baseline import BaselineCalculator
+from .config import DataArguments, DataAugArguments, FullArticleMap, MiscArgument, ModelArguments, TrainingArguments, AnalysisArguments, BaselineArticleMap
+from .model import MLMModel,  ClassifyModel
+from .data import get_dataset, get_label_data
+from .data_augment_util import SelfDataAugmentor
 from .masked_token_util import MaskedTokenLabeller, ngram_inner_label, ngram_outer_label, random_label
 from .analysis import ClusterAnalysis, DistanceAnalysis, ClusterCompare, CorrelationAnalysis, CorrelationCompare
-from nltk import tokenize
-from nltk.tokenize import sent_tokenize, word_tokenize
-from nltk.stem.porter import PorterStemmer
-from numpy.lib.function_base import copy
-from copy import deepcopy
-from sklearn.feature_extraction.text import CountVectorizer
 from tqdm import tqdm
-from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances, cosine_distances, manhattan_distances
+from sklearn.metrics.pairwise import euclidean_distances
 from scipy.stats import kendalltau
 import numpy as np
-from matplotlib import pyplot as plt, transforms
-from os import path
+from matplotlib import pyplot as plt
 from typing import Dict, List
 import json
 import os
@@ -28,19 +17,6 @@ import matplotlib
 import transformers
 
 matplotlib.use('Agg')
-
-
-def generate_baseline(
-    misc_args: MiscArgument,
-    baseline_args: BaselineArguments,
-    data_args: DataArguments
-) -> Dict:
-    baseline_calculator = BaselineCalculator(
-        misc_args, baseline_args, data_args)
-    baseline_calculator.load_data()
-    baseline_calculator.encode_data()
-    result = baseline_calculator.feature_analysis()
-    return result
 
 
 def train_lm(
@@ -165,7 +141,7 @@ def label_score_predict(
 
     log_dir = os.path.join(
         misc_args.log_dir, data_args.data_dir.split('_')[1].split('/')[0])
-    log_dir = os.path.join(log_dir,str(training_args.seed))
+    log_dir = os.path.join(log_dir, str(training_args.seed))
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
@@ -243,6 +219,7 @@ def label_score_predict(
         for token in word_set:
             fp.write(token+'\n')
 
+
 def label_score_analysis(
     misc_args: MiscArgument,
     model_args: ModelArguments,
@@ -253,41 +230,47 @@ def label_score_analysis(
 ) -> Dict:
     data_map = BaselineArticleMap()
 
-    ground_truth_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
+    ground_truth_distance_order_matrix = np.zeros(
+        shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=np.int)
     if ground_truth == "MBR":
-        ground_truth_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.float32)
-        bias_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)))
-        for i,media_a in enumerate(data_map.dataset_list):
+        ground_truth_distance_matrix = np.zeros(shape=(
+            len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=np.float32)
+        bias_distance_matrix = np.zeros(
+            shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)))
+        for i, media_a in enumerate(data_map.dataset_list):
             temp_distance = list()
-            for j,media_b in enumerate(data_map.dataset_list):
-                bias_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
-                temp_distance.append(abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
-                ground_truth_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
+            for j, media_b in enumerate(data_map.dataset_list):
+                bias_distance_matrix[i][j] = abs(
+                    data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
+                temp_distance.append(
+                    abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
+                ground_truth_distance_matrix[i][j] = abs(
+                    data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
             distance_set = set(temp_distance)
             distance_set = sorted(list(distance_set))
             for o, d_o in enumerate(distance_set):
-                for j,d_j in enumerate(temp_distance):
+                for j, d_j in enumerate(temp_distance):
                     if d_o == d_j:
                         ground_truth_distance_order_matrix[i][j] = o
-    elif ground_truth in ["source",'trust']:
+    elif ground_truth in ["source", 'trust']:
         ground_truth_model = joblib.load(
-        './log/baseline/model/baseline_'+ground_truth+'_article.c')
-        ground_truth_distance_matrix = np.load('./log/baseline/model/baseline_'+ground_truth+'_article.npy')
-        for i,media_a in enumerate(data_map.dataset_list):
+            './log/baseline/model/baseline_'+ground_truth+'_article.c')
+        ground_truth_distance_matrix = np.load(
+            './log/baseline/model/baseline_'+ground_truth+'_article.npy')
+        for i, media_a in enumerate(data_map.dataset_list):
             temp_distance = ground_truth_distance_matrix[i]
             distance_set = set(temp_distance)
             distance_set = sorted(list(distance_set))
             for o, d_o in enumerate(distance_set):
-                for j,d_j in enumerate(temp_distance):
+                for j, d_j in enumerate(temp_distance):
                     if d_o == d_j:
                         ground_truth_distance_order_matrix[i][j] = o
-    elif ground_truth  == 'human':
-        chosen_media_order = [[0,3,4,1,2],[4,0,1,3,2],[4,1,0,3,2],[1,3,4,0,2],[4,2,3,1,0]]
+    elif ground_truth == 'human':
+        chosen_media_order = [[0, 3, 4, 1, 2], [4, 0, 1, 3, 2], [
+            4, 1, 0, 3, 2], [1, 3, 4, 0, 2], [4, 2, 3, 1, 0]]
         ground_truth_distance_order_matrix = np.array(chosen_media_order)
-        ground_truth_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int32)
-                    
-
-
+        ground_truth_distance_matrix = np.zeros(
+            shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=np.int32)
 
     analysis_result = dict()
     model_list = dict()
@@ -296,10 +279,11 @@ def label_score_analysis(
 
     if not os.path.exists(analysis_args.analysis_result_dir):
         os.makedirs(analysis_args.analysis_result_dir)
-    analysis_record_file = '/'.join(analysis_args.analysis_result_dir.split('/')[:6])
+    analysis_record_file = '/'.join(
+        analysis_args.analysis_result_dir.split('/')[:6])
     if not os.path.exists(analysis_record_file):
         os.makedirs(analysis_record_file)
-    analysis_record_file = os.path.join(analysis_record_file,'record')
+    analysis_record_file = os.path.join(analysis_record_file, 'record')
 
     error_count = 0
     analysis_data_temp = get_label_data(misc_args, analysis_args, data_args)
@@ -344,14 +328,16 @@ def label_score_analysis(
             continue
         try:
             model, result, dataset_list, encoded_list = analysis_model.analyze(
-                v, str(k), analysis_args, keep_result=False,data_map=data_map)
+                v, str(k), analysis_args, keep_result=False, data_map=data_map)
             if model is None:
                 continue
             if ground_truth == 'human':
-                human_media_list = [0,1,2,3,8]
-                chosen_media_distance_order_matrix = np.zeros(shape=(5,5),dtype=np.int)
+                human_media_list = [0, 1, 2, 3, 8]
+                chosen_media_distance_order_matrix = np.zeros(
+                    shape=(5, 5), dtype=np.int)
                 for i, media_index in enumerate(human_media_list):
-                    chosen_media_distance_order_matrix[i] = model[media_index,human_media_list]
+                    chosen_media_distance_order_matrix[i] = model[media_index,
+                                                                  human_media_list]
                 model = chosen_media_distance_order_matrix
                 result = chosen_media_distance_order_matrix
             analysis_result[k] = result
@@ -416,11 +402,12 @@ def label_score_analysis(
             'sentence': 'cluster_average', 'position': -2, 'word': 'cluster_average'}
 
         media_distance = analysis_data["media_average"]
-        media_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
+        media_distance_order_matrix = np.zeros(
+            shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=np.int)
 
-        for i,media_a in enumerate(data_map.dataset_list):
+        for i, media_a in enumerate(data_map.dataset_list):
             temp_distance = list()
-            for j,media_b in enumerate(data_map.dataset_list):
+            for j, media_b in enumerate(data_map.dataset_list):
                 temp_distance.append(media_distance[i][j])
             order_list = np.argsort(temp_distance)
             order_list = order_list.tolist()
@@ -431,7 +418,6 @@ def label_score_analysis(
         model_list['base'] = ground_truth_distance_order_matrix
         compare_model = CorrelationCompare(misc_args, analysis_args)
         analysis_result = compare_model.compare(model_list)
-        
 
     for i, dataset_name_a in enumerate(tqdm(data_map.dataset_list, desc="Combine cluster")):
         for j, dataset_name_b in enumerate(data_map.dataset_list):
@@ -464,11 +450,12 @@ def label_score_analysis(
         'sentence': 'performance_average', 'position': -2, 'word': 'performance_average'}
 
     media_distance = analysis_data["media_average"]
-    media_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
+    media_distance_order_matrix = np.zeros(
+        shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=np.int)
 
-    for i,media_a in enumerate(data_map.dataset_list):
+    for i, media_a in enumerate(data_map.dataset_list):
         temp_distance = list()
-        for j,media_b in enumerate(data_map.dataset_list):
+        for j, media_b in enumerate(data_map.dataset_list):
             temp_distance.append(media_distance[i][j])
         order_list = np.argsort(temp_distance)
         order_list = order_list.tolist()
@@ -477,13 +464,12 @@ def label_score_analysis(
             media_distance_order_matrix[i][j] = order
 
     if ground_truth == 'human':
-        media_list = [0,1,2,3,8]
-        chosen_media_distance_order_matrix = np.zeros(shape=(5,5),dtype=np.int)
+        media_list = [0, 1, 2, 3, 8]
+        chosen_media_distance_order_matrix = np.zeros(
+            shape=(5, 5), dtype=np.int)
         for i, media_index in enumerate(media_list):
-            chosen_media_distance_order_matrix[i] = media_distance_order_matrix[media_index,media_list]
+            chosen_media_distance_order_matrix[i] = media_distance_order_matrix[media_index, media_list]
         media_distance_order_matrix = chosen_media_distance_order_matrix
-
-
 
     if analysis_args.analysis_compare_method == 'distance':
         pass
@@ -506,21 +492,24 @@ def label_score_analysis(
             'sentence': 'cluster_average', 'position': -2, 'word': 'cluster_average'}
 
         media_distance = analysis_data["media_average"]
-        media_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
+        media_distance_order_matrix = np.zeros(
+            shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=np.int)
     elif analysis_args.analysis_compare_method == 'correlation':
-        if  method == 'tau':
+        if method == 'tau':
             for i in range(len(media_distance_order_matrix)):
-                tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(1,-1), ground_truth_distance_order_matrix[i].reshape(1,-1))
+                tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(
+                    1, -1), ground_truth_distance_order_matrix[i].reshape(1, -1))
                 performance += tau
             performance /= len(media_distance_order_matrix)
         elif method == 'pearson':
-            for i,media_a in enumerate(media_distance_order_matrix):
-                pearson = np.corrcoef(ground_truth_distance_matrix[i].reshape(1,-1),media_distance[i].reshape(1,-1))
+            for i, media_a in enumerate(media_distance_order_matrix):
+                pearson = np.corrcoef(ground_truth_distance_matrix[i].reshape(
+                    1, -1), media_distance[i].reshape(1, -1))
                 performance += pearson[0][1]
             performance /= len(media_distance_order_matrix)
 
         step_size = 0.05
-        x_list = np.arange(-1,1+step_size,step_size)
+        x_list = np.arange(-1, 1+step_size, step_size)
         distribution = [0 for _ in range(len(x_list))]
         for p in performance_average:
             try:
@@ -539,17 +528,20 @@ def label_score_analysis(
                 end_index = i
                 if start_index == 0:
                     start_index = i
-        
-        result_path = os.path.join(analysis_args.analysis_result_dir,method)
+
+        result_path = os.path.join(analysis_args.analysis_result_dir, method)
         if not os.path.exists(result_path):
             os.makedirs(result_path)
 
-        order_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_'+ground_truth+'.npy')
-        np.save(order_file,media_distance_order_matrix)
+        order_file = os.path.join(
+            result_path, analysis_args.analysis_encode_method + '_'+ground_truth+'.npy')
+        np.save(order_file, media_distance_order_matrix)
 
-        sort_result_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_sort_'+ground_truth+'.json')
+        sort_result_file = os.path.join(
+            result_path, analysis_args.analysis_encode_method + '_sort_'+ground_truth+'.json')
 
-        sentence_result_file = os.path.join(result_path, analysis_args.analysis_encode_method +'_sentence_'+ground_truth+'.json')
+        sentence_result_file = os.path.join(
+            result_path, analysis_args.analysis_encode_method + '_sentence_'+ground_truth+'.json')
         g = ""
         if ground_truth == 'source':
             g = 'SoA-s'
@@ -571,9 +563,11 @@ def label_score_analysis(
             d = "Gay Marriage"
         elif data_args.dataset == "obamacare":
             d = "Obamacare"
-        plt.title('Distribution of {} with {} '.format(d,g), fontsize=20)
-        plt_file = os.path.join(result_path, data_args.dataset+'_'+analysis_args.analysis_encode_method +'_distribution_'+ground_truth+'.jpg')
-        plt.plot(x_list[start_index:end_index+1], distribution[start_index:end_index+1],linewidth=2)
+        plt.title('Distribution of {} with {} '.format(d, g), fontsize=20)
+        plt_file = os.path.join(result_path, data_args.dataset+'_' +
+                                analysis_args.analysis_encode_method + '_distribution_'+ground_truth+'.jpg')
+        plt.plot(x_list[start_index:end_index+1],
+                 distribution[start_index:end_index+1], linewidth=2)
         plt.xticks(fontsize=20)
         plt.xlabel("Kendall rank correlation coefficients", fontsize=20)
         plt.ylabel("Percent of Instances", fontsize=20)
@@ -582,7 +576,7 @@ def label_score_analysis(
         # plt.vlines(mean_performance,0,np.max(distribution)+0.1, colors='g', label="The mean performance is "+ str(round(mean_performance,2)))
         # plt.vlines(median_performance,0,np.max(distribution)+0.1, colors='b', label="The median performance is "+ str(round(median_performance,2)))
 
-        plt.savefig(plt_file,bbox_inches='tight')
+        plt.savefig(plt_file, bbox_inches='tight')
         plt.close()
 
     result = dict()
@@ -605,7 +599,6 @@ def label_score_analysis(
     analysis_result = {k: {'score': v, 'sentence': sentence_list.index(
         sentence_position_data[k]['sentence'])+1, 'position': sentence_position_data[k]['position'], 'word': sentence_position_data[k]['word']} for k, v in analysis_result}
 
-
     with open(sort_result_file, mode='w', encoding='utf8') as fp:
         for k, v in analysis_result.items():
             fp.write(json.dumps(v, ensure_ascii=False)+'\n')
@@ -615,10 +608,12 @@ def label_score_analysis(
             v['sentence'] = k
             fp.write(json.dumps(v, ensure_ascii=False)+'\n')
 
-    record_item = {'ground_truth':ground_truth,'augmentation_method':data_args.data_type.split('/')[0],'analysis_compare_method':analysis_args.analysis_compare_method,'method':method,'performance':round(performance,2)}
-    with open(analysis_record_file,mode='a',encoding='utf8') as fp:
-        fp.write(json.dumps(record_item,ensure_ascii=False)+'\n')
-    print("The performance on {} is {}".format(ground_truth, round(performance,2)))
+    record_item = {'ground_truth': ground_truth, 'augmentation_method': data_args.data_type.split(
+        '/')[0], 'analysis_compare_method': analysis_args.analysis_compare_method, 'method': method, 'performance': round(performance, 2)}
+    with open(analysis_record_file, mode='a', encoding='utf8') as fp:
+        fp.write(json.dumps(record_item, ensure_ascii=False)+'\n')
+    print("The performance on {} is {}".format(
+        ground_truth, round(performance, 2)))
 
     print("Analysis finish")
     return analysis_result
@@ -629,24 +624,10 @@ def data_augemnt(
     data_args: DataArguments,
     aug_args: DataAugArguments
 ):
-    if aug_args.augment_type in ['duplicate', 'sentence_order_replacement', 'span_cutoff', 'word_order_replacement', 'word_replacement', 'sentence_replacement', 'combine_aug']:
-        data_augmentor = SelfDataAugmentor(misc_args, data_args, aug_args)
-    elif aug_args.augment_type in ['cross_sentence_replacement']:
-        data_augmentor = CrossDataAugmentor(misc_args, data_args, aug_args)
+
+    data_augmentor = SelfDataAugmentor(misc_args, data_args, aug_args)
     data_augmentor.data_augment(aug_args.augment_type)
     data_augmentor.save()
-
-
-def train_mask_score_model(model_args: ModelArguments,
-                           data_args: DataArguments,
-                           training_args: TrainingArguments,
-                           analysis_args: AnalysisArguments) -> None:
-
-    model = NERModel(model_args, data_args, training_args)
-
-    train_dataset, eval_dataset = get_mask_score_data(
-        analysis_args, data_args, model.tokenizer)
-    model.train(train_dataset, eval_dataset)
 
 
 def _draw_heatmap(data, x_list, y_list):
@@ -666,6 +647,7 @@ def _draw_heatmap(data, x_list, y_list):
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
              rotation_mode="anchor")
 
+
 def encode_media(
     misc_args: MiscArgument,
     model_args: ModelArguments,
@@ -681,22 +663,22 @@ def encode_media(
         model.train(train_dataset, train_dataset)
 
     model._model = transformers.BertModel.from_pretrained(training_args.output_dir,
-                    from_tf=bool(".ckpt" in training_args.output_dir),
-                    config=model._config,
-                    cache_dir=model._model_args.cache_dir,
-                )
+                                                          from_tf=bool(
+                                                              ".ckpt" in training_args.output_dir),
+                                                          config=model._config,
+                                                          cache_dir=model._model_args.cache_dir,
+                                                          )
 
     batch_size = 32
     index = 0
     sentence_list = list()
     batched_sentence_list = list()
-    with open(data_args.train_data_file,mode='r',encoding='utf8') as fp:
+    with open(data_args.train_data_file, mode='r', encoding='utf8') as fp:
         for line in fp.readlines():
             item = json.loads(line.strip())
             if len(item['original']) > 500:
                 item['original'] = item['original'][:500]
             sentence_list.append(item['original'])
-        
 
     while (index < len(sentence_list)):
         batched_sentence_list.append(sentence_list[index:index+batch_size])
@@ -711,8 +693,9 @@ def encode_media(
         encode_result.append(v)
     encode_result = np.array(encode_result)
     encode_result = encode_result.mean(axis=0)
-    saved_file = os.path.join(os.path.join(misc_args.log_dir),data_args.dataset)
+    saved_file = os.path.join(os.path.join(
+        misc_args.log_dir), data_args.dataset)
     if not os.path.exists(saved_file):
         os.makedirs(saved_file)
-    saved_file = os.path.join(saved_file,training_args.loss_type+'.npy')
-    np.save(saved_file,encode_result)
+    saved_file = os.path.join(saved_file, training_args.loss_type+'.npy')
+    np.save(saved_file, encode_result)

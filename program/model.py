@@ -1,21 +1,14 @@
 import logging
-
-from program.data_collect import data_collect
-import warnings
 import math
 import os
-from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
-from glob import glob
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
-from typing import Any, Dict, Optional, Tuple, Union
-from tokenizers import Tokenizer
+from typing import Any, Union, Dict
 
 import torch
 from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
-import torch.nn.functional as F
 import torch.utils.checkpoint
 from torch.utils.data import ConcatDataset
 
@@ -28,38 +21,24 @@ from transformers import (
     AutoConfig,
     AutoTokenizer,
     AutoModel,
-    AutoModelForSequenceClassification,
-    AutoModelForTokenClassification,
-    AutoModelWithLMHead,
-    BertConfig,
-    BertForMultipleChoice,
-    BertForTokenClassification,
     BertForSequenceClassification,
     BertModel,
     BertPreTrainedModel,
     DataCollatorForLanguageModeling,
     DataCollatorForPermutationLanguageModeling,
-    DataCollatorForTokenClassification,
     DataCollatorForWholeWordMask,
     DataCollatorWithPadding,
-    HfArgumentParser,
     LineByLineTextDataset,
     LineByLineWithRefDataset,
     pipeline,
     PretrainedConfig,
-    PreTrainedTokenizer,
     PreTrainedTokenizerBase,
     TextDataset,
 )
 from transformers.modeling_outputs import MaskedLMOutput, TokenClassifierOutput
 from transformers.models.bert.modeling_bert import BertPooler
-
-
-
-
 from .config import DataArguments, ModelArguments, TrainingArguments
-from .ner_util import NERDataset
-from .fine_tune_util import DataCollatorForClassConsistency, SentenceReplacementDataset, DataCollatorForLanguageModelingConsistency, Trainer
+from .fine_tune_util import DataCollatorForClassConsistency, DataCollatorForLanguageModelingConsistency, Trainer
 
 
 class DeepModel(ABC):
@@ -105,6 +84,7 @@ class DeepModel(ABC):
             self._logger.warning(
                 "You are instantiating a new config instance from scratch.")
         self._config.num_labels = 10
+
     def _load_tokenizer(self) -> None:
         if self._model_args.tokenizer_name:
             self.tokenizer = AutoTokenizer.from_pretrained(
@@ -133,7 +113,7 @@ class MLMModel(DeepModel):
             model_args: ModelArguments,
             data_args: DataArguments,
             training_args: TrainingArguments,
-            vanilla_model = False
+            vanilla_model=False
     ) -> None:
         super().__init__(model_args, data_args, training_args)
         self._language: str = ''
@@ -143,11 +123,11 @@ class MLMModel(DeepModel):
 
     def _load_data_collator(self) -> None:
 
-        self.basic_loss_type =self._training_args.loss_type.split('_')[0]
+        self.basic_loss_type = self._training_args.loss_type.split('_')[0]
         self.add_loss_type = None
         if len(self._training_args.loss_type.split('_')) > 1:
             self.add_loss_type = self._training_args.loss_type.split('_')[1]
-        
+
         if self._config.model_type == "xlnet":
             self._data_collator = DataCollatorForPermutationLanguageModeling(
                 tokenizer=self.tokenizer,
@@ -165,7 +145,7 @@ class MLMModel(DeepModel):
                 )
                 self._data_collator_eval = DataCollatorForLanguageModeling(
                     tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
-                )                
+                )
             elif self.basic_loss_type == 'mlm' and self.add_loss_type is not None:
                 self._data_collator_train = DataCollatorForLanguageModelingConsistency(
                     tokenizer=self.tokenizer, mlm=self._data_args.mlm, mlm_probability=self._data_args.mlm_probability
@@ -189,14 +169,16 @@ class MLMModel(DeepModel):
             if not self._vanilla_model:
                 self._model = BertForMaskedLM.from_pretrained(
                     self._model_args.model_name_or_path,
-                    from_tf=bool(".ckpt" in self._model_args.model_name_or_path),
+                    from_tf=bool(
+                        ".ckpt" in self._model_args.model_name_or_path),
                     config=self._config,
                     cache_dir=self._model_args.cache_dir,
                 )
             else:
                 self._model = transformers.BertForMaskedLM.from_pretrained(
                     self._model_args.model_name_or_path,
-                    from_tf=bool(".ckpt" in self._model_args.model_name_or_path),
+                    from_tf=bool(
+                        ".ckpt" in self._model_args.model_name_or_path),
                     config=self._config,
                     cache_dir=self._model_args.cache_dir,
                 )
@@ -216,7 +198,7 @@ class MLMModel(DeepModel):
         train_dataset: Union[LineByLineWithRefDataset,
                              LineByLineTextDataset, TextDataset, ConcatDataset],
         eval_dataset: Union[LineByLineWithRefDataset,
-                           LineByLineTextDataset, TextDataset, ConcatDataset]
+                            LineByLineTextDataset, TextDataset, ConcatDataset]
     ) -> None:
         self._model.train()
         self._trainer = Trainer(
@@ -237,9 +219,9 @@ class MLMModel(DeepModel):
     def eval(
         self,
         eval_dataset: Union[LineByLineWithRefDataset,
-                           LineByLineTextDataset, TextDataset, ConcatDataset],
+                            LineByLineTextDataset, TextDataset, ConcatDataset],
         record_file: str = None,
-        verbose :bool = True,
+        verbose: bool = True,
     ) -> None:
         if not verbose:
             self._training_args.disable_tqdm = True
@@ -251,7 +233,7 @@ class MLMModel(DeepModel):
         )
         self._eval(record_file, verbose)
 
-    def _eval(self, record_file = None, verbose=True) -> Dict:
+    def _eval(self, record_file=None, verbose=True) -> Dict:
         results = {}
         if verbose:
             self._logger.info("*** Evaluate ***")
@@ -271,7 +253,8 @@ class MLMModel(DeepModel):
             output_eval_file = os.path.join(output_eval_file, record_file)
         if not os.path.exists(output_eval_file):
             os.makedirs(output_eval_file)
-        output_eval_file = os.path.join(output_eval_file, "eval_results_lm.txt")
+        output_eval_file = os.path.join(
+            output_eval_file, "eval_results_lm.txt")
 
         with open(output_eval_file, "w") as writer:
             for key in sorted(result.keys()):
@@ -285,7 +268,7 @@ class MLMModel(DeepModel):
         if self._fill_mask is None:
             self._model.eval()
             self._fill_mask = pipeline(task="fill-mask", model=self._model,
-                                tokenizer=self.tokenizer, device=0, top_k=10)
+                                       tokenizer=self.tokenizer, device=0, top_k=10)
         result_dict = dict()
         results = self._fill_mask(sentence_list)
         if len(sentence_list) == 1:
@@ -298,7 +281,7 @@ class MLMModel(DeepModel):
         if self._fill_mask is None:
             self._model.eval()
             self._fill_mask = pipeline(task="feature-extraction", model=self._model,
-                                tokenizer=self.tokenizer, device=0)
+                                       tokenizer=self.tokenizer, device=0)
         result_dict = dict()
         # inputs = self.tokenizer(sentence_list,padding=True)
         results = self._fill_mask(sentence_list)
@@ -320,8 +303,10 @@ class ClassifyModel(DeepModel):
         self._prepare_model()
 
     def _load_data_collator(self) -> None:
-        self._data_collator_train = DataCollatorWithPadding(tokenizer=self.tokenizer)
-        self._data_collator_eval = DataCollatorWithPadding(tokenizer=self.tokenizer)
+        self._data_collator_train = DataCollatorWithPadding(
+            tokenizer=self.tokenizer)
+        self._data_collator_eval = DataCollatorWithPadding(
+            tokenizer=self.tokenizer)
 
     def _load_model(self) -> None:
         self._config.return_dict = True
@@ -334,7 +319,8 @@ class ClassifyModel(DeepModel):
             )
         else:
             self._logger.info("Training new model from scratch")
-            self._model = BertForSequenceClassification.from_config(self._config)
+            self._model = BertForSequenceClassification.from_config(
+                self._config)
         self._model.resize_token_embeddings(len(self.tokenizer))
 
     def _prepare_model(self) -> None:
@@ -348,7 +334,7 @@ class ClassifyModel(DeepModel):
         train_dataset: Union[LineByLineWithRefDataset,
                              LineByLineTextDataset, TextDataset, ConcatDataset],
         eval_dataset: Union[LineByLineWithRefDataset,
-                           LineByLineTextDataset, TextDataset, ConcatDataset]
+                            LineByLineTextDataset, TextDataset, ConcatDataset]
     ) -> None:
         self._model.train()
         self._trainer = transformers.Trainer(
@@ -357,7 +343,7 @@ class ClassifyModel(DeepModel):
             data_collator=self._data_collator_train,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
-            compute_metrics = compute_metrics
+            compute_metrics=compute_metrics
         )
         if self._training_args.do_train:
             self._trainer.train(model_path=self._model_path)
@@ -370,9 +356,9 @@ class ClassifyModel(DeepModel):
     def eval(
         self,
         eval_dataset: Union[LineByLineWithRefDataset,
-                           LineByLineTextDataset, TextDataset, ConcatDataset],
+                            LineByLineTextDataset, TextDataset, ConcatDataset],
         record_file: str = None,
-        verbose :bool = True,
+        verbose: bool = True,
     ) -> None:
         if not verbose:
             self._training_args.disable_tqdm = True
@@ -381,11 +367,11 @@ class ClassifyModel(DeepModel):
             args=self._training_args,
             data_collator=self._data_collator_eval,
             eval_dataset=eval_dataset,
-            compute_metrics = compute_metrics
+            compute_metrics=compute_metrics
         )
         self._eval(record_file, verbose)
 
-    def _eval(self, record_file = None, verbose=True) -> Dict:
+    def _eval(self, record_file=None, verbose=True) -> Dict:
         results = {}
         if verbose:
             self._logger.info("*** Evaluate ***")
@@ -403,7 +389,8 @@ class ClassifyModel(DeepModel):
             output_eval_file = os.path.join(output_eval_file, record_file)
         if not os.path.exists(output_eval_file):
             os.makedirs(output_eval_file)
-        output_eval_file = os.path.join(output_eval_file, "eval_results_lm.txt")
+        output_eval_file = os.path.join(
+            output_eval_file, "eval_results_lm.txt")
 
         with open(output_eval_file, "w") as writer:
             for key in sorted(result.keys()):
@@ -426,26 +413,30 @@ class ClassifyModel(DeepModel):
         inputs = self.tokenizer(
             sentence,
             add_special_tokens=True,
-            return_tensors = 'pt',
+            return_tensors='pt',
             padding=True
         )
         inputs = {
-            name: tensor.to("cuda:0") if isinstance(tensor, torch.Tensor) else tensor
+            name: tensor.to("cuda:0") if isinstance(
+                tensor, torch.Tensor) else tensor
             for name, tensor in inputs.items()
         }
         with torch.no_grad():
-            result = self._model(**inputs,output_attentions=True)
+            result = self._model(**inputs, output_attentions=True)
         result = {
-            name: tensor.to("cpu").numpy() if isinstance(tensor, torch.Tensor) else tensor
+            name: tensor.to("cpu").numpy() if isinstance(
+                tensor, torch.Tensor) else tensor
             for name, tensor in result.items()
         }
         result['tokenized_inputs'] = inputs
         return result
 
+
 def compute_metrics(pred):
     labels = pred.label_ids
     preds = pred.predictions.argmax(-1)
-    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='weighted')
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        labels, preds, average='weighted')
     acc = accuracy_score(labels, preds)
     return {
         'accuracy': acc,
@@ -453,193 +444,6 @@ def compute_metrics(pred):
         'precision': precision,
         'recall': recall
     }
-
-
-class SentenceReplacementModel(DeepModel):
-    def __init__(
-            self,
-            model_args: ModelArguments,
-            data_args: DataArguments,
-            training_args: TrainingArguments,
-    ) -> None:
-        super().__init__(model_args, data_args, training_args)
-        self._language: str = ''
-        self._prepare_model()
-
-    def _load_model(self) -> None:
-        self._config.return_dict = True
-        if self._model_args.model_name_or_path:
-            self._model = AutoModelForSequenceClassification.from_pretrained(
-                self._model_args.model_name_or_path,
-                from_tf=bool(".ckpt" in self._model_args.model_name_or_path),
-                config=self._config,
-                cache_dir=self._model_args.cache_dir,
-            )
-        else:
-            self._logger.info("Training new model from scratch")
-            self._model = BertForSequenceClassification.from_pretrained(
-                self._config)
-        self._model.resize_token_embeddings(len(self.tokenizer))
-
-    def _prepare_model(self) -> None:
-        self._load_config()
-        self._load_tokenizer()
-        self._load_model()
-
-
-    def train(
-        self,
-        train_dataset: SentenceReplacementDataset,
-        eval_dataset: SentenceReplacementDataset,
-        number_label: int
-    ) -> None:
-        if number_label > self._config.num_labels:
-            self._config.num_labels = number_label
-            self._load_model()
-
-
-        self._model.train()
-
-        self._trainer = Trainer(
-            model=self._model,
-            args=self._training_args,
-            train_dataset=train_dataset,
-            eval_dataset=eval_dataset,
-        )
-        self._trainer.train(model_path=self._model_path)
-        self._trainer.save_model()
-        if self._trainer.is_world_process_zero():
-            self.tokenizer.save_pretrained(self._training_args.output_dir)
-        if self._training_args.do_eval:
-            self._eval()
-
-    def _eval(self) -> Dict:
-        results = {}
-        self._logger.info("*** Evaluate ***")
-
-        eval_output = self._trainer.evaluate()
-
-        loss = eval_output["eval_loss"]
-        result = {"loss": loss}
-
-        output_eval_file = self._training_args.output_dir
-        if not os.path.exists(output_eval_file):
-            os.makedirs(output_eval_file)
-        output_eval_file = os.path.join(
-            output_eval_file, "eval_results.txt")
-        if self._trainer.is_world_process_zero():
-            with open(output_eval_file, "w") as writer:
-                self._logger.info("***** Eval results *****")
-                for key in sorted(result.keys()):
-                    self._logger.info("  %s = %s", key, str(result[key]))
-                    writer.write("%s = %s\n" % (key, str(result[key])))
-
-        results.update(result)
-
-        return results
-
-    def predict(self, sentence_list) -> Dict:
-        self._model.eval()
-        fill_mask = pipeline(task="fill-mask", model=self._model,
-                             tokenizer=self.tokenizer, device=0, top_k=10)
-        result_dict = dict()
-        for sentence in sentence_list:
-            results = fill_mask(sentence)
-            result_dict[sentence] = results
-        return result_dict
-
-
-class NERModel(DeepModel):
-    def __init__(
-            self,
-            model_args: ModelArguments,
-            data_args: DataArguments,
-            training_args: TrainingArguments,
-    ) -> None:
-        super().__init__(model_args, data_args, training_args)
-        self._language: str = ''
-        self._prepare_model()
-
-    def _load_model(self) -> None:
-        self._config.return_dict = True
-        self._config.num_labels = 1
-        if self._model_args.model_name_or_path:
-            self._model = BertForScoreLabel.from_pretrained(
-                self._model_args.model_name_or_path,
-                from_tf=bool(".ckpt" in self._model_args.model_name_or_path),
-                config=self._config,
-                cache_dir=self._model_args.cache_dir,
-            )
-        else:
-            self._logger.info("Training new model from scratch")
-            self._model = BertForScoreLabel.from_pretrained(
-                self._config)
-        self._model.resize_token_embeddings(len(self.tokenizer))
-
-    def _prepare_model(self) -> None:
-        self._load_config()
-        self._load_tokenizer()
-        self._load_model()
-        self._load_data_collator()
-
-    def _load_data_collator(self) -> None:
-        self._data_collator = DataCollatorForTokenClassification(
-            tokenizer=self.tokenizer, label_pad_token_id=1)
-
-    def train(
-        self,
-        train_dataset: NERDataset,
-        eval_dataset: NERDataset
-    ) -> None:
-        self._model.train()
-
-        self._trainer = Trainer(
-            model=self._model,
-            args=self._training_args,
-            train_dataset=train_dataset,
-            eval_dataset=eval_dataset,
-        )
-        self._trainer.train(model_path=self._model_path)
-        self._trainer.save_model()
-        if self._trainer.is_world_process_zero():
-            self.tokenizer.save_pretrained(self._training_args.output_dir)
-        if self._training_args.do_eval:
-            self._eval()
-
-    def _eval(self) -> Dict:
-        results = {}
-        self._logger.info("*** Evaluate ***")
-
-        eval_output = self._trainer.evaluate()
-
-        loss = eval_output["eval_loss"]
-        result = {"loss": loss}
-
-        output_eval_file = self._training_args.output_dir
-        if not os.path.exists(output_eval_file):
-            os.makedirs(output_eval_file)
-        output_eval_file = os.path.join(
-            output_eval_file, "eval_results.txt")
-        if self._trainer.is_world_process_zero():
-            with open(output_eval_file, "w") as writer:
-                self._logger.info("***** Eval results *****")
-                for key in sorted(result.keys()):
-                    self._logger.info("  %s = %s", key, str(result[key]))
-                    writer.write("%s = %s\n" % (key, str(result[key])))
-
-        results.update(result)
-
-        return results
-
-    def predict(self, sentence_list) -> Dict:
-        self._model.eval()
-        fill_mask = pipeline(task="fill-mask", model=self._model,
-                             tokenizer=self.tokenizer, device=0, top_k=10)
-        result_dict = dict()
-        for sentence in sentence_list:
-            results = fill_mask(sentence)
-            result_dict[sentence] = results
-        return result_dict
 
 
 class BertSimpleModel(DeepModel):
@@ -678,84 +482,6 @@ class BertSimpleModel(DeepModel):
             result_dict[sentence] = np.squeeze(results)[1:-1]
         return result_dict
 
-
-class BertForScoreLabel(BertPreTrainedModel):
-
-    _keys_to_ignore_on_load_unexpected = [r"pooler"]
-
-    def __init__(self, config):
-        super().__init__(config)
-        self.num_labels = config.num_labels
-
-        self.bert = BertModel(config, add_pooling_layer=False)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        self.classifier = nn.Linear(config.hidden_size, config.num_labels)
-
-        self.init_weights()
-
-
-    def forward(
-        self,
-        input_ids=None,
-        attention_mask=None,
-        token_type_ids=None,
-        position_ids=None,
-        head_mask=None,
-        inputs_embeds=None,
-        labels=None,
-        output_attentions=None,
-        output_hidden_states=None,
-        return_dict=None,
-    ):
-        r"""
-        labels (:obj:`torch.LongTensor` of shape :obj:`(batch_size, sequence_length)`, `optional`):
-            Labels for computing the token classification loss. Indices should be in ``[0, ..., config.num_labels -
-            1]``.
-        """
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-
-        outputs = self.bert(
-            input_ids,
-            attention_mask=attention_mask,
-            token_type_ids=token_type_ids,
-            position_ids=position_ids,
-            head_mask=head_mask,
-            inputs_embeds=inputs_embeds,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
-
-        sequence_output = outputs[0]
-
-        sequence_output = self.dropout(sequence_output)
-        logits = self.classifier(sequence_output)
-
-        loss = None
-        if labels is not None:
-            loss_fct = MSELoss()
-            # Only keep active parts of the loss
-            if attention_mask is not None:
-                active_loss = labels.view(-1)!=-100
-                active_logits = logits.view(-1, self.num_labels)
-                active_labels = torch.where(
-                    active_loss, labels.view(-1), active_logits.view(-1)
-                )
-                loss = loss_fct(active_logits, active_labels)
-            else:
-                loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-            loss = loss * labels.view(-1).size()[0] / int(active_loss.sum())
-
-        if not return_dict:
-            output = (logits,) + outputs[2:]
-            return ((loss,) + output) if loss is not None else output
-
-        return TokenClassifierOutput(
-            loss=loss,
-            logits=logits,
-            hidden_states=outputs.hidden_states,
-            attentions=outputs.attentions,
-        )
 
 class BertForMaskedLM(transformers.BertForMaskedLM):
     def __init__(self, config):
@@ -814,7 +540,8 @@ class BertForMaskedLM(transformers.BertForMaskedLM):
         masked_lm_loss = None
         if labels is not None:
             loss_fct = CrossEntropyLoss()  # -100 index = padding token
-            masked_lm_loss = loss_fct(prediction_scores.view(-1, self.config.vocab_size), labels.view(-1))
+            masked_lm_loss = loss_fct(
+                prediction_scores.view(-1, self.config.vocab_size), labels.view(-1))
 
         class_loss = None
         if classification:
@@ -834,25 +561,28 @@ class BertForMaskedLM(transformers.BertForMaskedLM):
                 if self.config.problem_type == "regression":
                     loss_fct = MSELoss()
                     if self.num_labels == 1:
-                        class_loss = loss_fct(logits.squeeze(), class_labels.squeeze())
+                        class_loss = loss_fct(
+                            logits.squeeze(), class_labels.squeeze())
                     else:
                         class_loss = loss_fct(logits, class_labels)
                 elif self.config.problem_type == "single_label_classification":
                     loss_fct = CrossEntropyLoss()
-                    class_loss = loss_fct(logits.view(-1, self.num_labels), class_labels.view(-1))
+                    class_loss = loss_fct(
+                        logits.view(-1, self.num_labels), class_labels.view(-1))
                 elif self.config.problem_type == "multi_label_classification":
                     loss_fct = BCEWithLogitsLoss()
                     class_loss = loss_fct(logits, class_labels)
 
         if not return_dict:
             output = (prediction_scores,) + outputs[2:]
-            output ((masked_lm_loss,) + output) if masked_lm_loss is not None else output
+            output((masked_lm_loss,) +
+                   output) if masked_lm_loss is not None else output
         else:
             output = MaskedLMOutput(
-            loss=masked_lm_loss,
-            logits=prediction_scores,
-            hidden_states=outputs.hidden_states,
-            attentions=outputs.attentions,
-        )
+                loss=masked_lm_loss,
+                logits=prediction_scores,
+                hidden_states=outputs.hidden_states,
+                attentions=outputs.attentions,
+            )
 
         return output, sequence_output, class_loss

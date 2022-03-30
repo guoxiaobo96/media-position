@@ -1,8 +1,6 @@
 from genericpath import exists
 import os
-import json
 import logging
-from datetime import datetime
 
 from .config import DataArguments, MiscArgument, ModelArguments, TrainingArguments, AnalysisArguments, BaselineArguments
 
@@ -36,19 +34,3 @@ def prepare_dirs_and_logger(
     handler.setFormatter(formatter)
 
     logger.addHandler(handler)
-
-    # data path
-
-
-def get_time(format_string="%m%d_%H%M%S"):
-    return datetime.now().strftime(format_string)
-
-
-def save_config(config):
-
-    print("[*] MODEL dir: %s" % config.model_dir)
-    print("[*] PARAM path: %s" % config.param_path)
-
-    with open(config.param_path, 'w') as fp:
-        json.dump(config.__dict__, fp, indent=4, sort_keys=True)
-        fp.write('\n')

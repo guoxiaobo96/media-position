@@ -1,22 +1,12 @@
-from numpy.lib.arraysetops import isin
-from sklearn.metrics.pairwise import cosine_distances
-from transformers import training_args
-from transformers.modeling_outputs import MaskedLMOutput
-from scipy.sparse.construct import random
-import numpy as np
-import json
-from typing import Optional, List, Dict, Tuple, Any, NewType, Union
+from typing import Optional, List, Dict,  Any,  Union
 from copy import deepcopy
 import torch
 from torch import nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, Dataset, RandomSampler, SequentialSampler
-import os
-import pickle
 from packaging import version
 
 import transformers
-from transformers import BertTokenizer, BatchEncoding, PreTrainedTokenizer, DataCollatorForLanguageModeling
+from transformers import BatchEncoding, DataCollatorForLanguageModeling
 from transformers.file_utils import is_sagemaker_mp_enabled, is_apex_available
 
 if is_sagemaker_mp_enabled():
@@ -39,9 +29,9 @@ class MLMConsistencyDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         item = dict()
         ori_item = {key: torch.tensor(val[idx])
-                for key, val in self.ori_encodings.items()}
+                    for key, val in self.ori_encodings.items()}
         aug_item = {key: torch.tensor(val[idx])
-                for key, val in self.aug_encodings.items()}
+                    for key, val in self.aug_encodings.items()}
         item['original'] = ori_item
         item['augmentation'] = aug_item
         return item
@@ -51,7 +41,7 @@ class MLMConsistencyDataset(torch.utils.data.Dataset):
 
 
 class ClassConsistencyDataset(torch.utils.data.Dataset):
-    def __init__(self, ori_encodings, aug_encodings,ori_labels, aug_labels):
+    def __init__(self, ori_encodings, aug_encodings, ori_labels, aug_labels):
         self.ori_encodings = ori_encodings
         self.aug_encodings = aug_encodings
         self.ori_labels = ori_labels
@@ -60,14 +50,14 @@ class ClassConsistencyDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         item = dict()
         ori_item = {key: torch.tensor(val[idx])
-                for key, val in self.ori_encodings.items()}
+                    for key, val in self.ori_encodings.items()}
         ori_item['labels'] = torch.tensor(self.ori_labels[idx])
         aug_item = {key: torch.tensor(val[idx])
-                for key, val in self.aug_encodings.items()}
+                    for key, val in self.aug_encodings.items()}
         aug_item['labels'] = torch.tensor(self.aug_labels[idx])
         item['original'] = ori_item
         item['augmentation'] = aug_item
-        
+
         return item
 
     def __len__(self):
@@ -85,7 +75,6 @@ class DataCollatorForLanguageModelingConsistency(DataCollatorForLanguageModeling
         # original_exampls =  deepcopy(examples)
         examples_temp = list()
 
-
         if 'original' in examples[0]:
             for example in examples:
                 examples_temp.append(example['original'])
@@ -96,9 +85,11 @@ class DataCollatorForLanguageModelingConsistency(DataCollatorForLanguageModeling
             examples = examples
 
         if isinstance(examples[0], (dict, BatchEncoding)):
-            batch = self.tokenizer.pad(examples, return_tensors="pt", pad_to_multiple_of=self.pad_to_multiple_of)
+            batch = self.tokenizer.pad(
+                examples, return_tensors="pt", pad_to_multiple_of=self.pad_to_multiple_of)
         else:
-            batch = {"input_ids": self._collate_batch(examples, self.tokenizer, pad_to_multiple_of=self.pad_to_multiple_of)}
+            batch = {"input_ids": self._collate_batch(
+                examples, self.tokenizer, pad_to_multiple_of=self.pad_to_multiple_of)}
 
         # If special token mask has been preprocessed, pop it from the dict.
         special_tokens_mask = batch.pop("special_tokens_mask", None)
@@ -121,7 +112,8 @@ class DataCollatorForLanguageModelingConsistency(DataCollatorForLanguageModeling
 
         # Check if padding is necessary.
         length_of_first = examples[0].size(0)
-        are_tensors_same_length = all(x.size(0) == length_of_first for x in examples)
+        are_tensors_same_length = all(
+            x.size(0) == length_of_first for x in examples)
         if are_tensors_same_length and (pad_to_multiple_of is None or length_of_first % pad_to_multiple_of == 0):
             return torch.stack(examples, dim=0)
 
@@ -135,13 +127,15 @@ class DataCollatorForLanguageModelingConsistency(DataCollatorForLanguageModeling
         # Creating the full tensor and filling it with our data.
         max_length = max(x.size(0) for x in examples)
         if pad_to_multiple_of is not None and (max_length % pad_to_multiple_of != 0):
-            max_length = ((max_length // pad_to_multiple_of) + 1) * pad_to_multiple_of
-        result = examples[0].new_full([len(examples), max_length], tokenizer.pad_token_id)
+            max_length = ((max_length // pad_to_multiple_of) +
+                          1) * pad_to_multiple_of
+        result = examples[0].new_full(
+            [len(examples), max_length], tokenizer.pad_token_id)
         for i, example in enumerate(examples):
             if tokenizer.padding_side == "right":
                 result[i, : example.shape[0]] = example
             else:
-                result[i, -example.shape[0] :] = example
+                result[i, -example.shape[0]:] = example
         return result
 
 
@@ -157,7 +151,6 @@ class DataCollatorForClassConsistency(DataCollatorForLanguageModeling):
         examples_temp = list()
         class_labels = list()
 
-
         if 'original' in examples[0]:
             for example in examples:
                 examples_temp.append(example['original'])
@@ -170,9 +163,11 @@ class DataCollatorForClassConsistency(DataCollatorForLanguageModeling):
             examples = examples
 
         if isinstance(examples[0], (dict, BatchEncoding)):
-            batch = self.tokenizer.pad(examples, return_tensors="pt", pad_to_multiple_of=self.pad_to_multiple_of)
+            batch = self.tokenizer.pad(
+                examples, return_tensors="pt", pad_to_multiple_of=self.pad_to_multiple_of)
         else:
-            batch = {"input_ids": self._collate_batch(examples, self.tokenizer, pad_to_multiple_of=self.pad_to_multiple_of)}
+            batch = {"input_ids": self._collate_batch(
+                examples, self.tokenizer, pad_to_multiple_of=self.pad_to_multiple_of)}
 
         # If special token mask has been preprocessed, pop it from the dict.
         special_tokens_mask = batch.pop("special_tokens_mask", None)
@@ -186,7 +181,7 @@ class DataCollatorForClassConsistency(DataCollatorForLanguageModeling):
                 labels[labels == self.tokenizer.pad_token_id] = -100
             batch["labels"] = labels
 
-        batch["class_labels"] = torch.tensor(class_labels,dtype=torch.long)
+        batch["class_labels"] = torch.tensor(class_labels, dtype=torch.long)
         return batch
 
     def _collate_batch(self, examples, tokenizer, pad_to_multiple_of: Optional[int] = None):
@@ -197,7 +192,8 @@ class DataCollatorForClassConsistency(DataCollatorForLanguageModeling):
 
         # Check if padding is necessary.
         length_of_first = examples[0].size(0)
-        are_tensors_same_length = all(x.size(0) == length_of_first for x in examples)
+        are_tensors_same_length = all(
+            x.size(0) == length_of_first for x in examples)
         if are_tensors_same_length and (pad_to_multiple_of is None or length_of_first % pad_to_multiple_of == 0):
             return torch.stack(examples, dim=0)
 
@@ -211,15 +207,16 @@ class DataCollatorForClassConsistency(DataCollatorForLanguageModeling):
         # Creating the full tensor and filling it with our data.
         max_length = max(x.size(0) for x in examples)
         if pad_to_multiple_of is not None and (max_length % pad_to_multiple_of != 0):
-            max_length = ((max_length // pad_to_multiple_of) + 1) * pad_to_multiple_of
-        result = examples[0].new_full([len(examples), max_length], tokenizer.pad_token_id)
+            max_length = ((max_length // pad_to_multiple_of) +
+                          1) * pad_to_multiple_of
+        result = examples[0].new_full(
+            [len(examples), max_length], tokenizer.pad_token_id)
         for i, example in enumerate(examples):
             if tokenizer.padding_side == "right":
                 result[i, : example.shape[0]] = example
             else:
-                result[i, -example.shape[0] :] = example
+                result[i, -example.shape[0]:] = example
         return result
-
 
 
 class Trainer(transformers.Trainer):
@@ -234,8 +231,6 @@ class Trainer(transformers.Trainer):
         self.add_loss_type = None
         if len(self.args.loss_type.split('_')) > 1:
             self.add_loss_type = self.args.loss_type.split('_')[1]
-
-
 
     def training_step(self, model: nn.Module, inputs: Dict[str, Union[torch.Tensor, Any]]) -> torch.Tensor:
         """
@@ -259,10 +254,9 @@ class Trainer(transformers.Trainer):
 
         if is_sagemaker_mp_enabled():
             scaler = self.scaler if self.use_amp else None
-            loss_mb = smp_forward_backward(model, inputs, self.args.gradient_accumulation_steps, scaler=scaler)
+            loss_mb = smp_forward_backward(
+                model, inputs, self.args.gradient_accumulation_steps, scaler=scaler)
             return loss_mb.reduce_mean().detach().to(self.args.device)
-
-
 
         if self.basic_loss_type == 'mlm' and self.add_loss_type is None:
             if self.use_amp:
@@ -281,7 +275,7 @@ class Trainer(transformers.Trainer):
                 with autocast():
                     loss = self.compute_loss_class_consistency(model, inputs)
             else:
-                loss = self.compute_loss_class_consistency(model, inputs)            
+                loss = self.compute_loss_class_consistency(model, inputs)
 
         if self.args.n_gpu > 1:
             loss = loss.mean()  # mean() to average on multi-gpu parallel training
@@ -341,7 +335,6 @@ class Trainer(transformers.Trainer):
             self._con_loss = self._cosine_loss
         elif self.add_loss_type == 'cossim':
             self._con_loss = self._consine_sim_loss
-            
 
         if self.label_smoother is not None and "labels" in inputs:
             labels = inputs.pop("labels")
@@ -368,10 +361,14 @@ class Trainer(transformers.Trainer):
             loss_aug = self.label_smoother(outputs_aug, labels)
         else:
             # We don't use .loss here since the model may return tuples instead of ModelOutput.
-            loss_ori = outputs_ori["loss"] if isinstance(outputs_ori, dict) else outputs_ori[0]
-            loss_aug = outputs_aug["loss"] if isinstance(outputs_aug, dict) else outputs_aug[0]
+            loss_ori = outputs_ori["loss"] if isinstance(
+                outputs_ori, dict) else outputs_ori[0]
+            loss_aug = outputs_aug["loss"] if isinstance(
+                outputs_aug, dict) else outputs_aug[0]
 
-        loss = self.args.ori_loss_scale*loss_ori + self.args.aug_loss_scale*loss_aug + self.args.con_loss_scale*self._con_loss(sequence_output_ori,sequence_output_aug)
+        loss = self.args.ori_loss_scale*loss_ori + self.args.aug_loss_scale*loss_aug + \
+            self.args.con_loss_scale * \
+            self._con_loss(sequence_output_ori, sequence_output_aug)
 
         return (loss, outputs_ori) if return_outputs else loss
 
@@ -389,7 +386,6 @@ class Trainer(transformers.Trainer):
             self._con_loss = self._cosine_loss
         elif self.add_loss_type == 'cossim':
             self._con_loss = self._consine_sim_loss
-            
 
         if self.label_smoother is not None and "labels" in inputs:
             labels = inputs.pop("labels")
@@ -404,8 +400,10 @@ class Trainer(transformers.Trainer):
             inputs_ori[k] = inputs[k][:size]
             inputs_aug[k] = inputs[k][size:]
 
-        outputs_ori, sequence_output_ori, class_loss_ori = model(**inputs_ori,classification=True)
-        outputs_aug, sequence_output_aug, class_loss_aug = model(**inputs_aug,classification=True)
+        outputs_ori, sequence_output_ori, class_loss_ori = model(
+            **inputs_ori, classification=True)
+        outputs_aug, sequence_output_aug, class_loss_aug = model(
+            **inputs_aug, classification=True)
         # Save past state if it exists
 
         if self.args.past_index >= 0:
@@ -416,21 +414,24 @@ class Trainer(transformers.Trainer):
             loss_aug = self.label_smoother(outputs_aug, labels)
         else:
             # We don't use .loss here since the model may return tuples instead of ModelOutput.
-            loss_ori = outputs_ori["loss"] if isinstance(outputs_ori, dict) else outputs_ori[0]
-            loss_aug = outputs_aug["loss"] if isinstance(outputs_aug, dict) else outputs_aug[0]
+            loss_ori = outputs_ori["loss"] if isinstance(
+                outputs_ori, dict) else outputs_ori[0]
+            loss_aug = outputs_aug["loss"] if isinstance(
+                outputs_aug, dict) else outputs_aug[0]
 
         sequence_output_aug = sequence_output_aug.detach()
-        con_loss = self._con_loss(sequence_output_ori,sequence_output_aug)
+        con_loss = self._con_loss(sequence_output_ori, sequence_output_aug)
         class_loss = class_loss_ori+class_loss_aug
-        loss = self.args.ori_loss_scale*loss_ori+self.args.class_loss_scale*class_loss+self.args.con_loss_scale*con_loss
+        loss = self.args.ori_loss_scale*loss_ori+self.args.class_loss_scale * \
+            class_loss+self.args.con_loss_scale*con_loss
 
         return (loss, outputs_ori) if return_outputs else loss
-
 
 
 class SupConLoss(nn.Module):
     """Supervised Contrastive Learning: https://arxiv.org/pdf/2004.11362.pdf.
     It also supports the unsupervised contrastive loss in SimCLR"""
+
     def __init__(self, temperature=0.07, contrast_mode='all',
                  base_temperature=0.07):
         super(SupConLoss, self).__init__()
@@ -451,10 +452,8 @@ class SupConLoss(nn.Module):
         Returns:
             A loss scalar.
         """
-        
 
-
-        features = torch.stack([features_ori,features_aug],dim=1)
+        features = torch.stack([features_ori, features_aug], dim=1)
 
         device = (torch.device('cuda')
                   if features.is_cuda
@@ -474,7 +473,8 @@ class SupConLoss(nn.Module):
         elif labels is not None:
             labels = labels.contiguous().view(-1, 1)
             if labels.shape[0] != batch_size:
-                raise ValueError('Num of labels does not match num of features')
+                raise ValueError(
+                    'Num of labels does not match num of features')
             mask = torch.eq(labels, labels.T).float().to(device)
         else:
             mask = mask.float().to(device)
@@ -522,83 +522,25 @@ class SupConLoss(nn.Module):
 
         return loss
 
+
 class CosineLoss(nn.Module):
     def __init__(self):
         super().__init__()
 
     def forward(self, features_ori, features_aug):
-        loss = 1 - F.cosine_similarity(features_ori,features_aug).mean()
+        loss = 1 - F.cosine_similarity(features_ori, features_aug).mean()
         return loss
+
 
 class CosineSimLoss(nn.Module):
     def __init__(self):
         super().__init__()
 
     def forward(self, features_ori, features_aug):
-        loss = F.cosine_similarity(features_ori,features_aug).mean()
+        loss = F.cosine_similarity(features_ori, features_aug).mean()
         return loss
 
-class SentenceReplacementDataset(torch.utils.data.Dataset):
-    def __init__(self, encodings, labels):
-        self.encodings = encodings
-        self.labels = labels
-
-    def __getitem__(self, idx):
-        item = {key: torch.tensor(val[idx])
-                for key, val in self.encodings.items()}
-        item['labels'] = torch.tensor(self.labels[idx])
-        return item
-
-    def __len__(self):
-        return len(self.labels)
-
-class NERDataset(torch.utils.data.Dataset):
-    def __init__(self, encodings, labels):
-        self.encodings = encodings
-        self.labels = labels
-
-    def __getitem__(self, idx):
-        item = {key: torch.tensor(val[idx])
-                for key, val in self.encodings.items()}
-        item['labels'] = torch.tensor(self.labels[idx])
-        return item
-
-    def __len__(self):
-        return len(self.labels)
-
-
-def encode_scores(scores, encodings: BatchEncoding):
-    scores = [[score for score in doc] for doc in scores]
-    encoded_scores = []
-    input_ids = list()
-    token_type_ids = list()
-    attention_mask = list()
-    encoding_list = list()
-    error_count = 0
-
-    for (doc_scores, doc_input_ids, doc_attemtion_mask, doc_token_type_ids, doc_offset, doc_encoding) in zip(scores, encodings.input_ids, encodings.attention_mask, encodings.token_type_ids, encodings.offset_mapping, encodings._encodings):
-        # create an empty array of -100
-        try:
-            doc_enc_scores = np.ones(len(doc_offset), dtype=float) * -100
-            arr_offset = np.array(doc_offset)
-
-            # set labels whose first offset position is 0 and the second is not 0
-            doc_enc_scores[(arr_offset[:, 0] == 0) & (
-                arr_offset[:, 1] != 0)] = doc_scores
-            encoded_scores.append(doc_enc_scores.tolist())
-            input_ids.append(doc_input_ids)
-            token_type_ids.append(doc_token_type_ids)
-            attention_mask.append(doc_attemtion_mask)
-            encoding_list.append(doc_encoding)
-        except:
-            error_count += 1
-
-    data = {'input_ids': input_ids, 'token_type_ids': token_type_ids,
-            'attention_mask': attention_mask}
-    encodings = BatchEncoding(data, encoding_list)
-
-    return encoded_scores, encodings
 
 def cosine_loss(p, q):
-    loss = 1 - F.cosine_similarity(p,q).mean()
+    loss = 1 - F.cosine_similarity(p, q).mean()
     return loss

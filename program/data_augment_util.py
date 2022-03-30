@@ -1,21 +1,13 @@
-from genericpath import exists
 import os
 import random
-from typing import List
-from bs4 import BeautifulSoup
 import json
-from multiprocessing import Condition, Pool
-from nltk.data import split_resource_url
 from nltk.tokenize import sent_tokenize
-from sklearn.cluster import AgglomerativeClustering
-from copy import copy, deepcopy
+from copy import deepcopy
 import torch
 import tqdm
 from gensim.models import Word2Vec
 from nltk.corpus import stopwords
-
-from .util import prepare_dirs_and_logger
-from .config import AnalysisArguments, DataArguments, MiscArgument, get_config, SourceMap, TrustMap, ArticleMap, FullArticleMap, DataAugArguments
+from .config import DataArguments, MiscArgument, FullArticleMap, DataAugArguments
 
 
 class BasicDataAugementor(object):
@@ -105,7 +97,7 @@ class SelfDataAugmentor(BasicDataAugementor):
     def __init__(self, misc_args: MiscArgument, data_args: DataArguments, aug_args: DataAugArguments) -> None:
         super().__init__(misc_args, data_args, aug_args)
         self._augment_method_map = {'duplicate': self._duplicate, 'no_augmentation': self._no_augmentation, 'sentence_order_replacement': self._sentence_order_replacement,
-                                    'span_cutoff': self._span_cutoff, 'word_order_replacement': self._word_order_replacement, 'word_replacement': self._word_replacement,'sentence_replacement':self._sentence_replacement,'combine_aug':self._combine_aug}
+                                    'span_cutoff': self._span_cutoff, 'word_order_replacement': self._word_order_replacement, 'word_replacement': self._word_replacement, 'sentence_replacement': self._sentence_replacement, 'combine_aug': self._combine_aug}
         self._data_prepare()
 
     def _data_prepare(self):
@@ -133,7 +125,7 @@ class SelfDataAugmentor(BasicDataAugementor):
             if augment_type in ['word_replacement']:
                 sentence_list = [s.split(' ') for s in train_data]
                 model = Word2Vec(sentences=sentence_list,
-                                window=5, min_count=1, workers=4)
+                                 window=5, min_count=1, workers=4)
             elif augment_type in ['sentence_replacement']:
                 model = self._cross_data[media]
             else:
@@ -145,10 +137,10 @@ class SelfDataAugmentor(BasicDataAugementor):
                 item = {'original': paragraph, 'augmented': list()}
 
                 augmented_sentence = self._augment_method(paragraph, model)
-                item['augmented']=augmented_sentence
+                item['augmented'] = augmented_sentence
                 augmented_train_data.append(item)
 
-                if self._misc_args.global_debug and index>100:
+                if self._misc_args.global_debug and index > 100:
                     break
 
             augmented_eval_data = eval_data
@@ -165,7 +157,7 @@ class SelfDataAugmentor(BasicDataAugementor):
 
         for _ in range(self._aug_args.multiple_number - 1):
             augmented_data.append(paragraph)
-        
+
         return augmented_data
 
     def _sentence_order_replacement(self, paragraph, model):
@@ -230,7 +222,7 @@ class SelfDataAugmentor(BasicDataAugementor):
         existing_data = [paragraph]
         augmented_data = list()
         num_replacement = max(1, int(0.1*len(paragraph.split(' '))))
-        
+
         for _ in range(self._aug_args.multiple_number - 1):
             augmented_sentence = self._data_augmentor.word_replacement(
                 paragraph, model, num_replacement)
@@ -245,11 +237,10 @@ class SelfDataAugmentor(BasicDataAugementor):
             existing_data.append(augmented_sentence)
         return augmented_data
 
-
     def _sentence_replacement(self, paragraph, model):
         existing_data = [paragraph]
         augmented_data = list()
-        
+
         for _ in range(self._aug_args.multiple_number - 1):
             chosen_sentence = random.choice(model)
             augmented_sentence = self._data_augmentor.sentence_replacement(
@@ -268,7 +259,7 @@ class SelfDataAugmentor(BasicDataAugementor):
 
     def _combine_aug(self, paragraph, model):
         aug_list = ['span_cutoff', 'sentence_order_replacement']
-        if len(sent_tokenize(paragraph))>1:
+        if len(sent_tokenize(paragraph)) > 1:
             aug_chosen = random.choice(aug_list)
         else:
             aug_chosen = 'span_cutoff'
@@ -276,8 +267,7 @@ class SelfDataAugmentor(BasicDataAugementor):
             augmented_data = self._span_cutoff(paragraph, model)
         elif aug_chosen == 'sentence_order_replacement':
             augmented_data = self._sentence_order_replacement(paragraph, model)
-        return augmented_data 
-
+        return augmented_data
 
     def _back_translation(self):
         en2de = torch.hub.load(
@@ -367,88 +357,9 @@ class DataAugmentor(object):
 
     def sentence_replacement(self, original_paragraph, chosen_sentence):
         splited_original_paragraph = sent_tokenize(original_paragraph)
-        chosen_original_sentence = random.randint(0,len(splited_original_paragraph) - 1)
+        chosen_original_sentence = random.randint(
+            0, len(splited_original_paragraph) - 1)
         splited_original_paragraph[chosen_original_sentence] = chosen_sentence
         augmented_sentence = ' '.join(splited_original_paragraph)
 
         return augmented_sentence
-
-
-
-class CrossDataAugmentor(BasicDataAugementor):
-    def __init__(self, misc_args: MiscArgument, data_args: DataArguments, aug_args: DataAugArguments) -> None:
-        super().__init__(misc_args, data_args, aug_args)
-        self._augment_method_map = {'cross_sentence_replacement': self._sentece_replacement}
-        self._cross_data = dict()
-        self._data_prepare()
-
-    def _data_prepare(self):
-        if self._aug_args.augment_type == 'cross_sentence_replacement':
-            sentence_split_data = dict()
-            for media, media_data in self._raw_data.items():
-                sentence_list = list()
-                for item in media_data['train']:
-                    sentence_list.extend(sent_tokenize(item))
-                sentence_split_data[media] = sentence_list
-            self._cross_data = sentence_split_data
-
-
-    def data_augment(self, augment_type):
-        self._augment_method = self._augment_method_map[augment_type]
-
-        for media, media_data in tqdm.tqdm(self._raw_data.items()):
-            if media not in self._augmented_data:
-                self._augmented_data[media] = dict()
-            train_data = media_data['train']
-            eval_data = media_data['eval']
-
-            augmented_train_data = list()
-            augmented_eval_data = list()
-
-            for index, paragraph in enumerate(train_data):
-                if paragraph == '':
-                    continue
-                item = {'original': {'sentence':paragraph,'label':1}, 'augmented': list()}
-
-                augmented_sentence = self._augment_method(media, paragraph, self._cross_data)
-                item['augmented']=augmented_sentence
-                augmented_train_data.append(item)
-
-                if self._misc_args.global_debug and index>100:
-                    break
-
-            augmented_eval_data = eval_data
-
-            self._augmented_data[media]['train'] = augmented_train_data
-            self._augmented_data[media]['eval'] = augmented_eval_data
-
-
-    def _sentece_replacement(self, media, original_paragraph, cross_paragraph):
-        existing_data = [original_paragraph]
-        augmented_data = list()
-        media_list = list(self._cross_data.keys())
-        media_list.remove(media)
-
-        for _ in range(self._aug_args.multiple_number - 1):
-            cross_media = random.choice(media_list)
-            chosen_sentence = random.choice(cross_paragraph[cross_media])
-            augmented_sentence = self._data_augmentor.sentence_replacement(original_paragraph, chosen_sentence)
-
-            count = 0
-            while augmented_sentence in existing_data:
-                count += 1
-                chosen_sentence = random.choice(cross_paragraph[cross_media])
-                augmented_sentence = self._data_augmentor.sentence_replacement(original_paragraph, chosen_sentence)
-                if count > 3:
-                    break
-
-            if media == cross_media:
-                label = 1
-            else:
-                label = 0
-
-            augmented_data.append({'sentence':augmented_sentence,'label':label})
-            existing_data.append(augmented_sentence)
-
-        return augmented_data
-

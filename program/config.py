@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Tuple, Any, NewType
+from typing import Optional, List, Dict, Tuple
 
 from transformers import MODEL_WITH_LM_HEAD_MAPPING, HfArgumentParser, set_seed, logging
 import transformers
@@ -45,7 +45,8 @@ class MiscArgument:
 class TrainingArguments(transformers.TrainingArguments):
     output_dir: str = field(
         default='',
-        metadata={"help": "The output directory where the model predictions and checkpoints will be written."},
+        metadata={
+            "help": "The output directory where the model predictions and checkpoints will be written."},
     )
     loss_type: str = field(
         default='mlm',
@@ -67,6 +68,7 @@ class TrainingArguments(transformers.TrainingArguments):
     class_loss_scale: float = field(
         default=0.0, metadata={"help": "The scale of consistency loss between origianl and augmentation data"}
     )
+
 
 @dataclass
 class DataArguments:
@@ -158,7 +160,8 @@ class DataArguments:
     )
     label_method: str = field(
         default='trigram', metadata={"help": "The method for labelling the masked token"}
-    )    
+    )
+
 
 @dataclass
 class DataAugArguments:
@@ -252,7 +255,8 @@ class AnalysisArguments:
         },
     )
 
-@dataclass 
+
+@dataclass
 class BaselineArguments:
     baseline_encode_method: str = field(
         default="tfidf", metadata={"help": "The method for encoding the baseline"}
@@ -268,26 +272,32 @@ class BaselineArguments:
 
 @dataclass
 class FullArticleMap:
-    dataset_to_name: Dict = field(default_factory=lambda: {'ABC.com':'ABC News','Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','guardiannews.com':'Guardian','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','rushlimbaugh.com':'rushlimbaugh.com','sean':'The Sean Hannity Show','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
+    dataset_to_name: Dict = field(default_factory=lambda: {'ABC.com': 'ABC News', 'Breitbart': 'Breitbart', 'CBS': 'CBS News', 'CNN': 'CNN', 'Fox': 'Fox News', 'guardiannews.com': 'Guardian', 'HuffPost': 'HuffPost',
+                                  'NPR': 'NPR', 'NYtimes': 'New York Times', 'rushlimbaugh.com': 'rushlimbaugh.com', 'sean': 'The Sean Hannity Show', 'usatoday': 'USA Today', 'wallstreet': 'Wall Street Journal', 'washington': 'Washington Post'})
     name_to_dataset: Dict = field(init=False)
     dataset_list: List[str] = field(init=False)
-    left_dataset_list: List[str] = field(default_factory=lambda:['Breitbart', 'Fox', 'sean','rushlimbaugh.com'])
+    left_dataset_list: List[str] = field(
+        default_factory=lambda: ['Breitbart', 'Fox', 'sean', 'rushlimbaugh.com'])
 
     def __post_init__(self):
         self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
-        self.dataset_list = [k for k,v in self.dataset_to_name.items()]
+        self.dataset_list = [k for k, v in self.dataset_to_name.items()]
+
 
 @dataclass
 class BaselineArticleMap:
-    dataset_to_name: Dict = field(default_factory=lambda: {'Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News','HuffPost':'HuffPost','NPR':'NPR','NYtimes':'New York Times','usatoday':'USA Today','wallstreet':'Wall Street Journal','washington':'Washington Post'})
+    dataset_to_name: Dict = field(default_factory=lambda: {'Breitbart': 'Breitbart', 'CBS': 'CBS News', 'CNN': 'CNN', 'Fox': 'Fox News', 'HuffPost': 'HuffPost',
+                                  'NPR': 'NPR', 'NYtimes': 'New York Times', 'usatoday': 'USA Today', 'wallstreet': 'Wall Street Journal', 'washington': 'Washington Post'})
     name_to_dataset: Dict = field(init=False)
     dataset_list: List[str] = field(init=False)
-    dataset_bias: Dict = field(default_factory=lambda:{'Breitbart':2,'CBS':-1,'CNN':-5/3,'Fox':5/3,'HuffPost':-2,'NPR':-0.5,'NYtimes':-1.5,'usatoday':-1,'wallstreet':0.5,'washington':-1})
-    left_dataset_list: List[str] = field(default_factory=lambda:['Breitbart', 'Fox', 'sean','rushlimbaugh.com'])
+    dataset_bias: Dict = field(default_factory=lambda: {'Breitbart': 2, 'CBS': -1, 'CNN': -5/3, 'Fox': 5/3,
+                               'HuffPost': -2, 'NPR': -0.5, 'NYtimes': -1.5, 'usatoday': -1, 'wallstreet': 0.5, 'washington': -1})
+    left_dataset_list: List[str] = field(
+        default_factory=lambda: ['Breitbart', 'Fox', 'sean', 'rushlimbaugh.com'])
 
     def __post_init__(self):
         self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
-        self.dataset_list = [k for k,v in self.dataset_to_name.items()]
+        self.dataset_list = [k for k, v in self.dataset_to_name.items()]
 
 
 @dataclass
@@ -303,81 +313,6 @@ class ArticleMap:
         self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
         self.dataset_list = [k for k, v in self.dataset_to_name.items()]
 
-# @dataclass
-# class ArticleMap:
-#     dataset_to_name: Dict = field(default_factory=lambda: {'Breitbart':'Breitbart','CBS':'CBS News','CNN':'CNN','Fox':'Fox News'})
-#     name_to_dataset: Dict = field(init=False)
-#     dataset_list: List[str] = field(init=False)
-#     left_dataset_list: List[str] = field(default_factory=lambda:['Breitbart', 'Fox', 'sean','rushlimbaugh.com'])
-
-#     def __post_init__(self):
-#         self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
-#         self.dataset_list = [k for k,v in self.dataset_to_name.items()]
-
-
-@dataclass
-class TwitterMap:
-    dataset_to_name: Dict = field(default_factory=lambda: {'BreitbartNews': 'Breitbart', 'CNN': 'CNN', 'FoxNews': 'Fox News',
-                                                           'nytimes': 'New York Times', 'seanhannity': 'Sean Hannity Show (radio)', 'washingtonpost': 'Washington Post'})
-    name_to_dataset: Dict = field(init=False)
-    dataset_list: List[str] = field(init=False)
-    left_dataset_list: List[str] = field(
-        default_factory=lambda: ['BreitbartNews', 'FoxNews', 'seanhannity'])
-
-    def __post_init__(self):
-        self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
-        self.dataset_list = [k for k, v in self.dataset_to_name.items()]
-
-
-@dataclass
-class SourceMap:
-    republican_datasets_list: List[str] = field(
-        default_factory=lambda: ['Fox News', 'Sean Hannity Show (radio)', 'Breitbart'])
-    democrat_datasets_list: List[str] = field(
-        default_factory=lambda: ['CNN', 'New York Times', 'NPR'])
-
-    dataset_to_name: Dict = field(default_factory=lambda: {
-                                  'FoxNews': 'Fox News', 'seanhannity': 'Sean Hannity Show (radio)', 'BreitbartNews': 'Breitbart', 'CNN': 'CNN', 'nytimes': 'New York Times', 'NPR': 'NPR'})
-
-    name_to_dataset: Dict = field(init=False)
-    position_to_name: Dict = field(init=False)
-    full_datasets_list: List[str] = field(init=False)
-    position_list: List[str] = field(
-        default_factory=lambda: ['republican', 'democrat'])
-
-    def __post_init__(self):
-        self.full_datasets_list = self.democrat_datasets_list + self.republican_datasets_list
-
-        self.position_to_name = {
-            'Republican': self.republican_datasets_list, 'Democrat': self.democrat_datasets_list}
-
-        self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
-
-
-@dataclass
-class TrustMap:
-    republican_datasets_list: List[str] = field(
-        default_factory=lambda: ['Fox News', 'Sean Hannity Show (radio)', 'Breitbart'])
-    democrat_datasets_list: List[str] = field(
-        default_factory=lambda: ['CNN', 'New York Times', 'Washington Post', 'MSNBC', 'NBC NEWS', 'NPR'])
-
-    dataset_to_name: Dict = field(default_factory=lambda: {
-                                  'FoxNews': 'Fox News', 'seanhannity': 'Sean Hannity Show (radio)', 'BreitbartNews': 'Breitbart', 'CNN': 'CNN', 'nytimes': 'New York Times', 'washingtonpost': 'Washington Post', 'MSNBC': 'MSNBC', 'NBCNews': 'NBC NEWS', 'NPR': 'NPR'})
-
-    name_to_dataset: Dict = field(init=False)
-    position_to_name: Dict = field(init=False)
-    full_datasets_list: List[str] = field(init=False)
-    position_list: List[str] = field(
-        default_factory=lambda: ['republican', 'democrat'])
-
-    def __post_init__(self):
-        self.full_datasets_list = self.democrat_datasets_list + self.republican_datasets_list
-
-        self.position_to_name = {
-            'Republican': self.republican_datasets_list, 'Democrat': self.democrat_datasets_list}
-
-        self.name_to_dataset = {v: k for k, v in self.dataset_to_name.items()}
-
 
 def get_config() -> Tuple:
 
@@ -391,21 +326,27 @@ def get_config() -> Tuple:
         baseline_args: BaselineArguments
     ) -> None:
 
-        misc_args.log_dir = os.path.join(misc_args.log_dir,model_args.model_dataset)
-        analysis_args.analysis_data_dir = os.path.join(analysis_args.analysis_data_dir,model_args.model_dataset)
-        analysis_args.analysis_result_dir = os.path.join(analysis_args.analysis_result_dir,model_args.model_dataset)
+        misc_args.log_dir = os.path.join(
+            misc_args.log_dir, model_args.model_dataset)
+        analysis_args.analysis_data_dir = os.path.join(
+            analysis_args.analysis_data_dir, model_args.model_dataset)
+        analysis_args.analysis_result_dir = os.path.join(
+            analysis_args.analysis_result_dir, model_args.model_dataset)
 
         if aug_args.augment_type != 'original':
-            data_args.data_type = os.path.join(aug_args.augment_type, str(aug_args.multiple_number))
-        elif data_args.data_type=='':
+            data_args.data_type = os.path.join(
+                aug_args.augment_type, str(aug_args.multiple_number))
+        elif data_args.data_type == '':
             data_args.data_type = 'original'
-        data_args.data_dir = os.path.join(data_args.data_dir,str(training_args.seed))
+        data_args.data_dir = os.path.join(
+            data_args.data_dir, str(training_args.seed))
         data_args.data_path = os.path.join(
             data_args.data_dir, os.path.join(data_args.dataset, data_args.data_type))
         if 'mlm' in training_args.loss_type or 'class' in training_args.loss_type:
             data_args.mlm = True
-        training_args.output_dir = os.path.join(os.path.join(training_args.output_dir,training_args.loss_type),data_args.data_type)
-        
+        training_args.output_dir = os.path.join(os.path.join(
+            training_args.output_dir, training_args.loss_type), data_args.data_type)
+
         if misc_args.task != "encode_media":
             if training_args.do_train:
                 data_args.train_data_file = os.path.join(
@@ -417,22 +358,20 @@ def get_config() -> Tuple:
             data_args.train_data_file = os.path.join(
                 data_args.data_path, 'en.full')
             data_args.eval_data_file = os.path.join(
-                    data_args.data_path, 'en.full')
+                data_args.data_path, 'en.full')
         if misc_args.load_model:
             model_args.load_model_dir = os.path.join(os.path.join(
-                model_args.load_model_dir,training_args.loss_type),data_args.data_type)
+                model_args.load_model_dir, training_args.loss_type), data_args.data_type)
             model_args.model_name_or_path = model_args.load_model_dir
-                
 
         analysis_args.analysis_data_dir = os.path.join(os.path.join(os.path.join(os.path.join(os.path.join(
-            os.path.join(analysis_args.analysis_data_dir,data_args.dataset),str(training_args.seed)),training_args.loss_type),data_args.label_method),data_args.data_type), 'json')
+            os.path.join(analysis_args.analysis_data_dir, data_args.dataset), str(training_args.seed)), training_args.loss_type), data_args.label_method), data_args.data_type), 'json')
         analysis_args.analysis_result_dir = os.path.join(os.path.join(os.path.join(os.path.join(os.path.join(os.path.join(
-            analysis_args.analysis_result_dir,data_args.dataset),str(training_args.seed)),training_args.loss_type),data_args.label_method),data_args.data_type), analysis_args.analysis_compare_method)
+            analysis_args.analysis_result_dir, data_args.dataset), str(training_args.seed)), training_args.loss_type), data_args.label_method), data_args.data_type), analysis_args.analysis_compare_method)
 
         training_args.disable_tqdm = False
-        
 
-    parser = HfArgumentParser((MiscArgument, DataArguments, DataAugArguments, 
+    parser = HfArgumentParser((MiscArgument, DataArguments, DataAugArguments,
                                ModelArguments, TrainingArguments, AnalysisArguments, BaselineArguments))
 
     misc_args, data_args, aug_args, model_args, training_args, analysis_args, baseline_args = parser.parse_args_into_dataclasses()

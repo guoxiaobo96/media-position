@@ -1,20 +1,14 @@
-from curses import keyname
-import imp
-import keyword
 import os
 from random import random
 from matplotlib import pyplot as plt
 import csv
-from dataclasses import dataclass, field
-from gensim.models import Word2Vec, KeyedVectors
+from gensim.models import KeyedVectors
 from nltk.stem.porter import *
 from abc import ABC, abstractmethod
-from glob import glob
 from tqdm import tqdm
-from typing import Any, Dict, Optional, Set, Tuple, Union, List
-from sklearn import cluster
+from typing import Dict, Set, Tuple, List
 import joblib
-from grakel import Graph, graph
+from grakel import Graph
 from grakel.graph_kernels import *
 from copy import deepcopy
 from zss import simple_distance, Node
@@ -30,12 +24,10 @@ from sklearn.cluster import (
     DBSCAN,
     OPTICS,
     Birch)
-from sklearn.metrics import adjusted_rand_score,adjusted_mutual_info_score
+from sklearn.metrics import adjusted_mutual_info_score
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.metrics.pairwise import(
     cosine_distances,
-    euclidean_distances,
-    manhattan_distances
 )
 from scipy.sparse.csgraph import shortest_path
 import numpy as np
@@ -115,7 +107,8 @@ class BaseAnalysis(ABC):
 class ClusterAnalysis(BaseAnalysis):
     def __init__(self, misc_args: MiscArgument, model_args: ModelArguments, data_args: DataArguments, training_args: TrainingArguments, config: AnalysisArguments, pre_computer=False) -> None:
         super().__init__(misc_args, model_args, data_args, training_args, config)
-        self._load_analysis_model(self._config.analysis_cluster_method, pre_computer)
+        self._load_analysis_model(
+            self._config.analysis_cluster_method, pre_computer)
 
     def _load_analysis_model(
         self,
@@ -137,7 +130,7 @@ class ClusterAnalysis(BaseAnalysis):
                     n_clusters=2, compute_distances=True, affinity='euclidean', linkage='complete')
             else:
                 self._analyser = AgglomerativeClustering(
-                    n_clusters=2, compute_distances=True, affinity='precomputed', linkage='complete')                
+                    n_clusters=2, compute_distances=True, affinity='precomputed', linkage='complete')
         elif cluster_method == "DBSCAN":
             self._analyser = DBSCAN(eps=0.5, min_samples=2)
         elif cluster_method == "OPTICS":
@@ -176,7 +169,7 @@ class ClusterAnalysis(BaseAnalysis):
             plt_file = os.path.join(analysis_args.analysis_result_dir, analysis_args.analysis_encode_method +
                                     '_'+analysis_args.analysis_cluster_method+'_'+sentence_number+'.png')
             data_file = os.path.join(analysis_args.analysis_result_dir, analysis_args.analysis_encode_method +
-                                    '_'+sentence_number+'_distance.npy')
+                                     '_'+sentence_number+'_distance.npy')
             model_path = analysis_args.analysis_result_dir
             if not os.path.exists(model_path):
                 os.makedirs(model_path)
@@ -260,17 +253,16 @@ class CorrelationAnalysis(BaseAnalysis):
         elif method == 'pearson':
             self._analyser = cosine_distances
 
-
-
-    def _rank_distance(self,data,data_map):
+    def _rank_distance(self, data, data_map):
         distance_matrix = cosine_distances(data)
-        media_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
-        for i,media_a in enumerate(data_map.dataset_list):
+        media_distance_order_matrix = np.zeros(
+            shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=np.int)
+        for i, media_a in enumerate(data_map.dataset_list):
             temp_distance = list()
             distance_map = list()
-            for j,media_b in enumerate(data_map.dataset_list):
+            for j, media_b in enumerate(data_map.dataset_list):
                 # temp_distance.append(distance_matrix[i][j])
-                distance_map.append((j,distance_matrix[i][j]))
+                distance_map.append((j, distance_matrix[i][j]))
             random.shuffle(distance_map)
             for item in distance_map:
                 temp_distance.append(item[1])
@@ -278,7 +270,7 @@ class CorrelationAnalysis(BaseAnalysis):
                 return None
             order_list = np.argsort(temp_distance)
             order_list = order_list.tolist()
-            
+
             for order, v in enumerate(order_list):
                 media_distance_order_matrix[i][distance_map[v][0]] = order
 
@@ -289,9 +281,6 @@ class CorrelationAnalysis(BaseAnalysis):
             #     media_distance_order_matrix[i][j] = order
         return media_distance_order_matrix
 
-
-    
-
     def analyze(
         self,
         data,
@@ -300,7 +289,7 @@ class CorrelationAnalysis(BaseAnalysis):
         keep_result=True,
         encode: bool = True,
         dataset_list: List = [],
-        data_map = None,
+        data_map=None,
 
     ) -> Dict[int, Set[str]]:
         cluster_result = dict()
@@ -311,12 +300,10 @@ class CorrelationAnalysis(BaseAnalysis):
         else:
             encoded_list = data
         if self._config.analysis_correlation_method == 'tau':
-            media_distance_matrix = self._analyser(encoded_list,data_map)
+            media_distance_matrix = self._analyser(encoded_list, data_map)
         elif self._config.analysis_correlation_method == 'pearson':
             media_distance_matrix = self._analyser(encoded_list)
         return media_distance_matrix, media_distance_matrix, dataset_list, encoded_list
-
-
 
 
 class TermEncoder(object):
@@ -452,12 +439,14 @@ class Word2VecEncoder(object):
             encode_result[dataset] = np.sum(term_encode.T, axis=0)
         return encode_result
 
+
 class CorrelationCompare(object):
     def __init__(self, misc_args: MiscArgument, analysis_args: AnalysisArguments) -> None:
         super().__init__()
         self. _result_path = os.path.join(os.path.join(
             analysis_args.analysis_result_dir, analysis_args.graph_distance), analysis_args.graph_kernel)
         self._analysis_args = analysis_args
+
     def compare(self, model_dict):
         name_list = list()
         model_list = list()
@@ -470,21 +459,24 @@ class CorrelationCompare(object):
         base_index = name_list.index('base')
         step_size = 0.05
         distribution = [0 for _ in range(int(2/step_size) + 1)]
-        for k, name in enumerate(tqdm(name_list,desc="Calculate distance")):
+        for k, name in enumerate(tqdm(name_list, desc="Calculate distance")):
             if k == base_index:
                 continue
             performance = 0
-            if  self._analysis_args.analysis_correlation_method == 'tau':
+            if self._analysis_args.analysis_correlation_method == 'tau':
                 for i in range(len(model_list[base_index])):
-                    tau, p_value = kendalltau(model_list[k][i].reshape(1,-1), model_list[base_index][i].reshape(1,-1))
+                    tau, p_value = kendalltau(model_list[k][i].reshape(
+                        1, -1), model_list[base_index][i].reshape(1, -1))
                     performance += tau
             elif self._analysis_args.analysis_correlation_method == 'pearson':
                 for i in range(len(model_list[base_index])):
-                    pearson = np.corrcoef(model_list[k][i].reshape(1,-1),model_list[base_index][i].reshape(1,-1))
+                    pearson = np.corrcoef(model_list[k][i].reshape(
+                        1, -1), model_list[base_index][i].reshape(1, -1))
                     performance += pearson[0][1]
             performance /= len(model_list[base_index])
             result_dict[name] = performance
         return result_dict
+
 
 class ClusterCompare(object):
     def __init__(self, misc_args: MiscArgument, analysis_args: AnalysisArguments) -> None:
@@ -595,7 +587,7 @@ class ClusterCompare(object):
 
     def _build_graph(self, model, label_list=None) -> None:
         if self._analysis_args.graph_kernel == 'cluster':
-            if self._analysis_args.graph_distance in ['count','co_occurance']:
+            if self._analysis_args.graph_distance in ['count', 'co_occurance']:
                 return self._cluster_generate(model)
             elif self._analysis_args.graph_distance in ['adjusted_rand_index']:
                 return model.labels_
@@ -656,7 +648,7 @@ class ClusterCompare(object):
 
             graph_list = gk.fit_transform(graph_list)
         base_index = name_list.index('base')
-        for i, name in enumerate(tqdm(name_list,desc="Calculate distance")):
+        for i, name in enumerate(tqdm(name_list, desc="Calculate distance")):
             if i != base_index:
                 if self._analysis_args.graph_distance == 'count':
                     count = 0
@@ -665,9 +657,11 @@ class ClusterCompare(object):
                             count += 1
                     distance = count / (len(graph_list[base_index]) - 1)
                 elif self._analysis_args.graph_distance == 'co_occurance':
-                    distance = self._co_occurance_distance(graph_list[i],graph_list[base_index])
+                    distance = self._co_occurance_distance(
+                        graph_list[i], graph_list[base_index])
                 elif self._analysis_args.graph_distance == 'adjusted_rand_index':
-                    distance = adjusted_mutual_info_score(graph_list[base_index],graph_list[i])
+                    distance = adjusted_mutual_info_score(
+                        graph_list[base_index], graph_list[i])
                 elif self._analysis_args.graph_distance == 'edit':
                     distance = simple_distance(
                         graph_list[base_index], graph_list[i])
@@ -680,11 +674,12 @@ class ClusterCompare(object):
 
     def _co_occurance_distance(self, cluster_list, base_cluster_list):
         cluster_number = len(cluster_list) - 1
-        distance_matrix = np.zeros((len(cluster_list)+1,len(cluster_list)+1))
-        basic_distance_matrix = np.zeros((len(cluster_list)+1,len(cluster_list)+1))
+        distance_matrix = np.zeros((len(cluster_list)+1, len(cluster_list)+1))
+        basic_distance_matrix = np.zeros(
+            (len(cluster_list)+1, len(cluster_list)+1))
 
         for cluster in cluster_list:
-            if len(cluster) ==  len(cluster_list) + 1:
+            if len(cluster) == len(cluster_list) + 1:
                 continue
             for i in cluster:
                 for j in cluster:
@@ -696,7 +691,7 @@ class ClusterCompare(object):
         #         distance_matrix[i] = distance_matrix[i] / temp
 
         for cluster in base_cluster_list:
-            if len(cluster) ==  len(cluster_list) + 1:
+            if len(cluster) == len(cluster_list) + 1:
                 continue
             for i in cluster:
                 for j in cluster:
@@ -706,10 +701,10 @@ class ClusterCompare(object):
         #     basic_distance_matrix[i] = basic_distance_matrix[i] / np.sum(basic_distance_matrix[i],axis=0)
         distance = 0
         for i in range(len(distance_matrix)):
-            distance += cosine_distances(distance_matrix[i].reshape(1,-1), basic_distance_matrix[i].reshape(1,-1))
+            distance += cosine_distances(distance_matrix[i].reshape(
+                1, -1), basic_distance_matrix[i].reshape(1, -1))
             # distance += manhattan_distances(distance_matrix[i].reshape(1,-1), basic_distance_matrix[i].reshape(1,-1))
         return distance[0][0]
-     
 
     def compare(self, model_dict: Dict[str, AgglomerativeClustering], label_list=None) -> None:
         graph_list = list()
@@ -730,16 +725,6 @@ class ClusterCompare(object):
 
 
 def main():
-    # from config import get_config
-    # from data import get_analysis_data
-    # from util import prepare_dirs_and_logger
-    # misc_args, model_args, data_args, training_args, analysis_args = get_config()
-    # prepare_dirs_and_logger(misc_args, model_args,
-    #                         data_args, training_args, analysis_args)
-    # analysis_data = get_analysis_data(analysis_args)
-    # analysis_model = DistanceAnalysis(model_args, data_args, training_args, analysis_args)
-    # for k,v in analysis_data.items():
-    #     analysis_model.analyze(analysis_data['4.json'])
     log_dir = '../../log/tweets'
     category_file = os.path.join(os.path.join(log_dir, 'dict'), 'category.csv')
     with open(category_file, mode='r') as fp:

@@ -1,3 +1,0 @@
-loss,augmentation,multi_number,Breitbart,CBS,CNN,Fox,HuffPost,NPR,NYtimes,usatoday,wallstreet,washington,avg,
-mlm,no_augmentation,1,7.271,7.007,7.142,8.577,7.661,6.393,7.316,7.333,7.589,7.919,7.42(0.58)
-mlm,sentence_order_replacement,4,7.125,6.699,6.586,7.961,6.999,6.217,6.285,7.594,7.473,7.659,7.06(0.61)
