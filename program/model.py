@@ -24,6 +24,7 @@ from transformers import (
     BertForSequenceClassification,
     BertModel,
     BertPreTrainedModel,
+    AutoModelWithLMHead,
     DataCollatorForLanguageModeling,
     DataCollatorForPermutationLanguageModeling,
     DataCollatorForWholeWordMask,
@@ -166,22 +167,29 @@ class MLMModel(DeepModel):
     def _load_model(self) -> None:
         self._config.return_dict = True
         if self._model_args.model_name_or_path:
-            if not self._vanilla_model:
-                self._model = BertForMaskedLM.from_pretrained(
-                    self._model_args.model_name_or_path,
-                    from_tf=bool(
-                        ".ckpt" in self._model_args.model_name_or_path),
-                    config=self._config,
-                    cache_dir=self._model_args.cache_dir,
-                )
-            else:
-                self._model = transformers.BertForMaskedLM.from_pretrained(
-                    self._model_args.model_name_or_path,
-                    from_tf=bool(
-                        ".ckpt" in self._model_args.model_name_or_path),
-                    config=self._config,
-                    cache_dir=self._model_args.cache_dir,
-                )
+            # if not self._vanilla_model:
+            #     self._model = BertForMaskedLM.from_pretrained(
+            #         self._model_args.model_name_or_path,
+            #         from_tf=bool(
+            #             ".ckpt" in self._model_args.model_name_or_path),
+            #         config=self._config,
+            #         cache_dir=self._model_args.cache_dir,
+            #     )
+            # else:
+            #     self._model = transformers.BertForMaskedLM.from_pretrained(
+            #         self._model_args.model_name_or_path,
+            #         from_tf=bool(
+            #             ".ckpt" in self._model_args.model_name_or_path),
+            #         config=self._config,
+            #         cache_dir=self._model_args.cache_dir,
+            #     )
+            self._model = AutoModelWithLMHead.from_pretrained(
+                self._model_args.model_name_or_path,
+                from_tf=bool(
+                    ".ckpt" in self._model_args.model_name_or_path),
+                config=self._config,
+                cache_dir=self._model_args.cache_dir,
+            )
         else:
             self._logger.info("Training new model from scratch")
             self._model = BertForMaskedLM.from_config(self._config)

@@ -150,7 +150,7 @@ def label_score_predict(
     elif predict_args.predict_prob_args == 'general-relative':
         baseline_model_args = copy.deepcopy(model_args)
         baseline_model_args.load_model_dir = ""
-        baseline_model_args.model_name_or_path = "distilroberta-base"
+        baseline_model_args.model_name_or_path = "roberta-base"
         baseline_data_args = copy.deepcopy(data_args)
         baseline_data_args.dataset = 'all'
         baseline_data_args.data_path = baseline_data_args.data_path.replace(data_args.dataset,'all')

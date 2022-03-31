@@ -307,7 +307,7 @@ class Trainer(transformers.Trainer):
             labels = inputs.pop("labels")
         else:
             labels = None
-        outputs, _, _ = model(**inputs)
+        outputs = model(**inputs)
         # Save past state if it exists
         # TODO: this needs to be fixed and made cleaner later.
         if self.args.past_index >= 0:
