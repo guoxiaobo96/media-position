@@ -1,4 +1,4 @@
-from .config import DataArguments, DataAugArguments, FullArticleMap, MiscArgument, ModelArguments, TrainingArguments, AnalysisArguments, BaselineArticleMap
+from .config import DataArguments, DataAugArguments, FullArticleMap, MiscArgument, ModelArguments, PredictArguments, TrainingArguments, AnalysisArguments, BaselineArticleMap
 from .model import MLMModel,  ClassifyModel
 from .data import get_dataset, get_label_data
 from .data_augment_util import SelfDataAugmentor
@@ -15,6 +15,8 @@ import os
 import joblib
 import matplotlib
 import transformers
+import torch
+import copy
 
 matplotlib.use('Agg')
 
@@ -126,8 +128,8 @@ def label_score_predict(
     model_args: ModelArguments,
     data_args: DataArguments,
     training_args: TrainingArguments,
+    predict_args: PredictArguments
 ) -> Dict:
-    dataset_map = FullArticleMap()
 
     data_type = list()
     dataset = data_args.dataset
@@ -137,19 +139,33 @@ def label_score_predict(
         data_type = ['dataset', 'position']
 
     model = MLMModel(model_args, data_args, training_args, vanilla_model=True)
+    if predict_args.predict_prob_args == 'media-relative':
+        baseline_model_args = copy.deepcopy(model_args)
+        baseline_model_args.load_model_dir = baseline_model_args.load_model_dir.replace(data_args.dataset,'all')
+        baseline_model_args.model_name_or_path = baseline_model_args.model_name_or_path.replace(data_args.dataset,'all')
+        baseline_data_args = copy.deepcopy(data_args)
+        baseline_data_args.dataset = 'all'
+        baseline_data_args.data_path = baseline_data_args.data_path.replace(data_args.dataset,'all')
+        baseline_model = MLMModel(baseline_model_args, baseline_data_args, training_args, vanilla_model=True)
+    elif predict_args.predict_prob_args == 'general-relative':
+        baseline_model_args = copy.deepcopy(model_args)
+        baseline_model_args.load_model_dir = ""
+        baseline_model_args.model_name_or_path = "distilroberta-base"
+        baseline_data_args = copy.deepcopy(data_args)
+        baseline_data_args.dataset = 'all'
+        baseline_data_args.data_path = baseline_data_args.data_path.replace(data_args.dataset,'all')
+        baseline_model = MLMModel(baseline_model_args, baseline_data_args, training_args, vanilla_model=True)
+
+
     word_set = set()
 
     log_dir = os.path.join(
         misc_args.log_dir, data_args.data_dir.split('_')[1].split('/')[0])
     log_dir = os.path.join(log_dir, str(training_args.seed))
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
 
     log_dir = os.path.join(os.path.join(os.path.join(
         log_dir, training_args.loss_type), data_args.label_method), data_args.data_type)
 
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
     log_path = os.path.join(os.path.join(log_dir, 'json'))
     if not os.path.exists(log_path):
         os.makedirs(log_path)
@@ -160,7 +176,7 @@ def label_score_predict(
     masked_sentence_dict = dict()
 
     masked_sentence_file = os.path.join(os.path.join(os.path.join(
-        data_args.data_dir, 'all'), 'original'), 'en.masked.'+data_args.label_method)
+        data_args.data_dir, 'all'), 'masked'), 'en.masked.'+data_args.label_method)
     with open(masked_sentence_file, mode='r', encoding='utf8') as fp:
         for line in fp.readlines():
             item = json.loads(line.strip())
@@ -181,13 +197,18 @@ def label_score_predict(
         batched_masked_sentence_list = batched_masked_sentence_list[:10]
 
     results = dict()
+    baseline_results = dict()
     for batch_sentence in tqdm(batched_masked_sentence_list):
         result = model.predict(batch_sentence)
         results.update(result)
 
+        if 'relative' in predict_args.predict_prob_args:
+            result = baseline_model.predict(batch_sentence)
+            baseline_results.update(result)
+
     record_dict = dict()
 
-    for sentence, items in results.items():
+    for sentence, item in results.items():
         original_sentence = masked_sentence_dict[sentence]
         if original_sentence not in record_dict:
             record_dict[original_sentence] = {
@@ -199,10 +220,36 @@ def label_score_predict(
                 masked_index = i
 
         record_dict[original_sentence]['word'][masked_index] = dict()
-        for item in items:
-            record_dict[original_sentence]['word'][masked_index][item["token_str"]] = str(
-                round(item["score"], 3))
-            word_set.add(item["token_str"])
+        if 'relative' in predict_args.predict_prob_args:
+            relative_item = baseline_results[sentence]
+            normalized_item = torch.log(item) - torch.log(relative_item)
+            if predict_args.predict_chosen_args == 'binary':
+                highest_prob = torch.topk(normalized_item, int(predict_args.predict_chosen_number/2), dim=1)
+                lowest_prob = torch.topk(normalized_item, int(predict_args.predict_chosen_number/2), dim=1,largest=False)
+                top_prob_indices = torch.cat([highest_prob.indices[0],lowest_prob.indices[0]])
+                top_prob_values= torch.cat([highest_prob.values[0],lowest_prob.values[0]])
+                top_tokens = zip(top_prob_indices.tolist(), top_prob_values.tolist())
+            elif predict_args.predict_chosen_args == 'maxdiff':
+                abs_normalized_item = torch.abs(normalized_item)
+                top_prob = torch.topk(abs_normalized_item, predict_args.predict_chosen_number, dim=1)
+                top_prob_indices = top_prob.indices[0]
+                top_prob_values = normalized_item[0][top_prob_indices]
+                top_tokens = zip(top_prob_indices.tolist(), top_prob_values.tolist())
+            elif predict_args.predict_chosen_args == 'maxposi':
+                top_prob = torch.topk(normalized_item, predict_args.predict_chosen_number, dim=1)
+                top_tokens = zip(top_prob.indices[0].tolist(), top_prob.values[0].tolist())
+            elif predict_args.predict_chosen_args == 'maxneg':
+                top_prob = torch.topk(normalized_item, predict_args.predict_chosen_number, dim=1,largest=False)
+                top_tokens = zip(top_prob.indices[0].tolist(), top_prob.values[0].tolist())
+
+        elif predict_args.predict_prob_args == "absolute":
+            top_prob = torch.topk(item, predict_args.predict_chosen_number, dim=1)
+            top_tokens = zip(top_prob.indices[0].tolist(), top_prob.values[0].tolist())
+        for token, score in top_tokens:
+            token = model.tokenizer.decode([token])
+            record_dict[original_sentence]['word'][masked_index][token] = str(
+                round(score, 3))
+        word_set.add(token)
 
     with open(log_file, mode='w', encoding='utf8') as fp:
         for _, item in record_dict.items():

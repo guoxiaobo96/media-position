@@ -2,7 +2,7 @@ from genericpath import exists
 import os
 import logging
 
-from .config import DataArguments, MiscArgument, ModelArguments, TrainingArguments, AnalysisArguments, BaselineArguments
+from .config import DataArguments, MiscArgument, ModelArguments, TrainingArguments, AnalysisArguments, PredictArguments
 
 
 def prepare_dirs_and_logger(
@@ -11,7 +11,7 @@ def prepare_dirs_and_logger(
         data_args: DataArguments,
         training_args: TrainingArguments,
         analysis_args: AnalysisArguments,
-        baseline_args: BaselineArguments
+        predict_args: PredictArguments
 
 ) -> None:
     # os.chdir(os.path.dirname(__file__))

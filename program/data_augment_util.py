@@ -27,7 +27,8 @@ class BasicDataAugementor(object):
 
     def _load_original_data(self):
         self._raw_data = dict()
-        media_list = os.listdir(self._data_args.data_dir)
+        # media_list = os.listdir(self._data_args.data_dir)
+        media_list = ['all']
         for media in media_list:
             if media not in self._raw_data:
                 self._raw_data[media] = dict()
@@ -87,7 +88,6 @@ class BasicDataAugementor(object):
                 for item in self._augmented_data[media]['train']:
                     fp.write(json.dumps(item, ensure_ascii=False)+'\n')
             eval_file = os.path.join(data_path, 'en.valid')
-            random.shuffle(self._augmented_data[media]['eval'])
             with open(eval_file, mode='w', encoding='utf8') as fp:
                 for item in self._augmented_data[media]['eval']:
                     fp.write(item+'\n')
@@ -144,7 +144,9 @@ class SelfDataAugmentor(BasicDataAugementor):
                     break
 
             augmented_eval_data = eval_data
-
+            random.seed(42)
+            random.shuffle(augmented_train_data)
+            random.shuffle(augmented_eval_data)
             self._augmented_data[media]['train'] = augmented_train_data
             self._augmented_data[media]['eval'] = augmented_eval_data
 

@@ -25,3 +25,4 @@ log_*/*/*/*/*/*
 env/
 analysis_*/
 data/
+model/

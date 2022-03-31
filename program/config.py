@@ -26,7 +26,7 @@ class MiscArgument:
         default='/home/xiaobo/media-position', metadata={"help": "The relative path to the root dir"}
     )
     log_dir: Optional[str] = field(
-        default='/data/xiaobo/media-position/log', metadata={"help": "The relative path to the log dir"}
+        default='./log', metadata={"help": "The relative path to the log dir"}
     )
     gpu_id: str = field(
         default='0', metadata={"help": "The id of gpu which runs the work"}
@@ -257,16 +257,15 @@ class AnalysisArguments:
 
 
 @dataclass
-class BaselineArguments:
-    baseline_encode_method: str = field(
-        default="tfidf", metadata={"help": "The method for encoding the baseline"}
+class PredictArguments:
+    predict_prob_args: str = field(
+        default="absolute", metadata={"help": "how to calculate the prob for predicting masked token"}
     )
-    min_num_gram: int = field(
-        default=0, metadata={"help": "The minimum number of gram for baseline encoding method where 0 means the method without n_gram"}
+    predict_chosen_args: str = field(
+        default="binary", metadata={"help": "how to chosen the tokens based on the prob"}
     )
-
-    max_num_gram: int = field(
-        default=0, metadata={"help": "The maxinum number of gram for baseline encoding method where 0 means the method without n_gram"}
+    predict_chosen_number: int = field(
+        default=10, metadata={"help": "The number of tokens be chosen"}
     )
 
 
@@ -323,11 +322,13 @@ def get_config() -> Tuple:
         model_args: ModelArguments,
         training_args: TrainingArguments,
         analysis_args: AnalysisArguments,
-        baseline_args: BaselineArguments
+        predict_args: PredictArguments
     ) -> None:
 
         misc_args.log_dir = os.path.join(
             misc_args.log_dir, model_args.model_dataset)
+        misc_args.log_dir = os.path.join(
+            misc_args.log_dir, predict_args.predict_prob_args + "/" + predict_args.predict_chosen_args)
         analysis_args.analysis_data_dir = os.path.join(
             analysis_args.analysis_data_dir, model_args.model_dataset)
         analysis_args.analysis_result_dir = os.path.join(
@@ -372,13 +373,13 @@ def get_config() -> Tuple:
         training_args.disable_tqdm = False
 
     parser = HfArgumentParser((MiscArgument, DataArguments, DataAugArguments,
-                               ModelArguments, TrainingArguments, AnalysisArguments, BaselineArguments))
+                               ModelArguments, TrainingArguments, AnalysisArguments, PredictArguments))
 
-    misc_args, data_args, aug_args, model_args, training_args, analysis_args, baseline_args = parser.parse_args_into_dataclasses()
+    misc_args, data_args, aug_args, model_args, training_args, analysis_args, predict_args = parser.parse_args_into_dataclasses()
     _get_config(misc_args, data_args, aug_args, model_args,
-                training_args, analysis_args, baseline_args)
+                training_args, analysis_args, predict_args)
     set_seed(training_args.seed)
-    return misc_args, model_args, data_args, aug_args, training_args, analysis_args, baseline_args
+    return misc_args, model_args, data_args, aug_args, training_args, analysis_args, predict_args
 
 
 if __name__ == '__main__':

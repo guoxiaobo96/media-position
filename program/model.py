@@ -265,17 +265,28 @@ class MLMModel(DeepModel):
         return results
 
     def predict(self, sentence_list, batch_size=64) -> Dict:
-        if self._fill_mask is None:
-            self._model.eval()
-            self._fill_mask = pipeline(task="fill-mask", model=self._model,
-                                       tokenizer=self.tokenizer, device=0, top_k=10)
+        # if self._fill_mask is None:
+        #     self._model.eval()
+        #     self._fill_mask = pipeline(task="fill-mask", model=self._model,
+        #                                tokenizer=self.tokenizer, device=0, top_k=10)
+        # result_dict = dict()
+        # results = self._fill_mask(sentence_list)
+        # if len(sentence_list) == 1:
+        #     results = [results]
+        # for i, sentence in enumerate(sentence_list):
+        #     result_dict[sentence] = results[i]
         result_dict = dict()
-        results = self._fill_mask(sentence_list)
-        if len(sentence_list) == 1:
-            results = [results]
-        for i, sentence in enumerate(sentence_list):
-            result_dict[sentence] = results[i]
+        for i, sequence in enumerate(sentence_list):
+            sequence = sequence.replace("[mask]", self.tokenizer.mask_token)
+            input_ids = self.tokenizer.encode(sequence, return_tensors="pt")
+            mask_token_index = torch.where(input_ids == self.tokenizer.mask_token_id)[1]
+
+            token_logits = self._model(input_ids)[0]
+            mask_token_logits = token_logits[0, mask_token_index, :]
+            mask_token_logits = torch.softmax(mask_token_logits, dim=1)
+            result_dict[sentence_list[i]] = mask_token_logits
         return result_dict
+        # return result_dict
 
     def encode(self, sentence_list, batch_size=64) -> Dict:
         if self._fill_mask is None:
