@@ -277,6 +277,7 @@ def label_score_analysis(
     data_args: DataArguments,
     training_args: TrainingArguments,
     analysis_args: AnalysisArguments,
+    predict_args: PredictArguments,
     ground_truth: str
 ) -> Dict:
     data_map = BaselineArticleMap()
@@ -584,51 +585,51 @@ def label_score_analysis(
         if not os.path.exists(result_path):
             os.makedirs(result_path)
 
-        order_file = os.path.join(
-            result_path, analysis_args.analysis_encode_method + '_'+ground_truth+'.npy')
-        np.save(order_file, media_distance_order_matrix)
+        # order_file = os.path.join(
+        #     result_path, analysis_args.analysis_encode_method + '_'+ground_truth+'.npy')
+        # np.save(order_file, media_distance_order_matrix)
 
-        sort_result_file = os.path.join(
-            result_path, analysis_args.analysis_encode_method + '_sort_'+ground_truth+'.json')
+        # sort_result_file = os.path.join(
+        #     result_path, analysis_args.analysis_encode_method + '_sort_'+ground_truth+'.json')
 
-        sentence_result_file = os.path.join(
-            result_path, analysis_args.analysis_encode_method + '_sentence_'+ground_truth+'.json')
-        g = ""
-        if ground_truth == 'source':
-            g = 'SoA-s'
-        elif ground_truth == 'trust':
-            g = 'SoA-t'
-        elif ground_truth == 'MBR':
-            g = 'MBR'
-        else:
-            g == 'human'
+        # sentence_result_file = os.path.join(
+        #     result_path, analysis_args.analysis_encode_method + '_sentence_'+ground_truth+'.json')
+        # g = ""
+        # if ground_truth == 'source':
+        #     g = 'SoA-s'
+        # elif ground_truth == 'trust':
+        #     g = 'SoA-t'
+        # elif ground_truth == 'MBR':
+        #     g = 'MBR'
+        # else:
+        #     g == 'human'
 
-        d = ""
-        if data_args.dataset == "climate-change":
-            d = "Climate Change"
-        elif data_args.dataset == "corporate-tax":
-            d = "Corporate Tax"
-        elif data_args.dataset == "drug-policy":
-            d = "Drug Policy"
-        elif data_args.dataset == "gay-marriage":
-            d = "Gay Marriage"
-        elif data_args.dataset == "obamacare":
-            d = "Obamacare"
-        plt.title('Distribution of {} with {} '.format(d, g), fontsize=20)
-        plt_file = os.path.join(result_path, data_args.dataset+'_' +
-                                analysis_args.analysis_encode_method + '_distribution_'+ground_truth+'.jpg')
-        plt.plot(x_list[start_index:end_index+1],
-                 distribution[start_index:end_index+1], linewidth=2)
-        plt.xticks(fontsize=20)
-        plt.xlabel("Kendall rank correlation coefficients", fontsize=20)
-        plt.ylabel("Percent of Instances", fontsize=20)
+        # d = ""
+        # if data_args.dataset == "climate-change":
+        #     d = "Climate Change"
+        # elif data_args.dataset == "corporate-tax":
+        #     d = "Corporate Tax"
+        # elif data_args.dataset == "drug-policy":
+        #     d = "Drug Policy"
+        # elif data_args.dataset == "gay-marriage":
+        #     d = "Gay Marriage"
+        # elif data_args.dataset == "obamacare":
+        #     d = "Obamacare"
+        # plt.title('Distribution of {} with {} '.format(d, g), fontsize=20)
+        # plt_file = os.path.join(result_path, data_args.dataset+'_' +
+        #                         analysis_args.analysis_encode_method + '_distribution_'+ground_truth+'.jpg')
+        # plt.plot(x_list[start_index:end_index+1],
+        #          distribution[start_index:end_index+1], linewidth=2)
+        # plt.xticks(fontsize=20)
+        # plt.xlabel("Kendall rank correlation coefficients", fontsize=20)
+        # plt.ylabel("Percent of Instances", fontsize=20)
 
-        # plt.vlines(performance,0,np.max(distribution)+0.1, colors='r', label="The model performance is "+ str(round(performance,2)))
-        # plt.vlines(mean_performance,0,np.max(distribution)+0.1, colors='g', label="The mean performance is "+ str(round(mean_performance,2)))
-        # plt.vlines(median_performance,0,np.max(distribution)+0.1, colors='b', label="The median performance is "+ str(round(median_performance,2)))
+        # # plt.vlines(performance,0,np.max(distribution)+0.1, colors='r', label="The model performance is "+ str(round(performance,2)))
+        # # plt.vlines(mean_performance,0,np.max(distribution)+0.1, colors='g', label="The mean performance is "+ str(round(mean_performance,2)))
+        # # plt.vlines(median_performance,0,np.max(distribution)+0.1, colors='b', label="The median performance is "+ str(round(median_performance,2)))
 
-        plt.savefig(plt_file, bbox_inches='tight')
-        plt.close()
+        # plt.savefig(plt_file, bbox_inches='tight')
+        # plt.close()
 
     result = dict()
     average_distance = dict()
@@ -646,21 +647,21 @@ def label_score_analysis(
         result[sentence][-1] = (np.mean(average_distance),
                                 'sentence_average')
 
-    sentence_list = list(result.keys())
-    analysis_result = {k: {'score': v, 'sentence': sentence_list.index(
-        sentence_position_data[k]['sentence'])+1, 'position': sentence_position_data[k]['position'], 'word': sentence_position_data[k]['word']} for k, v in analysis_result}
+    # sentence_list = list(result.keys())
+    # analysis_result = {k: {'score': v, 'sentence': sentence_list.index(
+    #     sentence_position_data[k]['sentence'])+1, 'position': sentence_position_data[k]['position'], 'word': sentence_position_data[k]['word']} for k, v in analysis_result}
 
-    with open(sort_result_file, mode='w', encoding='utf8') as fp:
-        for k, v in analysis_result.items():
-            fp.write(json.dumps(v, ensure_ascii=False)+'\n')
+    # with open(sort_result_file, mode='w', encoding='utf8') as fp:
+    #     for k, v in analysis_result.items():
+    #         fp.write(json.dumps(v, ensure_ascii=False)+'\n')
 
-    with open(sentence_result_file, mode='w', encoding='utf8') as fp:
-        for k, v in result.items():
-            v['sentence'] = k
-            fp.write(json.dumps(v, ensure_ascii=False)+'\n')
+    # with open(sentence_result_file, mode='w', encoding='utf8') as fp:
+    #     for k, v in result.items():
+    #         v['sentence'] = k
+    #         fp.write(json.dumps(v, ensure_ascii=False)+'\n')
 
     record_item = {'ground_truth': ground_truth, 'augmentation_method': data_args.data_type.split(
-        '/')[0], 'analysis_compare_method': analysis_args.analysis_compare_method, 'method': method, 'performance': round(performance, 2)}
+        '/')[0], 'analysis_compare_method': analysis_args.analysis_compare_method, 'method': method, 'prob method':predict_args.predict_prob_args, 'token chosen method': predict_args.predict_chosen_args, 'performance': round(performance, 2)}
     with open(analysis_record_file, mode='a', encoding='utf8') as fp:
         fp.write(json.dumps(record_item, ensure_ascii=False)+'\n')
     print("The performance on {} is {}".format(

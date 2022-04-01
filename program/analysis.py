@@ -266,8 +266,8 @@ class CorrelationAnalysis(BaseAnalysis):
             random.shuffle(distance_map)
             for item in distance_map:
                 temp_distance.append(item[1])
-            if temp_distance.count(0) > 1:
-                return None
+            # if temp_distance.count(0) > 1:
+            #     return None
             order_list = np.argsort(temp_distance)
             order_list = order_list.tolist()
 

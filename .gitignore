@@ -10,11 +10,6 @@ log/*/*/json/*.json
 log/*/*/dict/*
 log/*/*/model/*
 
-analysis/*/*/*/*/*/*/*/*/*/*.json
-analysis/*/*/*/*/*/*/*/*/*.json
-analysis/*/*/*/*/*/*/*/*/*/*.c
-analysis/*/*/*/*/*/*/*/*/*.c
-
 log/*/*/*/*/*/*
 log/*/*/*/*/*
 
@@ -26,3 +21,4 @@ env/
 analysis_*/
 data/
 model/
+analysis/*/*/42/mlm/bigram_outer/no_augmentation/1/correlation/tau/*

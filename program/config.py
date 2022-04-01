@@ -219,7 +219,7 @@ class ModelArguments:
 @dataclass
 class AnalysisArguments:
     analysis_data_dir: str = field(
-        default="/data/xiaobo/media-position/log", metadata={"help": "The dir of analysis data"}
+        default="./log", metadata={"help": "The dir of analysis data"}
     )
     analysis_result_dir: str = field(
         default="analysis", metadata={"help": "The dir of analysis result"}
@@ -329,8 +329,7 @@ def get_config() -> Tuple:
             misc_args.log_dir, model_args.model_dataset)
         misc_args.log_dir = os.path.join(
             misc_args.log_dir, predict_args.predict_prob_args + "/" + predict_args.predict_chosen_args)
-        analysis_args.analysis_data_dir = os.path.join(
-            analysis_args.analysis_data_dir, model_args.model_dataset)
+        analysis_args.analysis_data_dir = misc_args.log_dir
         analysis_args.analysis_result_dir = os.path.join(
             analysis_args.analysis_result_dir, model_args.model_dataset)
 

@@ -29,13 +29,11 @@ def main(
                             training_args, predict_args)
     elif misc_args.task == 'label_score_analysis':
         label_score_analysis(misc_args, model_args,
-                             data_args, training_args, analysis_args, 'human')
+                             data_args, training_args, analysis_args, predict_args, 'trust')
         label_score_analysis(misc_args, model_args,
-                             data_args, training_args, analysis_args, 'trust')
+                             data_args, training_args, analysis_args, predict_args, 'source')
         label_score_analysis(misc_args, model_args,
-                             data_args, training_args, analysis_args, 'source')
-        label_score_analysis(misc_args, model_args,
-                             data_args, training_args, analysis_args, 'MBR')
+                             data_args, training_args, analysis_args, predict_args, 'MBR')
     elif misc_args.task == "data_collect":
         if aug_args.augment_type == 'original':
             data_collect(misc_args, data_args)
