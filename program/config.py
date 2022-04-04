@@ -324,6 +324,10 @@ def get_config() -> Tuple:
         analysis_args: AnalysisArguments,
         predict_args: PredictArguments
     ) -> None:
+        model_args.model_type = model_args.model_name_or_path
+        misc_args.log_dir = os.path.join(misc_args.log_dir,model_args.model_type)
+        analysis_args.analysis_data_dir = os.path.join(analysis_args.analysis_data_dir,model_args.model_type)
+        analysis_args.analysis_result_dir = os.path.join(analysis_args.analysis_result_dir, model_args.model_type)
 
         misc_args.log_dir = os.path.join(
             misc_args.log_dir, model_args.model_dataset)

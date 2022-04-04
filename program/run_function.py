@@ -139,7 +139,8 @@ def label_score_predict(
         data_type = ['dataset', 'position']
 
     model = MLMModel(model_args, data_args, training_args, vanilla_model=True)
-    model._model.to("cuda:0")
+    if torch.cuda.is_available():
+        model._model.to("cuda:0")
     if predict_args.predict_prob_args == 'media-relative':
         baseline_model_args = copy.deepcopy(model_args)
         baseline_model_args.load_model_dir = baseline_model_args.load_model_dir.replace(data_args.dataset,'all')
@@ -148,7 +149,8 @@ def label_score_predict(
         baseline_data_args.dataset = 'all'
         baseline_data_args.data_path = baseline_data_args.data_path.replace(data_args.dataset,'all')
         baseline_model = MLMModel(baseline_model_args, baseline_data_args, training_args, vanilla_model=True)
-        baseline_model._model.to("cuda:0")
+        if torch.cuda.is_available():
+            baseline_model._model.to("cuda:0")
     elif predict_args.predict_prob_args == 'general-relative':
         baseline_model_args = copy.deepcopy(model_args)
         baseline_model_args.load_model_dir = ""
@@ -157,7 +159,8 @@ def label_score_predict(
         baseline_data_args.dataset = 'all'
         baseline_data_args.data_path = baseline_data_args.data_path.replace(data_args.dataset,'all')
         baseline_model = MLMModel(baseline_model_args, baseline_data_args, training_args, vanilla_model=True)
-        baseline_model._model.to("cuda:0")
+        if torch.cuda.is_available():
+            baseline_model._model.to("cuda:0")
 
 
     word_set = set()
@@ -282,39 +285,33 @@ def label_score_analysis(
 ) -> Dict:
     data_map = BaselineArticleMap()
 
-    ground_truth_distance_order_matrix = np.zeros(
-        shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=np.int)
+
+    ground_truth_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
     if ground_truth == "MBR":
-        ground_truth_distance_matrix = np.zeros(shape=(
-            len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=np.float32)
-        bias_distance_matrix = np.zeros(
-            shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)))
-        for i, media_a in enumerate(data_map.dataset_list):
+        ground_truth_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.float32)
+        bias_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)))
+        for i,media_a in enumerate(data_map.dataset_list):
             temp_distance = list()
-            for j, media_b in enumerate(data_map.dataset_list):
-                bias_distance_matrix[i][j] = abs(
-                    data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
-                temp_distance.append(
-                    abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
-                ground_truth_distance_matrix[i][j] = abs(
-                    data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
+            for j,media_b in enumerate(data_map.dataset_list):
+                bias_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
+                temp_distance.append(abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
+                ground_truth_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
             distance_set = set(temp_distance)
             distance_set = sorted(list(distance_set))
             for o, d_o in enumerate(distance_set):
-                for j, d_j in enumerate(temp_distance):
+                for j,d_j in enumerate(temp_distance):
                     if d_o == d_j:
                         ground_truth_distance_order_matrix[i][j] = o
-    elif ground_truth in ["source", 'trust']:
+    elif ground_truth in ["SoA-t",'SoA-s']:
         ground_truth_model = joblib.load(
-            './log/baseline/model/baseline_'+ground_truth+'_article.c')
-        ground_truth_distance_matrix = np.load(
-            './log/baseline/model/baseline_'+ground_truth+'_article.npy')
-        for i, media_a in enumerate(data_map.dataset_list):
+        './log/ground-truth/model/ground-truth_'+ground_truth+'.c')
+        ground_truth_distance_matrix = np.load('./log/ground-truth/model/ground-truth_'+ground_truth+'.npy')
+        for i,media_a in enumerate(data_map.dataset_list):
             temp_distance = ground_truth_distance_matrix[i]
             distance_set = set(temp_distance)
             distance_set = sorted(list(distance_set))
             for o, d_o in enumerate(distance_set):
-                for j, d_j in enumerate(temp_distance):
+                for j,d_j in enumerate(temp_distance):
                     if d_o == d_j:
                         ground_truth_distance_order_matrix[i][j] = o
     elif ground_truth == 'human':

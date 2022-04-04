@@ -277,13 +277,15 @@ class MLMModel(DeepModel):
         for i, sequence in enumerate(sentence_list):
             sequence = sequence.replace("[MASK]", self.tokenizer.mask_token)
             input_ids = self.tokenizer.encode(sequence, return_tensors="pt")
-            input_ids = input_ids.to(device=self._model.device)
+            if torch.cuda.is_available():
+                input_ids = input_ids.to(device=self._model.device)
             mask_token_index = torch.where(input_ids == self.tokenizer.mask_token_id)[1]
 
             token_logits = self._model(input_ids)[0]
             mask_token_logits = token_logits[0, mask_token_index, :]
             mask_token_logits = torch.softmax(mask_token_logits, dim=1)
-            mask_token_logits = mask_token_logits.detach().cpu()
+            if torch.cuda.is_available():
+                mask_token_logits = mask_token_logits.detach().cpu()
             result_dict[sentence_list[i]] = mask_token_logits
         return result_dict
         # return result_dict
