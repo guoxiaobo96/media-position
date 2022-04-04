@@ -29,9 +29,9 @@ def main(
                             training_args, predict_args)
     elif misc_args.task == 'label_score_analysis':
         label_score_analysis(misc_args, model_args,
-                             data_args, training_args, analysis_args, predict_args, 'trust')
+                             data_args, training_args, analysis_args, predict_args, 'SoA-t')
         label_score_analysis(misc_args, model_args,
-                             data_args, training_args, analysis_args, predict_args, 'source')
+                             data_args, training_args, analysis_args, predict_args, 'SoA-s')
         label_score_analysis(misc_args, model_args,
                              data_args, training_args, analysis_args, predict_args, 'MBR')
     elif misc_args.task == "data_collect":

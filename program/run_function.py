@@ -282,39 +282,33 @@ def label_score_analysis(
 ) -> Dict:
     data_map = BaselineArticleMap()
 
-    ground_truth_distance_order_matrix = np.zeros(
-        shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=np.int)
+
+    ground_truth_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
     if ground_truth == "MBR":
-        ground_truth_distance_matrix = np.zeros(shape=(
-            len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=np.float32)
-        bias_distance_matrix = np.zeros(
-            shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)))
-        for i, media_a in enumerate(data_map.dataset_list):
+        ground_truth_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.float32)
+        bias_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)))
+        for i,media_a in enumerate(data_map.dataset_list):
             temp_distance = list()
-            for j, media_b in enumerate(data_map.dataset_list):
-                bias_distance_matrix[i][j] = abs(
-                    data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
-                temp_distance.append(
-                    abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
-                ground_truth_distance_matrix[i][j] = abs(
-                    data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
+            for j,media_b in enumerate(data_map.dataset_list):
+                bias_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
+                temp_distance.append(abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
+                ground_truth_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
             distance_set = set(temp_distance)
             distance_set = sorted(list(distance_set))
             for o, d_o in enumerate(distance_set):
-                for j, d_j in enumerate(temp_distance):
+                for j,d_j in enumerate(temp_distance):
                     if d_o == d_j:
                         ground_truth_distance_order_matrix[i][j] = o
-    elif ground_truth in ["source", 'trust']:
+    elif ground_truth in ["SoA-t",'SoA-s']:
         ground_truth_model = joblib.load(
-            './log/baseline/model/baseline_'+ground_truth+'_article.c')
-        ground_truth_distance_matrix = np.load(
-            './log/baseline/model/baseline_'+ground_truth+'_article.npy')
-        for i, media_a in enumerate(data_map.dataset_list):
+        './log/ground-truth/model/ground-truth_'+ground_truth+'.c')
+        ground_truth_distance_matrix = np.load('./log/ground-truth/model/ground-truth_'+ground_truth+'.npy')
+        for i,media_a in enumerate(data_map.dataset_list):
             temp_distance = ground_truth_distance_matrix[i]
             distance_set = set(temp_distance)
             distance_set = sorted(list(distance_set))
             for o, d_o in enumerate(distance_set):
-                for j, d_j in enumerate(temp_distance):
+                for j,d_j in enumerate(temp_distance):
                     if d_o == d_j:
                         ground_truth_distance_order_matrix[i][j] = o
     elif ground_truth == 'human':
