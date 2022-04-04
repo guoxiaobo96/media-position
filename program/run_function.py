@@ -139,7 +139,8 @@ def label_score_predict(
         data_type = ['dataset', 'position']
 
     model = MLMModel(model_args, data_args, training_args, vanilla_model=True)
-    model._model.to("cuda:0")
+    if torch.cuda.is_available():
+        model._model.to("cuda:0")
     if predict_args.predict_prob_args == 'media-relative':
         baseline_model_args = copy.deepcopy(model_args)
         baseline_model_args.load_model_dir = baseline_model_args.load_model_dir.replace(data_args.dataset,'all')
@@ -148,7 +149,8 @@ def label_score_predict(
         baseline_data_args.dataset = 'all'
         baseline_data_args.data_path = baseline_data_args.data_path.replace(data_args.dataset,'all')
         baseline_model = MLMModel(baseline_model_args, baseline_data_args, training_args, vanilla_model=True)
-        baseline_model._model.to("cuda:0")
+        if torch.cuda.is_available():
+            baseline_model._model.to("cuda:0")
     elif predict_args.predict_prob_args == 'general-relative':
         baseline_model_args = copy.deepcopy(model_args)
         baseline_model_args.load_model_dir = ""
@@ -157,7 +159,8 @@ def label_score_predict(
         baseline_data_args.dataset = 'all'
         baseline_data_args.data_path = baseline_data_args.data_path.replace(data_args.dataset,'all')
         baseline_model = MLMModel(baseline_model_args, baseline_data_args, training_args, vanilla_model=True)
-        baseline_model._model.to("cuda:0")
+        if torch.cuda.is_available():
+            baseline_model._model.to("cuda:0")
 
 
     word_set = set()

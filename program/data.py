@@ -234,7 +234,7 @@ def get_label_data(
     for file in data_map.dataset_list:
         analysis_data_file = os.path.join(
             analysis_args.analysis_data_dir, file+'.json')
-        with open(analysis_data_file) as fp:
+        with open(analysis_data_file,mode='r',encoding='utf8') as fp:
             count = 0
             for line in fp:
                 item = json.loads(line.strip())
