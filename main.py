@@ -1,7 +1,7 @@
 from program.config import AnalysisArguments, get_config, DataArguments, MiscArgument, ModelArguments, TrainingArguments, DataAugArguments, PredictArguments
 from program.data import extract_data
 from program.util import prepare_dirs_and_logger
-from program.run_function import train_lm, label_score_predict, label_score_analysis, data_augemnt, eval_lm, train_classifier, label_masked_token, encode_media
+from program.run_function import train_lm, predict_token, label_score_analysis, data_augemnt, eval_lm, train_classifier, label_masked_token, encode_media
 from program.data_collect import data_collect
 
 
@@ -25,7 +25,7 @@ def main(
     elif misc_args.task == 'label_masked_token':
         label_masked_token(misc_args, model_args, data_args, training_args)
     elif misc_args.task == 'label_score_predict':
-        label_score_predict(misc_args, model_args, data_args,
+        predict_token(misc_args, model_args, data_args,
                             training_args, predict_args)
     elif misc_args.task == 'label_score_analysis':
         label_score_analysis(misc_args, model_args,

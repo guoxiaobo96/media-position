@@ -264,6 +264,8 @@ class PredictArguments:
     predict_chosen_args: str = field(
         default="binary", metadata={"help": "how to chosen the tokens based on the prob"}
     )
+    predict_word_only: bool = field(
+        default=True, metadata={"help": "Whether to return the word only"})
     predict_chosen_number: int = field(
         default=10, metadata={"help": "The number of tokens be chosen"}
     )
@@ -325,14 +327,18 @@ def get_config() -> Tuple:
         predict_args: PredictArguments
     ) -> None:
         model_args.model_type = model_args.model_name_or_path
-        misc_args.log_dir = os.path.join(misc_args.log_dir,model_args.model_type)
-        analysis_args.analysis_data_dir = os.path.join(analysis_args.analysis_data_dir,model_args.model_type)
-        analysis_args.analysis_result_dir = os.path.join(analysis_args.analysis_result_dir, model_args.model_type)
+        misc_args.log_dir = os.path.join(
+            misc_args.log_dir, model_args.model_type)
+        analysis_args.analysis_data_dir = os.path.join(
+            analysis_args.analysis_data_dir, model_args.model_type)
+        analysis_args.analysis_result_dir = os.path.join(
+            analysis_args.analysis_result_dir, model_args.model_type)
 
         misc_args.log_dir = os.path.join(
             misc_args.log_dir, model_args.model_dataset)
         misc_args.log_dir = os.path.join(
             misc_args.log_dir, predict_args.predict_prob_args + "/" + predict_args.predict_chosen_args)
+        misc_args.log_dir = os.path.join(misc_args.log_dir, str(predict_args.predict_word_only))
         analysis_args.analysis_data_dir = misc_args.log_dir
         analysis_args.analysis_result_dir = os.path.join(
             analysis_args.analysis_result_dir, model_args.model_dataset)

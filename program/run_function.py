@@ -4,6 +4,7 @@ from .data import get_dataset, get_label_data
 from .data_augment_util import SelfDataAugmentor
 from .masked_token_util import MaskedTokenLabeller, ngram_inner_label, ngram_outer_label, random_label
 from .analysis import ClusterAnalysis, DistanceAnalysis, ClusterCompare, CorrelationAnalysis, CorrelationCompare
+from .predict_token_util import TokenChecker
 from tqdm import tqdm
 from sklearn.metrics.pairwise import euclidean_distances
 from scipy.stats import kendalltau
@@ -122,7 +123,7 @@ def label_masked_token(
             fp.write(json.dumps(item, ensure_ascii=False)+'\n')
 
 
-def label_score_predict(
+def predict_token(
 
     misc_args: MiscArgument,
     model_args: ModelArguments,
@@ -137,18 +138,22 @@ def label_score_predict(
     data_type.append('dataset')
     if dataset in ['vanilla']:
         data_type = ['dataset', 'position']
-
     model = MLMModel(model_args, data_args, training_args, vanilla_model=True)
+    token_checker = TokenChecker(model_args.model_type, model.tokenizer)
     if torch.cuda.is_available():
         model._model.to("cuda:0")
     if predict_args.predict_prob_args == 'media-relative':
         baseline_model_args = copy.deepcopy(model_args)
-        baseline_model_args.load_model_dir = baseline_model_args.load_model_dir.replace(data_args.dataset,'all')
-        baseline_model_args.model_name_or_path = baseline_model_args.model_name_or_path.replace(data_args.dataset,'all')
+        baseline_model_args.load_model_dir = baseline_model_args.load_model_dir.replace(
+            data_args.dataset, 'all')
+        baseline_model_args.model_name_or_path = baseline_model_args.model_name_or_path.replace(
+            data_args.dataset, 'all')
         baseline_data_args = copy.deepcopy(data_args)
         baseline_data_args.dataset = 'all'
-        baseline_data_args.data_path = baseline_data_args.data_path.replace(data_args.dataset,'all')
-        baseline_model = MLMModel(baseline_model_args, baseline_data_args, training_args, vanilla_model=True)
+        baseline_data_args.data_path = baseline_data_args.data_path.replace(
+            data_args.dataset, 'all')
+        baseline_model = MLMModel(
+            baseline_model_args, baseline_data_args, training_args, vanilla_model=True)
         if torch.cuda.is_available():
             baseline_model._model.to("cuda:0")
     elif predict_args.predict_prob_args == 'general-relative':
@@ -157,11 +162,12 @@ def label_score_predict(
         baseline_model_args.model_name_or_path = model_args.model_type
         baseline_data_args = copy.deepcopy(data_args)
         baseline_data_args.dataset = 'all'
-        baseline_data_args.data_path = baseline_data_args.data_path.replace(data_args.dataset,'all')
-        baseline_model = MLMModel(baseline_model_args, baseline_data_args, training_args, vanilla_model=True)
+        baseline_data_args.data_path = baseline_data_args.data_path.replace(
+            data_args.dataset, 'all')
+        baseline_model = MLMModel(
+            baseline_model_args, baseline_data_args, training_args, vanilla_model=True)
         if torch.cuda.is_available():
             baseline_model._model.to("cuda:0")
-
 
     word_set = set()
 
@@ -231,32 +237,79 @@ def label_score_predict(
             relative_item = baseline_results[sentence]
             normalized_item = torch.log(item) - torch.log(relative_item)
             if predict_args.predict_chosen_args == 'binary':
-                highest_prob = torch.topk(normalized_item, int(predict_args.predict_chosen_number/2), dim=1)
-                lowest_prob = torch.topk(normalized_item, int(predict_args.predict_chosen_number/2), dim=1,largest=False)
-                top_prob_indices = torch.cat([highest_prob.indices[0],lowest_prob.indices[0]])
-                top_prob_values= torch.cat([highest_prob.values[0],lowest_prob.values[0]])
-                top_tokens = zip(top_prob_indices.tolist(), top_prob_values.tolist())
+                highest_prob = torch.topk(normalized_item, int(
+                    predict_args.predict_chosen_number/2)*100, dim=1)
+                lowest_prob = torch.topk(normalized_item, int(
+                    predict_args.predict_chosen_number/2)*100, dim=1, largest=False)
+                top_highest_prob_indices = highest_prob.indices[0]
+                top_highest_prob_values = normalized_item[0][top_highest_prob_indices]
+                top_highest_tokens = zip(top_highest_prob_indices.tolist(),
+                                 top_highest_prob_values.tolist())
+
+                top_lowest_prob_indices = lowest_prob.indices[0]
+                top_lowest_prob_values = normalized_item[0][top_lowest_prob_indices]
+                top_lowest_tokens = zip(top_lowest_prob_indices.tolist(),
+                                 top_lowest_prob_values.tolist())
             elif predict_args.predict_chosen_args == 'maxdiff':
                 abs_normalized_item = torch.abs(normalized_item)
-                top_prob = torch.topk(abs_normalized_item, predict_args.predict_chosen_number, dim=1)
+                top_prob = torch.topk(
+                    abs_normalized_item, predict_args.predict_chosen_number * 100, dim=1)
                 top_prob_indices = top_prob.indices[0]
                 top_prob_values = normalized_item[0][top_prob_indices]
-                top_tokens = zip(top_prob_indices.tolist(), top_prob_values.tolist())
+                top_tokens = zip(top_prob_indices.tolist(),
+                                 top_prob_values.tolist())
             elif predict_args.predict_chosen_args == 'maxposi':
-                top_prob = torch.topk(normalized_item, predict_args.predict_chosen_number, dim=1)
-                top_tokens = zip(top_prob.indices[0].tolist(), top_prob.values[0].tolist())
+                top_prob = torch.topk(
+                    normalized_item, predict_args.predict_chosen_number * 100, dim=1)
+                top_tokens = zip(
+                    top_prob.indices[0].tolist(), top_prob.values[0].tolist())
             elif predict_args.predict_chosen_args == 'maxneg':
-                top_prob = torch.topk(normalized_item, predict_args.predict_chosen_number, dim=1,largest=False)
-                top_tokens = zip(top_prob.indices[0].tolist(), top_prob.values[0].tolist())
-
+                top_prob = torch.topk(
+                    normalized_item, predict_args.predict_chosen_number * 100, dim=1, largest=False)
+                top_tokens = zip(
+                    top_prob.indices[0].tolist(), top_prob.values[0].tolist())
         elif predict_args.predict_prob_args == "absolute":
-            top_prob = torch.topk(item, predict_args.predict_chosen_number, dim=1)
-            top_tokens = zip(top_prob.indices[0].tolist(), top_prob.values[0].tolist())
-        for token, score in top_tokens:
-            token = model.tokenizer.decode([token])
-            record_dict[original_sentence]['word'][masked_index][token] = str(
-                round(score, 3))
-        word_set.add(token)
+            top_prob = torch.topk(
+                item, predict_args.predict_chosen_number*100, dim=1)
+            top_tokens = zip(
+                top_prob.indices[0].tolist(), top_prob.values[0].tolist())
+
+        res = dict()
+        temp_word_set = set()
+        if predict_args.predict_chosen_args != 'binary':
+            count = 0
+            for token, score in top_tokens:
+                token = model.tokenizer.decode([token])
+                if not predict_args.predict_word_only or token_checker.check_token(token):
+                    count += 1
+                    res[token] = str(round(score, 3))
+                    temp_word_set.add(token)
+                if count == predict_args.predict_chosen_number:
+                    record_dict[original_sentence]['word'][masked_index] = res
+                    word_set.update(temp_word_set)
+        else:
+            count = 0
+            for token, score in top_highest_tokens:
+                token = model.tokenizer.decode([token])
+                if not predict_args.predict_word_only or token_checker.check_token(token):
+                    count += 1
+                    res[token] = str(round(score, 3))
+                    temp_word_set.add(token)
+                if count == predict_args.predict_chosen_number / 2:
+                    break
+            count = 0
+            for token, score in top_lowest_tokens:
+                token = model.tokenizer.decode([token])
+                if not predict_args.predict_word_only or token_checker.check_token(token):
+                    count += 1
+                    res[token] = str(round(score, 3))
+                    temp_word_set.add(token)
+                if count == predict_args.predict_chosen_number / 2:
+                    break
+            if len(res) == predict_args.predict_chosen_number:
+                record_dict[original_sentence]['word'][masked_index] = res
+                word_set.update(temp_word_set)
+
 
     with open(log_file, mode='w', encoding='utf8') as fp:
         for _, item in record_dict.items():
@@ -285,33 +338,39 @@ def label_score_analysis(
 ) -> Dict:
     data_map = BaselineArticleMap()
 
-
-    ground_truth_distance_order_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.int)
+    ground_truth_distance_order_matrix = np.zeros(
+        shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=np.int)
     if ground_truth == "MBR":
-        ground_truth_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)),dtype=np.float32)
-        bias_distance_matrix = np.zeros(shape=(len(data_map.dataset_bias),len(data_map.dataset_bias)))
-        for i,media_a in enumerate(data_map.dataset_list):
+        ground_truth_distance_matrix = np.zeros(shape=(
+            len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=np.float32)
+        bias_distance_matrix = np.zeros(
+            shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)))
+        for i, media_a in enumerate(data_map.dataset_list):
             temp_distance = list()
-            for j,media_b in enumerate(data_map.dataset_list):
-                bias_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
-                temp_distance.append(abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
-                ground_truth_distance_matrix[i][j] = abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
+            for j, media_b in enumerate(data_map.dataset_list):
+                bias_distance_matrix[i][j] = abs(
+                    data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
+                temp_distance.append(
+                    abs(data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b]))
+                ground_truth_distance_matrix[i][j] = abs(
+                    data_map.dataset_bias[media_a] - data_map.dataset_bias[media_b])
             distance_set = set(temp_distance)
             distance_set = sorted(list(distance_set))
             for o, d_o in enumerate(distance_set):
-                for j,d_j in enumerate(temp_distance):
+                for j, d_j in enumerate(temp_distance):
                     if d_o == d_j:
                         ground_truth_distance_order_matrix[i][j] = o
-    elif ground_truth in ["SoA-t",'SoA-s']:
+    elif ground_truth in ["SoA-t", 'SoA-s']:
         ground_truth_model = joblib.load(
-        './log/ground-truth/model/ground-truth_'+ground_truth+'.c')
-        ground_truth_distance_matrix = np.load('./log/ground-truth/model/ground-truth_'+ground_truth+'.npy')
-        for i,media_a in enumerate(data_map.dataset_list):
+            './log/ground-truth/model/ground-truth_'+ground_truth+'.c')
+        ground_truth_distance_matrix = np.load(
+            './log/ground-truth/model/ground-truth_'+ground_truth+'.npy')
+        for i, media_a in enumerate(data_map.dataset_list):
             temp_distance = ground_truth_distance_matrix[i]
             distance_set = set(temp_distance)
             distance_set = sorted(list(distance_set))
             for o, d_o in enumerate(distance_set):
-                for j,d_j in enumerate(temp_distance):
+                for j, d_j in enumerate(temp_distance):
                     if d_o == d_j:
                         ground_truth_distance_order_matrix[i][j] = o
     elif ground_truth == 'human':
@@ -658,7 +717,7 @@ def label_score_analysis(
     #         fp.write(json.dumps(v, ensure_ascii=False)+'\n')
 
     record_item = {'ground_truth': ground_truth, 'augmentation_method': data_args.data_type.split(
-        '/')[0], 'analysis_compare_method': analysis_args.analysis_compare_method, 'method': method, 'prob method':predict_args.predict_prob_args, 'token chosen method': predict_args.predict_chosen_args, 'performance': round(performance, 2)}
+        '/')[0], 'analysis_compare_method': analysis_args.analysis_compare_method, 'method': method, 'prob method': predict_args.predict_prob_args, 'token chosen method': predict_args.predict_chosen_args, 'word only':str(predict_args.predict_word_only), 'performance': round(performance, 2)}
     with open(analysis_record_file, mode='a', encoding='utf8') as fp:
         fp.write(json.dumps(record_item, ensure_ascii=False)+'\n')
     print("The performance on {} is {}".format(
