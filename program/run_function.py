@@ -717,7 +717,7 @@ def label_score_analysis(
     #         fp.write(json.dumps(v, ensure_ascii=False)+'\n')
 
     record_item = {'ground_truth': ground_truth, 'augmentation_method': data_args.data_type.split(
-        '/')[0], 'analysis_compare_method': analysis_args.analysis_compare_method, 'method': method, 'prob method': predict_args.predict_prob_args, 'token chosen method': predict_args.predict_chosen_args, 'word only':str(predict_args.predict_word_only), 'performance': round(performance, 2)}
+        '/')[0], 'analysis_compare_method': analysis_args.analysis_compare_method, 'method': method, 'label method':data_args.label_method, 'prob method': predict_args.predict_prob_args, 'token chosen method': predict_args.predict_chosen_args, 'word only':str(predict_args.predict_word_only), 'performance': round(performance, 2)}
     with open(analysis_record_file, mode='a', encoding='utf8') as fp:
         fp.write(json.dumps(record_item, ensure_ascii=False)+'\n')
     print("The performance on {} is {}".format(
