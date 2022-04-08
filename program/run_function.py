@@ -287,6 +287,7 @@ def predict_token(
                 if count == predict_args.predict_chosen_number:
                     record_dict[original_sentence]['word'][masked_index] = res
                     word_set.update(temp_word_set)
+                    break
         else:
             count = 0
             for token, score in top_highest_tokens:
