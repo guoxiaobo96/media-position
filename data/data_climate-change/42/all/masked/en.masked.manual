@@ -1,0 +1,4 @@
+{"original_sentence": "The climate change is very [MASK].", "masked_sentence": ["The climate change is very [MASK]."]}
+{"original_sentence": "The climate change is a [MASK].", "masked_sentence": ["The climate change is a [MASK]."]}
+{"original_sentence": "Global warming is a [MASK].", "masked_sentence": ["Global warmming is a [MASK]."]}
+{"original_sentence": "I [MASK] the global warming.", "masked_sentence": ["I [MASK] the global warming."]}

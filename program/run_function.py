@@ -244,12 +244,12 @@ def predict_token(
                 top_highest_prob_indices = highest_prob.indices[0]
                 top_highest_prob_values = normalized_item[0][top_highest_prob_indices]
                 top_highest_tokens = zip(top_highest_prob_indices.tolist(),
-                                 top_highest_prob_values.tolist())
+                                         top_highest_prob_values.tolist())
 
                 top_lowest_prob_indices = lowest_prob.indices[0]
                 top_lowest_prob_values = normalized_item[0][top_lowest_prob_indices]
                 top_lowest_tokens = zip(top_lowest_prob_indices.tolist(),
-                                 top_lowest_prob_values.tolist())
+                                        top_lowest_prob_values.tolist())
             elif predict_args.predict_chosen_args == 'maxdiff':
                 abs_normalized_item = torch.abs(normalized_item)
                 top_prob = torch.topk(
@@ -310,7 +310,6 @@ def predict_token(
             if len(res) == predict_args.predict_chosen_number:
                 record_dict[original_sentence]['word'][masked_index] = res
                 word_set.update(temp_word_set)
-
 
     with open(log_file, mode='w', encoding='utf8') as fp:
         for _, item in record_dict.items():
@@ -552,7 +551,8 @@ def label_score_analysis(
         if (v < analysis_args.analysis_threshold or analysis_args.analysis_threshold == -1):
             performance_average.append(v)
     analysis_result['performance_average'] = np.nanmean(performance_average)
-    analysis_result = sorted(analysis_result.items(), key=lambda x: x[1])
+    analysis_result = sorted(analysis_result.items(),
+                             key=lambda x: x[1], reverse=True)
     sentence_position_data['media_average'] = {
         'sentence': 'media_average', 'position': -2, 'word': 'media_average'}
     sentence_position_data['performance_average'] = {
@@ -630,37 +630,29 @@ def label_score_analysis(
         mean_performance = np.nanmean(performance_average)
         median_performance = np.nanmedian(performance_average)
 
-        start_index = 0
-        end_index = 0
-        for i, v in enumerate(distribution):
-            if v != 0:
-                end_index = i
-                if start_index == 0:
-                    start_index = i
-
         result_path = os.path.join(analysis_args.analysis_result_dir, method)
+        result_path = os.path.join(os.path.join(os.path.join(os.path.join(result_path, data_args.label_method),
+                                   predict_args.predict_prob_args), predict_args.predict_chosen_args), str(predict_args.predict_word_only))
         if not os.path.exists(result_path):
             os.makedirs(result_path)
 
         # order_file = os.path.join(
         #     result_path, analysis_args.analysis_encode_method + '_'+ground_truth+'.npy')
         # np.save(order_file, media_distance_order_matrix)
-
-        # sort_result_file = os.path.join(
-        #     result_path, analysis_args.analysis_encode_method + '_sort_'+ground_truth+'.json')
+        sort_result_file = os.path.join(
+            result_path, analysis_args.analysis_encode_method + '_sort_'+ground_truth+'.json')
 
         # sentence_result_file = os.path.join(
         #     result_path, analysis_args.analysis_encode_method + '_sentence_'+ground_truth+'.json')
-        # g = ""
-        # if ground_truth == 'source':
-        #     g = 'SoA-s'
-        # elif ground_truth == 'trust':
-        #     g = 'SoA-t'
-        # elif ground_truth == 'MBR':
-        #     g = 'MBR'
-        # else:
-        #     g == 'human'
 
+        # start_index = 0
+        # end_index = 0
+        # for i, v in enumerate(distribution):
+        #     if v != 0:
+        #         end_index = i
+        #         if start_index == 0:
+        #             start_index = i
+        # g = ground_truth
         # d = ""
         # if data_args.dataset == "climate-change":
         #     d = "Climate Change"
@@ -704,13 +696,15 @@ def label_score_analysis(
         result[sentence][-1] = (np.mean(average_distance),
                                 'sentence_average')
 
-    # sentence_list = list(result.keys())
+    sentence_list = list(result.keys())
     # analysis_result = {k: {'score': v, 'sentence': sentence_list.index(
     #     sentence_position_data[k]['sentence'])+1, 'position': sentence_position_data[k]['position'], 'word': sentence_position_data[k]['word']} for k, v in analysis_result}
+    analysis_result = {k: {'score': v, 'sentence': sentence_position_data[k]['sentence'], 'position': sentence_position_data[
+        k]['position'], 'word': sentence_position_data[k]['word']} for k, v in analysis_result}
 
-    # with open(sort_result_file, mode='w', encoding='utf8') as fp:
-    #     for k, v in analysis_result.items():
-    #         fp.write(json.dumps(v, ensure_ascii=False)+'\n')
+    with open(sort_result_file, mode='w', encoding='utf8') as fp:
+        for k, v in analysis_result.items():
+            fp.write(json.dumps(v, ensure_ascii=False)+'\n')
 
     # with open(sentence_result_file, mode='w', encoding='utf8') as fp:
     #     for k, v in result.items():
@@ -718,7 +712,7 @@ def label_score_analysis(
     #         fp.write(json.dumps(v, ensure_ascii=False)+'\n')
 
     record_item = {'ground_truth': ground_truth, 'augmentation_method': data_args.data_type.split(
-        '/')[0], 'analysis_compare_method': analysis_args.analysis_compare_method, 'method': method, 'label method':data_args.label_method, 'prob method': predict_args.predict_prob_args, 'token chosen method': predict_args.predict_chosen_args, 'word only':str(predict_args.predict_word_only), 'performance': round(performance, 2)}
+        '/')[0], 'analysis_compare_method': analysis_args.analysis_compare_method, 'method': method, 'label method': data_args.label_method, 'prob method': predict_args.predict_prob_args, 'token chosen method': predict_args.predict_chosen_args, 'word only': str(predict_args.predict_word_only), 'performance': round(performance, 2)}
     with open(analysis_record_file, mode='a', encoding='utf8') as fp:
         fp.write(json.dumps(record_item, ensure_ascii=False)+'\n')
     print("The performance on {} is {}".format(

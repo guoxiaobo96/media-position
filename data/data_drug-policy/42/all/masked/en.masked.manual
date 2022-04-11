@@ -1,0 +1,4 @@
+{"original_sentence": "Marijuana should be [MASK].", "masked_sentence": ["Marijuana should be [MASK]."]}
+{"original_sentence": "Recreational marijuana is [MASK].", "masked_sentence": ["Recreational marijuana is [MASK]."]}
+{"original_sentence": ""I [MASK] the recreation use of marijuana.", "masked_sentence": ["I [MASK] the recreation use of marijuana."]}
+{"original_sentence": "The legalization of recreational marijuana is [MASK].", "masked_sentence": ["The legalization of recreational marijuana is [MASK]."]}
