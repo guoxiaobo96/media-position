@@ -1,0 +1,1 @@
+{"ground_truth": "SoA-t", "augmentation_method": "no_augmentation", "analysis_compare_method": "correlation", "method": "tau", "label method": "bigram_outer", "prob method": "absolute", "token chosen method": "maxposi", "word only": "False", "performance": 0.31}
