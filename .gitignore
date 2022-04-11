@@ -18,6 +18,4 @@ log_*/*/*/*/*/*
 
 
 env/
-analysis_*/
 model/
-analysis/*/*/42/mlm/bigram_outer/no_augmentation/1/correlation/tau/*
