@@ -272,7 +272,7 @@ class MLMModel(DeepModel):
 
         return results
 
-    def predict(self, sentence_list, batch_size=64) -> Dict:
+    def predict(self, sentence_list, token_list=None, batch_size=64) -> Dict:
         result_dict = dict()
         for i, sequence in enumerate(sentence_list):
             sequence = sequence.replace("[MASK]", self.tokenizer.mask_token)
@@ -286,9 +286,11 @@ class MLMModel(DeepModel):
             mask_token_logits = torch.softmax(mask_token_logits, dim=1)
             if torch.cuda.is_available():
                 mask_token_logits = mask_token_logits.detach().cpu()
-            result_dict[sentence_list[i]] = mask_token_logits
+            if token_list:
+                result_dict[sentence_list[i]+" <split> "+",".join(token_list[i])] = mask_token_logits
+            else:
+                result_dict[sentence_list[i]] = mask_token_logits
         return result_dict
-        # return result_dict
 
     def encode(self, sentence_list, batch_size=64) -> Dict:
         if self._fill_mask is None:
