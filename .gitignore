@@ -7,4 +7,4 @@ env/
 model/
 
 temp.py
-analysis/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*.json
+analysis*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*.json
