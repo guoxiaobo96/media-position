@@ -18,7 +18,7 @@ import matplotlib
 import transformers
 import torch
 import copy
-
+import math
 matplotlib.use('Agg')
 
 
@@ -186,6 +186,7 @@ def predict_token(
     batched_masked_sentence_list: List = list()
     masked_sentence_list = list()
     masked_sentence_dict = dict()
+    predicted_token_list = list()
 
     masked_sentence_file = os.path.join(os.path.join(os.path.join(
         data_args.data_dir, 'all'), 'masked'), 'en.masked.'+data_args.label_method)
@@ -194,9 +195,16 @@ def predict_token(
             item = json.loads(line.strip())
             original_sentence = item['original_sentence']
             masked_sentences = item['masked_sentence']
+            if predict_args.predict_chosen_args == "manual":
+                label_list = item['labels']
+                predicted_token_list.append(label_list)
             masked_sentence_list.extend(masked_sentences)
             for masked_sentence in masked_sentences:
-                masked_sentence_dict[masked_sentence] = original_sentence
+                if predict_args.predict_chosen_args == "manual":
+                    masked_sentence_dict[masked_sentence+" <split> "+",".join(label_list)] = {'sentence':original_sentence+" <split> "+",".join(label_list)}
+                    masked_sentence_dict[masked_sentence+" <split> "+",".join(label_list)]['tokens'] = label_list
+                else:
+                    masked_sentence_dict[masked_sentence] = {'sentence':original_sentence}
 
     batch_size = 32
     index = 0
@@ -208,21 +216,24 @@ def predict_token(
     if misc_args.global_debug:
         batched_masked_sentence_list = batched_masked_sentence_list[:10]
 
+
     results = dict()
     baseline_results = dict()
     for batch_sentence in tqdm(batched_masked_sentence_list):
         batch_sentence
-        result = model.predict(batch_sentence)
+        result = model.predict(batch_sentence, predicted_token_list)
         results.update(result)
 
         if 'relative' in predict_args.predict_prob_args:
-            result = baseline_model.predict(batch_sentence)
+            result = baseline_model.predict(batch_sentence, predicted_token_list)
             baseline_results.update(result)
 
     record_dict = dict()
 
     for sentence, item in results.items():
-        original_sentence = masked_sentence_dict[sentence]
+        original_sentence = masked_sentence_dict[sentence]['sentence']
+        if predict_args.predict_chosen_args == "manual":
+            token_list = masked_sentence_dict[sentence]['tokens']
         if original_sentence not in record_dict:
             record_dict[original_sentence] = {
                 'sentence': original_sentence, 'word': dict()}
@@ -268,6 +279,14 @@ def predict_token(
                     normalized_item, predict_args.predict_chosen_number * 100, dim=1, largest=False)
                 top_tokens = zip(
                     top_prob.indices[0].tolist(), top_prob.values[0].tolist())
+            elif predict_args.predict_chosen_args == "manual":
+                if model_args.model_type == "roberta-base":
+                    index_list = [model.tokenizer.convert_tokens_to_ids("Ġ"+token) for token in token_list]
+                elif model_args.model_type == "bert-base-uncased":
+                    index_list = [model.tokenizer.convert_tokens_to_ids(token.lower()) for token in token_list]
+                chosen_probs = normalized_item[0][index_list]
+                top_tokens = zip(index_list, chosen_probs.tolist())
+
         elif predict_args.predict_prob_args == "absolute":
             top_prob = torch.topk(
                 item, predict_args.predict_chosen_number*100, dim=1)
@@ -276,7 +295,14 @@ def predict_token(
 
         res = dict()
         temp_word_set = set()
-        if predict_args.predict_chosen_args != 'binary':
+        if predict_args.predict_chosen_args == 'manual':
+            for token, score in top_tokens:
+                token = model.tokenizer.decode([token])
+                res[token] = str(round(pow(math.e,score), 3))
+                temp_word_set.add(token)
+            record_dict[original_sentence]['word'][masked_index] = res
+            word_set.update(temp_word_set)
+        elif predict_args.predict_chosen_args != 'binary':
             count = 0
             for token, score in top_tokens:
                 token = model.tokenizer.decode([token])
