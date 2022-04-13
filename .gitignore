@@ -2,7 +2,7 @@ program/__pycache__/*
 runs/*
 .vscode/*
 shell/
-log/
+log*/
 env/
 model/
 
