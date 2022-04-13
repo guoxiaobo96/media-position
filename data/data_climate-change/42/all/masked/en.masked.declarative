@@ -1,0 +1,10 @@
+{"original_sentence": "The climate change is a reality. [MASK].", "masked_sentence": ["The climate change is a reality. [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "The global warming is a reality. [MASK].", "masked_sentence": ["The global warming is a reality. [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "The climate change is a hoax. [MASK].", "masked_sentence": ["The climate change is a hoax. [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "The global warming is a hoax. [MASK].", "masked_sentence": ["The global warming is a hoax. [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "The climate change is a lie. [MASK].", "masked_sentence": ["The climate change is a hoax. [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "The global warming is a lie. [MASK].", "masked_sentence": ["The global warming is a hoax. [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "The climate change is a reality. [MASK].", "masked_sentence": ["The climate change is a reality. [MASK]."],"labels": ["Yes","No","Maybe"]}
+{"original_sentence": "The global warming is a reality. [MASK].", "masked_sentence": ["The global warming is a reality. [MASK]."],"labels": ["Yes","No","Maybe"]}
+{"original_sentence": "The climate change is a hoax. [MASK].", "masked_sentence": ["The climate change is a hoax. [MASK]."],"labels": ["Yes","No","Maybe"]}
+{"original_sentence": "The global warming is a hoax. [MASK].", "masked_sentence": ["The global warming is a hoax. [MASK]."],"labels": ["Yes","No","Maybe"]}

@@ -1,0 +1,8 @@
+{"original_sentence": "The legalization of recreational marijuana is good. [MASK].", "masked_sentence": ["The legalization of recreational marijuana is good. [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "The legalization of recreational marijuana is bad. [MASK].", "masked_sentence": ["The legalization of recreational marijuana is bad. [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "The legalization of recreational marijuana is acceptable. [MASK].", "masked_sentence": ["The legalization of recreational marijuana is acceptable. [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "The legalization of recreational marijuana is unacceptable. [MASK].", "masked_sentence": ["The legalization of recreational marijuana is unacceptable. [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "The legalization of recreational marijuana is good. [MASK].", "masked_sentence": ["The legalization of recreational marijuana is good. [MASK]."],"labels": ["Yes","No","Maybe"]}
+{"original_sentence": "The legalization of recreational marijuana is bad. [MASK].", "masked_sentence": ["The legalization of recreational marijuana is bad. [MASK]."],"labels": ["Yes","No","Maybe"]}
+{"original_sentence": "The legalization of recreational marijuana is acceptable. [MASK].", "masked_sentence": ["The legalization of recreational marijuana is acceptable. [MASK]."],"labels": ["Yes","No","Maybe"]}
+{"original_sentence": "The legalization of recreational marijuana is unacceptable. [MASK].", "masked_sentence": ["The legalization of recreational marijuana is unacceptable. [MASK]."],"labels": ["Yes","No","Maybe"]}
