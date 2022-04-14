@@ -1,0 +1,8 @@
+{"original_sentence": "Is the obamacare good? [MASK].", "masked_sentence": ["Is the obamacare good? [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "Is the obamacare bad? [MASK].", "masked_sentence": ["Is the obamacare bad? [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "Is the obamacare affordable? [MASK].", "masked_sentence": ["Is the obamacare affordable? [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "Is the obamacare unaffordable? [MASK].", "masked_sentence": ["Is the obamacare unaffordable? [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "Is the obamacare good? [MASK].", "masked_sentence": ["Is the obamacare good? [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "Is the obamacare bad? [MASK].", "masked_sentence": ["Is the obamacare bad? [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "Is the obamacare affordable? [MASK].", "masked_sentence": ["Is the obamacare affordable? [MASK]."],"labels": ["True","False","Maybe"]}
+{"original_sentence": "Is the obamacare unaffordable? [MASK].", "masked_sentence": ["Is the obamacare unaffordable? [MASK]."],"labels": ["True","False","Maybe"]}

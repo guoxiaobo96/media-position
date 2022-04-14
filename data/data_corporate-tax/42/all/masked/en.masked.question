@@ -1,8 +1,0 @@
-{"original_sentence": "Is the corporate tax too high? [MASK].", "masked_sentence": ["Is the corporate tax too high? [MASK]."],"labels": ["True","False","Maybe"]}
-{"original_sentence": "Is the corporate tax too low? [MASK].", "masked_sentence": ["Is the corporate tax too low? [MASK]"],"labels": ["True","False","Maybe"]}
-{"original_sentence": "Is the corporate tax high enough? [MASK].", "masked_sentence": ["Is the corporate tax high enough? [MASK]."],"labels": ["True","False","Maybe"]}
-{"original_sentence": "Is the corporate tax low enough? [MASK].", "masked_sentence": ["Is the corporate tax low enough? [MASK]."],"labels": ["True","False","Maybe"]}
-{"original_sentence": "Is the corporate tax too high? [MASK].", "masked_sentence": ["Is the corporate tax too high. [MASK]."],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "Is the corporate tax too low? [MASK].", "masked_sentence": ["Is the corporate tax too low. [MASK]"],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "Is the corporate tax high enough? [MASK].", "masked_sentence": ["Is the corporate tax high enough. [MASK]."],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "Is the corporate tax low enough? [MASK].", "masked_sentence": ["Is the corporate tax low enough. [MASK]."],"labels": ["Yes","No","Maybe"]}

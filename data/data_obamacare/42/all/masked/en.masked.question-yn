@@ -1,0 +1,8 @@
+{"original_sentence": "Is the Affordabel Care Act good? [MASK].", "masked_sentence": ["Is the Affordabel Care Act good? [MASK]."],"labels": ["Yes","No","Maybe"]}
+{"original_sentence": "Is the Affordabel Care Act bad? [MASK].", "masked_sentence": ["Is the Affordabel Care Act bad? [MASK]."],"labels": ["Yes","No","Maybe"]}
+{"original_sentence": "Is the Affordabel Care Act affordable? [MASK].", "masked_sentence": ["Is the Affordabel Care Act affordable? [MASK]."],"labels": ["Yes","No","Maybe"]}
+{"original_sentence": "Is the Affordabel Care Act unaffordable? [MASK].", "masked_sentence": ["Is the Affordabel Care Act unaffordable? [MASK]."],"labels": ["Yes","No","Maybe"]}
+{"original_sentence": "Is the Affordabel Care Act good? [MASK].", "masked_sentence": ["Is the Affordabel Care Act good? [MASK]."],"labels": ["Yes","No","Maybe"]}
+{"original_sentence": "Is the Affordabel Care Act bad? [MASK].", "masked_sentence": ["Is the Affordabel Care Act bad? [MASK]."],"labels": ["Yes","No","Maybe"]}
+{"original_sentence": "Is the Affordabel Care Act affordable? [MASK].", "masked_sentence": ["Is the Affordabel Care Act affordable? [MASK]."],"labels": ["Yes","No","Maybe"]}
+{"original_sentence": "Is the Affordabel Care Act unaffordable? [MASK].", "masked_sentence": ["Is the Affordabel Care Act unaffordable? [MASK]."],"labels": ["Yes","No","Maybe"]}

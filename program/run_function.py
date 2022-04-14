@@ -142,7 +142,7 @@ def predict_token(
     token_checker = TokenChecker(model_args.model_type, model.tokenizer)
     if torch.cuda.is_available():
         model._model.to("cuda:0")
-    if predict_args.predict_prob_args == 'media-relative':
+    if 'media-relative' in predict_args.predict_prob_args:
         baseline_model_args = copy.deepcopy(model_args)
         baseline_model_args.load_model_dir = baseline_model_args.load_model_dir.replace(
             data_args.dataset, 'all')
@@ -156,7 +156,7 @@ def predict_token(
             baseline_model_args, baseline_data_args, training_args, vanilla_model=True)
         if torch.cuda.is_available():
             baseline_model._model.to("cuda:0")
-    elif predict_args.predict_prob_args == 'general-relative':
+    elif 'general-relative' in predict_args.predict_prob_args:
         baseline_model_args = copy.deepcopy(model_args)
         baseline_model_args.load_model_dir = ""
         baseline_model_args.model_name_or_path = model_args.model_type
@@ -246,7 +246,8 @@ def predict_token(
         record_dict[original_sentence]['word'][masked_index] = dict()
         if 'relative' in predict_args.predict_prob_args:
             relative_item = baseline_results[sentence]
-            normalized_item = torch.log(item) - torch.log(relative_item)
+            if 'chosen' not in predict_args.predict_prob_args:
+                normalized_item = torch.log(item) - torch.log(relative_item)
             if predict_args.predict_chosen_args == 'binary':
                 highest_prob = torch.topk(normalized_item, int(
                     predict_args.predict_chosen_number/2)*100, dim=1)
@@ -284,9 +285,13 @@ def predict_token(
                     index_list = [model.tokenizer.convert_tokens_to_ids("Ġ"+token) for token in token_list]
                 elif model_args.model_type == "bert-base-uncased":
                     index_list = [model.tokenizer.convert_tokens_to_ids(token.lower()) for token in token_list]
-                chosen_probs = normalized_item[0][index_list]
+                if 'chosen' in predict_args.predict_prob_args:
+                    normalized_item = torch.log(torch.softmax(item[0][index_list],dim=0)) - torch.log(torch.softmax(relative_item[0][index_list],dim=0))
+                    index_list_temp = [i for i in range(len(index_list))]
+                    chosen_probs = normalized_item[index_list_temp]
+                else:
+                    chosen_probs = normalized_item[0][index_list]
                 top_tokens = zip(index_list, chosen_probs.tolist())
-
         elif predict_args.predict_prob_args == "absolute":
             top_prob = torch.topk(
                 item, predict_args.predict_chosen_number*100, dim=1)
