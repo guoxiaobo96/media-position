@@ -10,3 +10,4 @@ temp.py
 analysis*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*.json
 *.csv
 data/data_all/42/all/
+data/data_all/42/CBS/no_augmentation/1/en.train.cache
