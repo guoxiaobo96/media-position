@@ -1,8 +1,0 @@
-{"original_sentence": "The gay marriage is good. [MASK].", "masked_sentence": ["The gay marriage is good. [MASK]."],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "The gay marriage is bad. [MASK].", "masked_sentence": ["The gay marriage is bad. [MASK]."],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "The gay marriage is acceptable. [MASK].", "masked_sentence": ["The gay marriage is acceptable. [MASK]."],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "The gay marriage is unacceptable. [MASK].", "masked_sentence": ["The gay marriage is unacceptable. [MASK]."],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "The gay marriage is good. [MASK].", "masked_sentence": ["The gay marriage is good. [MASK]."],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "The gay marriage is bad. [MASK].", "masked_sentence": ["The gay marriage is bad. [MASK]."],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "The gay marriage is acceptable. [MASK].", "masked_sentence": ["The gay marriage is acceptable. [MASK]."],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "The gay marriage is unacceptable. [MASK].", "masked_sentence": ["The gay marriage is unacceptable. [MASK]."],"labels": ["Yes","No","Maybe"]}

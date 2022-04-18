@@ -1,8 +1,0 @@
-{"original_sentence": "The Affordabel Care Act is good. [MASK].", "masked_sentence": ["The Affordabel Care Act is good. [MASK]."],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "The Affordabel Care Act is bad. [MASK].", "masked_sentence": ["The Affordabel Care Act is bad. [MASK]."],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "The Affordabel Care Act is affordable. [MASK].", "masked_sentence": ["The Affordabel Care Act is affordable. [MASK]."],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "The Affordabel Care Act is unaffordable. [MASK].", "masked_sentence": ["The Affordabel Care Act is unaffordable. [MASK]."],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "The Affordabel Care Act is good. [MASK].", "masked_sentence": ["The Affordabel Care Act is good. [MASK]."],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "The Affordabel Care Act is bad. [MASK].", "masked_sentence": ["The Affordabel Care Act is bad. [MASK]."],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "The Affordabel Care Act is affordable. [MASK].", "masked_sentence": ["The Affordabel Care Act is affordable. [MASK]."],"labels": ["Yes","No","Maybe"]}
-{"original_sentence": "The Affordabel Care Act is unaffordable. [MASK].", "masked_sentence": ["The Affordabel Care Act is unaffordable. [MASK]."],"labels": ["Yes","No","Maybe"]}

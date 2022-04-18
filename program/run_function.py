@@ -1,3 +1,4 @@
+from re import L
 from .config import DataArguments, DataAugArguments, FullArticleMap, MiscArgument, ModelArguments, PredictArguments, TrainingArguments, AnalysisArguments, BaselineArticleMap
 from .model import MLMModel,  ClassifyModel
 from .data import get_dataset, get_label_data
@@ -246,63 +247,79 @@ def predict_token(
         record_dict[original_sentence]['word'][masked_index] = dict()
         if 'relative' in predict_args.predict_prob_args:
             relative_item = baseline_results[sentence]
-            if 'chosen' not in predict_args.predict_prob_args:
-                normalized_item = torch.log(item) - torch.log(relative_item)
-            if predict_args.predict_chosen_args == 'binary':
-                highest_prob = torch.topk(normalized_item, int(
-                    predict_args.predict_chosen_number/2)*100, dim=1)
-                lowest_prob = torch.topk(normalized_item, int(
-                    predict_args.predict_chosen_number/2)*100, dim=1, largest=False)
-                top_highest_prob_indices = highest_prob.indices[0]
-                top_highest_prob_values = normalized_item[0][top_highest_prob_indices]
-                top_highest_tokens = zip(top_highest_prob_indices.tolist(),
-                                         top_highest_prob_values.tolist())
+            normalized_item = torch.log(item) - torch.log(relative_item)
+        else:
+            normalized_item = torch.log(item)
 
-                top_lowest_prob_indices = lowest_prob.indices[0]
-                top_lowest_prob_values = normalized_item[0][top_lowest_prob_indices]
-                top_lowest_tokens = zip(top_lowest_prob_indices.tolist(),
-                                        top_lowest_prob_values.tolist())
-            elif predict_args.predict_chosen_args == 'maxdiff':
-                abs_normalized_item = torch.abs(normalized_item)
-                top_prob = torch.topk(
-                    abs_normalized_item, predict_args.predict_chosen_number * 100, dim=1)
-                top_prob_indices = top_prob.indices[0]
-                top_prob_values = normalized_item[0][top_prob_indices]
-                top_tokens = zip(top_prob_indices.tolist(),
-                                 top_prob_values.tolist())
-            elif predict_args.predict_chosen_args == 'maxposi':
-                top_prob = torch.topk(
-                    normalized_item, predict_args.predict_chosen_number * 100, dim=1)
-                top_tokens = zip(
-                    top_prob.indices[0].tolist(), top_prob.values[0].tolist())
-            elif predict_args.predict_chosen_args == 'maxneg':
-                top_prob = torch.topk(
-                    normalized_item, predict_args.predict_chosen_number * 100, dim=1, largest=False)
-                top_tokens = zip(
-                    top_prob.indices[0].tolist(), top_prob.values[0].tolist())
-            elif predict_args.predict_chosen_args == "manual":
-                if model_args.model_type == "roberta-base":
-                    index_list = [model.tokenizer.convert_tokens_to_ids("Ġ"+token) for token in token_list]
-                elif model_args.model_type == "bert-base-uncased":
-                    index_list = [model.tokenizer.convert_tokens_to_ids(token.lower()) for token in token_list]
-                if 'chosen' in predict_args.predict_prob_args:
-                    normalized_item = torch.log(torch.softmax(item[0][index_list],dim=0)) - torch.log(torch.softmax(relative_item[0][index_list],dim=0))
-                    index_list_temp = [i for i in range(len(index_list))]
-                    chosen_probs = normalized_item[index_list_temp]
-                else:
-                    chosen_probs = normalized_item[0][index_list]
-                top_tokens = zip(index_list, chosen_probs.tolist())
-        elif predict_args.predict_prob_args == "absolute":
+        if predict_args.predict_chosen_args == 'binary':
+            highest_prob = torch.topk(normalized_item, int(
+                predict_args.predict_chosen_number/2)*100, dim=1)
+            lowest_prob = torch.topk(normalized_item, int(
+                predict_args.predict_chosen_number/2)*100, dim=1, largest=False)
+            top_highest_prob_indices = highest_prob.indices[0]
+            top_highest_prob_values = normalized_item[0][top_highest_prob_indices]
+            top_highest_tokens = zip(top_highest_prob_indices.tolist(),
+                                        top_highest_prob_values.tolist())
+
+            top_lowest_prob_indices = lowest_prob.indices[0]
+            top_lowest_prob_values = normalized_item[0][top_lowest_prob_indices]
+            top_lowest_tokens = zip(top_lowest_prob_indices.tolist(),
+                                    top_lowest_prob_values.tolist())
+        elif predict_args.predict_chosen_args == 'maxdiff':
+            abs_normalized_item = torch.abs(normalized_item)
             top_prob = torch.topk(
-                item, predict_args.predict_chosen_number*100, dim=1)
+                abs_normalized_item, predict_args.predict_chosen_number * 100, dim=1)
+            top_prob_indices = top_prob.indices[0]
+            top_prob_values = normalized_item[0][top_prob_indices]
+            top_tokens = zip(top_prob_indices.tolist(),
+                                top_prob_values.tolist())
+        elif predict_args.predict_chosen_args == 'maxposi':
+            top_prob = torch.topk(
+                normalized_item, predict_args.predict_chosen_number * 100, dim=1)
             top_tokens = zip(
                 top_prob.indices[0].tolist(), top_prob.values[0].tolist())
+        elif predict_args.predict_chosen_args == 'maxneg':
+            top_prob = torch.topk(
+                normalized_item, predict_args.predict_chosen_number * 100, dim=1, largest=False)
+            top_tokens = zip(
+                top_prob.indices[0].tolist(), top_prob.values[0].tolist())
+        elif predict_args.predict_chosen_args == "manual":
+            label_index_dict = dict()
+            index_list = list()
+            
+            if model_args.model_type == "roberta-base":
+                for label, token_list in token_list.items():
+                    if label not in label_index_dict:
+                        label_index_dict[label] = list()
+                    for token in token_list:
+                        token_id = model.tokenizer.convert_tokens_to_ids("Ġ"+token)
+                        label_index_dict[label].append(token_id)
+                        index_list.append(token_id)
+            elif model_args.model_type == "bert-base-uncased":
+                for label, token_list in token_list.items():
+                    if label not in label_index_dict:
+                        label_index_dict[label] = list()
+                    for token in token_list:
+                        token_id = model.tokenizer.convert_tokens_to_ids(token.lower())
+                        label_index_dict[label].append(token_id)
+                        index_list.append(token_id)
+
+            chosen_probs = list()
+            index_list_comb = list()
+            for label, index_list in label_index_dict.items():
+                prob = 0
+                index_list_comb.append(label)
+                for index in index_list:
+                    prob+=normalized_item[0][index].item()
+                chosen_probs.append(prob)
+            top_tokens = zip(index_list_comb, chosen_probs)
 
         res = dict()
         temp_word_set = set()
         if predict_args.predict_chosen_args == 'manual':
             for token, score in top_tokens:
-                token = model.tokenizer.decode([token])
+                if not isinstance(token,str):
+                    token = model.tokenizer.decode([token])
                 res[token] = str(round(pow(math.e,score), 3))
                 temp_word_set.add(token)
             record_dict[original_sentence]['word'][masked_index] = res
@@ -310,10 +327,11 @@ def predict_token(
         elif predict_args.predict_chosen_args != 'binary':
             count = 0
             for token, score in top_tokens:
-                token = model.tokenizer.decode([token])
+                if not isinstance(token,str):
+                    token = model.tokenizer.decode([token])
                 if not predict_args.predict_word_only or token_checker.check_token(token):
                     count += 1
-                    res[token] = str(round(score, 3))
+                    res[token] = str(round(pow(math.e,score), 3))
                     temp_word_set.add(token)
                 if count == predict_args.predict_chosen_number:
                     record_dict[original_sentence]['word'][masked_index] = res
@@ -322,19 +340,21 @@ def predict_token(
         else:
             count = 0
             for token, score in top_highest_tokens:
-                token = model.tokenizer.decode([token])
+                if not isinstance(token,str):
+                    token = model.tokenizer.decode([token])
                 if not predict_args.predict_word_only or token_checker.check_token(token):
                     count += 1
-                    res[token] = str(round(score, 3))
+                    res[token] = str(round(pow(math.e,score), 3))
                     temp_word_set.add(token)
                 if count == predict_args.predict_chosen_number / 2:
                     break
             count = 0
             for token, score in top_lowest_tokens:
-                token = model.tokenizer.decode([token])
+                if not isinstance(token,str):
+                    token = model.tokenizer.decode([token])
                 if not predict_args.predict_word_only or token_checker.check_token(token):
                     count += 1
-                    res[token] = str(round(score, 3))
+                    res[token] = str(round(pow(math.e,score), 3))
                     temp_word_set.add(token)
                 if count == predict_args.predict_chosen_number / 2:
                     break
