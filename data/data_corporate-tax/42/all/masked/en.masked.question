@@ -1,4 +1,4 @@
-{"original_sentence": "Is the corporate rate too high? [MASK].", "masked_sentence": ["Is the corporate rate too high? [MASK]."],"labels": {"positive":[True,Yes],"negative":[False, No],"Neutral":[Maybe]}}
-{"original_sentence": "Is the corporate rate too low? [MASK].", "masked_sentence": ["Is the corporate rate too low? [MASK]"],"labels": {"positive":[True,Yes],"negative":[False, No],"Neutral":[Maybe]}}
-{"original_sentence": "Is the corporate rate high enough? [MASK].", "masked_sentence": ["Is the corporate rate high enough? [MASK]."],"labels": {"positive":[True,Yes],"negative":[False, No],"Neutral":[Maybe]}}
-{"original_sentence": "Is the corporate rate low enough? [MASK].", "masked_sentence": ["Is the corporate rate low enough? [MASK]."],"labels": {"positive":[True,Yes],"negative":[False, No],"Neutral":[Maybe]}}
+{"original_sentence": "Is the corporate rate too high? [MASK].", "masked_sentence": ["Is the corporate rate too high? [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
+{"original_sentence": "Is the corporate rate too low? [MASK].", "masked_sentence": ["Is the corporate rate too low? [MASK]"],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
+{"original_sentence": "Is the corporate rate high enough? [MASK].", "masked_sentence": ["Is the corporate rate high enough? [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
+{"original_sentence": "Is the corporate rate low enough? [MASK].", "masked_sentence": ["Is the corporate rate low enough? [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
