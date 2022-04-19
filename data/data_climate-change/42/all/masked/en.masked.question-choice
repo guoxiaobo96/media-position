@@ -1,0 +1,1 @@
+{"original_sentence": "Is climate change a [MASK]?", "masked_sentence": ["Is climate change a [MASK]?"],"labels": {"reality":["reality"],"hoax":["hoax"]}}

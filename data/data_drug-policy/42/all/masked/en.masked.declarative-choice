@@ -1,0 +1,2 @@
+{"original_sentence": "Legalizing recreational marijuana is [MASK].", "masked_sentence": ["Legalizing recreational marijuana is [MASK]."],"labels": {"good":["good"],"bad":["bad"]}}
+{"original_sentence": "Legalizing recreational marijuana is [MASK].", "masked_sentence": ["Legalizing recreational marijuana is [MASK]."],"labels": {"acceptable":["acceptable"],"unacceptable":["unacceptable"]}}

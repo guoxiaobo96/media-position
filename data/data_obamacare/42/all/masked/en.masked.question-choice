@@ -1,0 +1,4 @@
+{"original_sentence": "Is Obamacare [MASK]?", "masked_sentence": ["Is Obamacare [MASK]?"],"labels": {"good":["good"],"bad":["bad"]}}
+{"original_sentence": "Is Obamacare [MASK]?", "masked_sentence": ["Is Obamacare [MASK]?"],"labels": {"affordable":["affordable"],"unaffordable":["unaffordable"]}}
+{"original_sentence": "Is The Affordable Care Act [MASK]?", "masked_sentence": ["Is The Affordable Care Act [MASK]?"],"labels": {"good":["good"],"bad":["bad"]}}
+{"original_sentence": "Is The Affordable Care Act [MASK]?", "masked_sentence": ["Is The Affordable Care Act [MASK]?"],"labels": {"affordable":["affordable"],"unaffordable":["unaffordable"]}}
