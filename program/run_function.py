@@ -315,14 +315,21 @@ def predict_token(
             top_tokens = zip(index_list_comb, chosen_probs)
 
         res = dict()
+        prob_list = list()
+
         temp_word_set = set()
         if predict_args.predict_chosen_args == 'manual':
             for token, score in top_tokens:
                 if not isinstance(token,str):
                     token = model.tokenizer.decode([token])
                 res[token] = str(round(pow(math.e,score), 3))
+                prob_list.append(pow(math.e,score))
                 temp_word_set.add(token)
-            record_dict[original_sentence]['word'][masked_index] = res
+            prob_list = np.array(prob_list)
+
+            prob_list = prob_list / np.sum(prob_list)
+            prob_list = [str(round(prob,6)) for prob in prob_list]
+            record_dict[original_sentence]['word'][masked_index] = {'prob':res,'distribution':prob_list}
             word_set.update(temp_word_set)
         elif predict_args.predict_chosen_args != 'binary':
             count = 0
