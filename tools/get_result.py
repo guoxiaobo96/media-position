@@ -1,9 +1,12 @@
+label_method_list = ['question-choice','question','declarative-choice','declarative']
+prob_method_list =  ['absolute','media-relative','general-relative']
+token_chosen_method_list = ['manual']
+
 def get_res():
     import os
     import json
 
-    # for model in ['roberta-base','bert-base-uncased']:
-    for model in ['bert-base-uncased']:
+    for model in ['roberta-base','bert-base-uncased']:
         for topic in ['climate-change','corporate-tax','drug-policy','gay-marriage','obamacare']:
             data = {'SoA-t':dict(),'SoA-s':dict(),'MBR':dict()}
             record_file = os.path.join(os.path.join(os.path.join("./analysis",model,topic,topic,"42","mlm","record")))
@@ -28,12 +31,13 @@ def get_res():
             for ground_truth, ground_trunth_data in data.items():
                 item = ""
                 with open('{}.csv'.format(ground_truth),mode='a',encoding='utf8') as fp:
-                    for label_method in ['bigram_outer','manual']:
+                    for label_method in ['manual']:
                         for prob_method in ['absolute','media-relative','general-relative']:
-                            if prob_method == 'absolute':
-                                token_chosen_method_list = ['maxposi']
-                            else:
-                                token_chosen_method_list = ['binary','maxdiff','maxposi']
+                            # if prob_method == 'absolute':
+                            #     token_chosen_method_list = ['maxposi']
+                            # else:
+                            #     token_chosen_method_list = ['manual']
+                            token_chosen_method_list = ['manual']
                             for token_chosen_method in token_chosen_method_list:
                                 for word_only in ['True','False']:
                                     item = item + ","+data[ground_truth][label_method][prob_method][token_chosen_method][word_only]
@@ -66,10 +70,10 @@ def get_result_in_domain():
             for ground_truth, _ in data.items():
                 item = ""
                 with open('{}.in_domain.csv'.format(ground_truth),mode='a',encoding='utf8') as fp:
-                    for label_method in ['question-tf','question-yn','declarative-tf','declarative-yn']:
-                        for prob_method in ['absolute','chosen-media-relative','media-relative','chosen-general-relative','general-relative']:
-                            token_chosen_method = "manual"
-                            item = item + ","+data[ground_truth][label_method][prob_method][token_chosen_method]['True']
+                    for label_method in label_method_list:
+                        for prob_method in prob_method_list:
+                            for token_chosen_method in token_chosen_method_list:
+                                item = item + ","+data[ground_truth][label_method][prob_method][token_chosen_method]['True']
                         item +=','
                     fp.write(item+'\n')
 
@@ -107,10 +111,10 @@ def get_result_out_domain():
                 item = ""
                 with open('{}.out_domain.csv'.format(ground_truth),mode='a',encoding='utf8') as fp:
                     # for label_method in ['question-tf','question-yn','declarative-tf','declarative-yn']:
-                    for label_method in ['question-tf','question-yn','declarative-tf','declarative-yn']:
-                        for prob_method in ['absolute','chosen-media-relative','media-relative','chosen-general-relative','general-relative']:
-                            token_chosen_method = "manual"
-                            item = item + ","+str(round(np.mean(data[ground_truth][label_method][prob_method][token_chosen_method]['True']),3))
+                    for label_method in label_method_list:
+                        for prob_method in prob_method_list:
+                            for token_chosen_method in token_chosen_method_list:
+                                item = item + ","+str(round(np.mean(data[ground_truth][label_method][prob_method][token_chosen_method]['True']),3))
                         item +=','
                     fp.write(item+'\n')
 
@@ -145,12 +149,12 @@ def get_result_list():
             for ground_truth, _ in data.items():
                 item = ""
                 with open('{}.list.csv'.format(ground_truth),mode='a',encoding='utf8') as fp:
-                    for label_method in ['question-tf','declarative-tf']:
-                        for prob_method in ['general-relative']:
-                            token_chosen_method = "manual"
-                            item = item + ",".join(data[ground_truth][label_method][prob_method][token_chosen_method]['True']) +",,"
+                    for label_method in label_method_list:
+                        for prob_method in prob_method_list:
+                            for token_chosen_method in token_chosen_method_list:
+                                item = item + ",".join(data[ground_truth][label_method][prob_method][token_chosen_method]['True']) +",,"
                     fp.write(item+'\n')
 if __name__ == '__main__':
-    # get_result_in_domain()
-    # get_result_out_domain()
+    get_result_in_domain()
+    get_result_out_domain()
     get_result_list()
