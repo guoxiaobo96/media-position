@@ -168,6 +168,10 @@ class DataAugArguments:
     """
     Arguments about the data argumentation
     """
+    clean_type: str = field(
+        default="original", metadata={"help": "The type of data cleaning"}
+    )
+    
     augment_type: str = field(
         default="original", metadata={"help": "The type of data argumentation"}
     )
@@ -175,6 +179,7 @@ class DataAugArguments:
     multiple_number: int = field(
         default=4, metadata={"help": "The times of data"}
     )
+
 
 
 @dataclass
@@ -327,12 +332,13 @@ def get_config() -> Tuple:
         predict_args: PredictArguments
     ) -> None:
         model_args.model_type = model_args.model_name_or_path
-        misc_args.log_dir = os.path.join(
-            misc_args.log_dir, model_args.model_type)
-        analysis_args.analysis_data_dir = os.path.join(
-            analysis_args.analysis_data_dir, model_args.model_type)
-        analysis_args.analysis_result_dir = os.path.join(
-            analysis_args.analysis_result_dir, model_args.model_type)
+        if model_args.model_type is not None:
+            misc_args.log_dir = os.path.join(
+                misc_args.log_dir, model_args.model_type)
+            analysis_args.analysis_data_dir = os.path.join(
+                analysis_args.analysis_data_dir, model_args.model_type)
+            analysis_args.analysis_result_dir = os.path.join(
+                analysis_args.analysis_result_dir, model_args.model_type)
 
         misc_args.log_dir = os.path.join(
             misc_args.log_dir, model_args.model_dataset)

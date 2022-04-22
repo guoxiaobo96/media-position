@@ -22,13 +22,14 @@ class BasicDataAugementor(object):
         self._augmented_data = dict()
         self._article_map = FullArticleMap()
         self._augment_method_map = None
-
+        self._clean_method_map = {'manual_clean':self._manual_clean,'no_clean':self._no_clean}
+        self._clean_method = self._clean_method_map[aug_args.clean_type]
         self._load_original_data()
 
     def _load_original_data(self):
         self._raw_data = dict()
-        # media_list = os.listdir(self._data_args.data_dir)
-        media_list = ['all']
+        media_list = os.listdir(self._data_args.data_dir)
+        # media_list = ['all']
         for media in media_list:
             if media not in self._raw_data:
                 self._raw_data[media] = dict()
@@ -41,6 +42,9 @@ class BasicDataAugementor(object):
                 self._data_args.data_dir, media), 'original'), 'en.valid')
             with open(train_file, mode='r', encoding='utf8') as fp:
                 for line in fp:
+                    line = self._clean_method(line.strip())
+                    if line == "":
+                        continue
                     paragraph_list = line.strip().split('\\n\\n')
                     for paragraph in paragraph_list:
                         if len(paragraph.split(' ')) < self._sequence_length and len(paragraph.split(' ')) > 5:
@@ -58,6 +62,9 @@ class BasicDataAugementor(object):
                             grouped_train_data.append(chunk_sentences.strip())
             with open(eval_file, mode='r', encoding='utf8') as fp:
                 for line in fp:
+                    line = self._clean_method(line.strip())
+                    if line == "":
+                        continue
                     paragraph_list = line.strip().split('\\n\\n')
                     for paragraph in paragraph_list:
                         if len(paragraph.split(' ')) < self._sequence_length and len(paragraph.split(' ')) > 5:
@@ -76,8 +83,21 @@ class BasicDataAugementor(object):
                             grouped_eval_data.append(chunk_sentences.strip())
             self._raw_data[media] = {
                 'train': grouped_train_data, 'eval': grouped_eval_data}
+    
+    def _no_clean(self,text):
+        return text
+
+    def _manual_clean(self, text):
+        clean_token_list = {'climate-change':['climate','global warming','climate-change'],'corporate-tax':['corporate tax','tax'],'drug-policy':['drug','marijuana','recreational'],'gay-marriage':['gay','same-sex'],'obamacare':['obamacare', 'care act']}
+        clean_tokens = clean_token_list[self._data_args.dataset]
+        for token in clean_tokens:
+            if token in text:
+                return text
+        return ""
 
     def save(self):
+        if self._aug_args.clean_type !='no_clean':
+            self._data_args.data_type = self._data_args.data_type.replace(self._aug_args.augment_type,self._aug_args.clean_type)
         for media in list(self._augmented_data.keys()):
             data_path = os.path.join(os.path.join(
                 self._data_args.data_dir, media), self._data_args.data_type)
@@ -131,6 +151,7 @@ class SelfDataAugmentor(BasicDataAugementor):
             else:
                 model = None
 
+
             for index, paragraph in enumerate(tqdm.tqdm(train_data)):
                 if paragraph == '':
                     continue
@@ -144,11 +165,13 @@ class SelfDataAugmentor(BasicDataAugementor):
                     break
 
             augmented_eval_data = eval_data
+
             random.seed(42)
             random.shuffle(augmented_train_data)
             random.shuffle(augmented_eval_data)
             self._augmented_data[media]['train'] = augmented_train_data
             self._augmented_data[media]['eval'] = augmented_eval_data
+
 
     def _no_augmentation(self, paragraph, model):
         augmented_data = list()

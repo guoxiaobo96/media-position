@@ -221,7 +221,6 @@ def predict_token(
     results = dict()
     baseline_results = dict()
     for batch_sentence in tqdm(batched_masked_sentence_list):
-        batch_sentence
         result = model.predict(batch_sentence, predicted_token_list)
         results.update(result)
 
@@ -292,7 +291,7 @@ def predict_token(
                     if label not in label_index_dict:
                         label_index_dict[label] = list()
                     for token in token_list:
-                        token_id = model.tokenizer.convert_tokens_to_ids("Ġ"+token)
+                        token_id = model.tokenizer.convert_tokens_to_ids("Ġ"+token.lower())
                         label_index_dict[label].append(token_id)
                         index_list.append(token_id)
             elif model_args.model_type == "bert-base-uncased":
