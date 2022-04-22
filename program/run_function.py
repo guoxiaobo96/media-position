@@ -7,7 +7,7 @@ from .masked_token_util import MaskedTokenLabeller, ngram_inner_label, ngram_out
 from .analysis import ClusterAnalysis, DistanceAnalysis, ClusterCompare, CorrelationAnalysis, CorrelationCompare
 from .predict_token_util import TokenChecker
 from tqdm import tqdm
-from sklearn.metrics.pairwise import euclidean_distances
+from sklearn.metrics.pairwise import euclidean_distances, cosine_distances
 from scipy.stats import kendalltau
 import numpy as np
 from matplotlib import pyplot as plt
@@ -539,10 +539,10 @@ def label_score_analysis(
                 encoded_b = analysis_data['media_average'][dataset_name_b]
                 for k in range(len(encoded_a)):
                     if k in analysis_result and (analysis_result[k] < analysis_args.analysis_threshold or analysis_args.analysis_threshold == -1):
-                        # average_distance += cosine_distances(
-                        #     encoded_a[k].reshape(1, -1), encoded_b[k].reshape(1, -1))[0][0]
-                        average_distance += euclidean_distances(
+                        average_distance += cosine_distances(
                             encoded_a[k].reshape(1, -1), encoded_b[k].reshape(1, -1))[0][0]
+                        # average_distance += euclidean_distances(
+                        #     encoded_a[k].reshape(1, -1), encoded_b[k].reshape(1, -1))[0][0]
                 average_distance_matrix[i][j] = average_distance / \
                     len(encoded_a)
                 average_distance_matrix[j][i] = average_distance / \
@@ -593,10 +593,10 @@ def label_score_analysis(
             encoded_b = analysis_data['media_average'][dataset_name_b]
             for k in range(len(encoded_a)):
                 if k in analysis_result and (analysis_result[k] < analysis_args.analysis_threshold or analysis_args.analysis_threshold == -1):
-                    # average_distance += cosine_distances(
-                    #     encoded_a[k].reshape(1, -1), encoded_b[k].reshape(1, -1))[0][0]
-                    average_distance += euclidean_distances(
+                    average_distance += cosine_distances(
                         encoded_a[k].reshape(1, -1), encoded_b[k].reshape(1, -1))[0][0]
+                    # average_distance += euclidean_distances(
+                    #     encoded_a[k].reshape(1, -1), encoded_b[k].reshape(1, -1))[0][0]
             average_distance_matrix[i][j] = average_distance / \
                 len(encoded_a)
             average_distance_matrix[j][i] = average_distance / \
