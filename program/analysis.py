@@ -317,12 +317,12 @@ class TermEncoder(object):
         term_set = set()
         encode_result = dict()
         for _, term_dict in data.items():
-            term_set = term_set.union(set(term_dict.keys()))
+            term_set = term_set.union(set(term_dict['prob'].keys()))
         for i, term in enumerate(list(term_set)):
             self._term_dict[term] = i
         for dataset, term_dict in data.items():
             encode_array = np.zeros(shape=len(term_set))
-            for k, v in term_dict.items():
+            for k, v in term_dict['prob'].items():
                 encode_array[self._term_dict[k]] = float(v)
             encode_result[dataset] = encode_array
         return encode_result
