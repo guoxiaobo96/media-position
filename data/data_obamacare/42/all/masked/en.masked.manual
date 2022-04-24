@@ -1,4 +1,0 @@
-{"original_sentence": "Obamacare is good.", "masked_sentence": ["Obamacare is [MASK]."]}
-{"original_sentence": "I like Obamacare.", "masked_sentence": ["I [MASK] Obamacare."]}
-{"original_sentence": "The Affordable Care Act is good.", "masked_sentence": ["The Affordable Care Act is [MASK]."]}
-{"original_sentence": "I like The Affordable Care Act.", "masked_sentence": ["I [MASK] The Affordable Care Act."]}

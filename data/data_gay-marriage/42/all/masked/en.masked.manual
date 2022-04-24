@@ -1,6 +1,0 @@
-{"original_sentence": "Gay marriage is [MASK].", "masked_sentence": ["Gay marriage is [MASK]."]}
-{"original_sentence": "Same-sex marriage is [MASK].", "masked_sentence": ["Same-sex marriage is [MASK]."]}
-{"original_sentence": "I [MASK] gay marriage.", "masked_sentence": ["I [MASK] gay marriage."]}
-{"original_sentence": "I [MASK] same-sex marriage.", "masked_sentence": ["I [MASK] same-sex marriage."]}
-{"original_sentence": "The legalization of same-sex marriage is [MASK].", "masked_sentence": ["The legalization of same-sex marriage is [MASK]."]}
-{"original_sentence": "The legalization of gay marriage is [MASK].", "masked_sentence": ["The legalization of gay marriage is [MASK]."]}
