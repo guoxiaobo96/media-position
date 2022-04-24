@@ -91,7 +91,7 @@ class BasicDataAugementor(object):
         clean_token_list = {'climate-change':['climate','global warming','climate-change'],'corporate-tax':['corporate tax','tax'],'drug-policy':['drug','marijuana','recreational'],'gay-marriage':['gay','same-sex'],'obamacare':['obamacare', 'care act']}
         clean_tokens = clean_token_list[self._data_args.dataset]
         for token in clean_tokens:
-            if token in text:
+            if token in text.lower():
                 return text
         return ""
 

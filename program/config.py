@@ -169,7 +169,7 @@ class DataAugArguments:
     Arguments about the data argumentation
     """
     clean_type: str = field(
-        default="original", metadata={"help": "The type of data cleaning"}
+        default="no_clean", metadata={"help": "The type of data cleaning"}
     )
     
     augment_type: str = field(

@@ -35,7 +35,7 @@ def origianl_collect(
         topic_list = topic_dict[data_args.dataset]
     else:
         topic_list = [data_args.dataset.replace('-', ' ')]
-    data_args.data_dir = data_args.data_dir + '_' + data_args.dataset
+    data_args.data_dir = data_args.data_dir
 
     year_list = os.listdir(data_args.original_data_dir)
     for year in year_list:
@@ -113,7 +113,7 @@ def _original_collect(data_path_dir, global_debug):
         if media not in article_dict:
             article_dict[media] = list()
         text = text.strip().replace('\n', '\\n').replace('\"', '')
-        text = text.lower()
+        # text = text.lower()
         article_dict[media].append(text)
     return article_dict
 

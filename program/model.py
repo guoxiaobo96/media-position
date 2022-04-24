@@ -275,8 +275,6 @@ class MLMModel(DeepModel):
     def predict(self, sentence_list, token_list=None, batch_size=64) -> Dict:
         result_dict = dict()
         for i, sequence in enumerate(sentence_list):
-            if 'corporate-tax' not in self._model_args.model_name_or_path:
-                sequence = sequence.lower()
             sequence = sequence.replace("[MASK]", self.tokenizer.mask_token)
             sequence = sequence.replace("[mask]", self.tokenizer.mask_token)
             input_ids = self.tokenizer.encode(sequence, return_tensors="pt")
