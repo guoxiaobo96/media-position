@@ -1,8 +1,0 @@
-{"original_sentence": "Obamacare is good. [MASK].", "masked_sentence": ["Obamacare is good. [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
-{"original_sentence": "Obamacare is bad. [MASK].", "masked_sentence": ["Obamacare is bad. [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
-{"original_sentence": "Obamacare is affordable. [MASK].", "masked_sentence": ["Obamacare is affordable. [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
-{"original_sentence": "Obamacare is unaffordable. [MASK].", "masked_sentence": ["Obamacare is unaffordable. [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
-{"original_sentence": "The Affordable Care Act is good. [MASK].", "masked_sentence": ["The Affordable Care Act is good. [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
-{"original_sentence": "The Affordable Care Act is bad. [MASK].", "masked_sentence": ["The Affordable Care Act is bad. [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
-{"original_sentence": "The Affordable Care Act is affordable. [MASK].", "masked_sentence": ["The Affordable Care Act is affordable. [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
-{"original_sentence": "The Affordable Care Act is unaffordable. [MASK].", "masked_sentence": ["The Affordable Care Act is unaffordable. [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}

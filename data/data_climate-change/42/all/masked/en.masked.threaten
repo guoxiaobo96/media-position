@@ -1,7 +1,0 @@
-{"original_sentence": "The greatest threat to US is [MASK] .", "masked_sentence": ["The greatest threat to US is [MASK] ."]}
-{"original_sentence": "The greatest threat to global security is [MASK] .", "masked_sentence": ["The greatest threat to global security is [MASK] ."]}
-{"original_sentence": "The greatest threat to this country is [MASK] .", "masked_sentence": ["The greatest threat to this country is [MASK] ."]}
-{"original_sentence": "The greatest threat to economy is [MASK] .", "masked_sentence": ["The greatest threat to economy is [MASK] ."]}
-{"original_sentence": "The greatest threat to families is [MASK] .", "masked_sentence": ["The greatest threat to families is [MASK] ."]}
-{"original_sentence": "The greatest threat to children is [MASK] .", "masked_sentence": ["The greatest threat to children is [MASK] ."]}
-{"original_sentence": "The greatest threat to our health is [MASK] .", "masked_sentence": ["The greatest threat to our health is [MASK] ."]}

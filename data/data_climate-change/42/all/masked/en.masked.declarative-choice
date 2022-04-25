@@ -1,4 +1,0 @@
-{"original_sentence": "Climate change is a [MASK].", "masked_sentence": ["Climate change is a [MASK]."],"labels": {"reality":["reality"],"hoax":["hoax"]}}
-{"original_sentence": "Climate change is a [MASK].", "masked_sentence": ["Climate change is a [MASK]."],"labels": {"reality":["reality"],"lie":["lie"]}}
-{"original_sentence": "Global warming is a [MASK].", "masked_sentence": ["Global warming is a [MASK]."],"labels": {"reality":["reality"],"hoax":["hoax"]}}
-{"original_sentence": "Global warming is a [MASK].", "masked_sentence": ["Global warming is a [MASK]."],"labels": {"reality":["reality"],"lie":["lie"]}}

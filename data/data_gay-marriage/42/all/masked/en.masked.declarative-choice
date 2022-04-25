@@ -1,4 +1,0 @@
-{"original_sentence": "Same-sex marriage is [MASK].", "masked_sentence": ["Same-sex marriage is [MASK]."],"labels": {"good":["good"],"bad":["bad"]}}
-{"original_sentence": "Same-sex marriage is [MASK].", "masked_sentence": ["Same-sex marriage is [MASK]."],"labels": {"acceptable":["acceptable"],"unacceptable":["unacceptable"]}}
-{"original_sentence": "Gay marriage is [MASK].", "masked_sentence": ["Gay marriage is [MASK]."],"labels": {"good":["good"],"bad":["bad"]}}
-{"original_sentence": "Gay marriage is [MASK].", "masked_sentence": ["Gay marriage is [MASK]."],"labels": {"acceptable":["acceptable"],"unacceptable":["unacceptable"]}}

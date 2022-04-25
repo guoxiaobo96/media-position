@@ -1,4 +1,0 @@
-{"original_sentence": ""Corporate tax is too [MASK].", "masked_sentence": ["Corporate tax is too [MASK]."]}
-{"original_sentence": "We should [MASK] the corporate tax rate.", "masked_sentence": ["We should [MASK] the corporate tax rate."]}
-{"original_sentence": "Increasing the corporate tax rate will [MASK] GDP.", "masked_sentence": ["Increasing the corporate tax rate will [MASK] GDP."]}
-{"original_sentence": "Increasing the corporate tax rate makes [MASK] life.", "masked_sentence": ["Increasing the corporate tax rate makes [MASK] life."]}
