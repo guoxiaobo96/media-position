@@ -291,7 +291,15 @@ def predict_token(
                     if label not in label_index_dict:
                         label_index_dict[label] = list()
                     for token in token_list:
-                        token_id = model.tokenizer.convert_tokens_to_ids("Ġ"+token.lower())
+                        token_id = model.tokenizer.convert_tokens_to_ids("Ġ"+token)
+                        label_index_dict[label].append(token_id)
+                        index_list.append(token_id)
+            elif model_args.model_type == "bert-base-cased":
+                for label, token_list in token_list.items():
+                    if label not in label_index_dict:
+                        label_index_dict[label] = list()
+                    for token in token_list:
+                        token_id = model.tokenizer.convert_tokens_to_ids(token)
                         label_index_dict[label].append(token_id)
                         index_list.append(token_id)
             elif model_args.model_type == "bert-base-uncased":
@@ -299,7 +307,7 @@ def predict_token(
                     if label not in label_index_dict:
                         label_index_dict[label] = list()
                     for token in token_list:
-                        token_id = model.tokenizer.convert_tokens_to_ids(token)
+                        token_id = model.tokenizer.convert_tokens_to_ids(token.lower())
                         label_index_dict[label].append(token_id)
                         index_list.append(token_id)
 
