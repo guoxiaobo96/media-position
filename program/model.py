@@ -276,7 +276,6 @@ class MLMModel(DeepModel):
         result_dict = dict()
         for i, sequence in enumerate(sentence_list):
             sequence = sequence.replace("[MASK]", self.tokenizer.mask_token)
-            sequence = sequence.replace("[mask]", self.tokenizer.mask_token)
             input_ids = self.tokenizer.encode(sequence, return_tensors="pt")
             if torch.cuda.is_available():
                 input_ids = input_ids.to(device=self._model.device)
