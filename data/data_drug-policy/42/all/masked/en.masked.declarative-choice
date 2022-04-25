@@ -1,2 +1,2 @@
-{"original_sentence": "The corporate rate is too [MASK].", "masked_sentence": ["The corporate rate is too [MASK]."],"labels": {"high":["high"],"low":["low"]}}
-{"original_sentence": "The corporate rate is [MASK] enough.", "masked_sentence": ["The corporate rate is [MASK] enough."],"labels": {"high":["high"],"low":["low"]}}
+{"original_sentence": "Legalizing recreational marijuana is [MASK].", "masked_sentence": ["Legalizing recreational marijuana is [MASK]."],"labels": {"good":["good"],"bad":["bad"]}}
+{"original_sentence": "Legalizing recreational marijuana is [MASK].", "masked_sentence": ["Legalizing recreational marijuana is [MASK]."],"labels": {"acceptable":["acceptable"],"unacceptable":["unacceptable"]}}
