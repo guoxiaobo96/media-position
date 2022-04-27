@@ -1,0 +1,2 @@
+{"original_sentence": "The corporate rate [MASK].", "masked_sentence": ["The corporate rate [MASK]."],"labels": {"high":["high"],"low":["low"]}}
+{"original_sentence": "[MASK] the corporate rate.", "masked_sentence": ["[MASK] the corporate rate."],"labels": {"high":["high"],"low":["low"]}}

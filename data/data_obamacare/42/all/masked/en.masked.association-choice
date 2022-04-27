@@ -1,0 +1,9 @@
+{"original_sentence": "Obamacare [MASK].", "masked_sentence": ["Obamacare [MASK]."],"labels": {"good":["good"],"bad":["bad"]}}
+{"original_sentence": "Obamacare [MASK].", "masked_sentence": ["Obamacare [MASK]."],"labels": {"affordable":["affordable"],"unaffordable":["unaffordable"]}}
+{"original_sentence": "The Affordable Care Act [MASK].", "masked_sentence": ["The Affordable Care Act [MASK]."],"labels": {"good":["good"],"bad":["bad"]}}
+{"original_sentence": "The Affordable Care Act [MASK].", "masked_sentence": ["The Affordable Care Act [MASK]."],"labels": {"affordable":["affordable"],"unaffordable":["unaffordable"]}}
+{"original_sentence": "[MASK] Obamacare.", "masked_sentence": ["[MASK] Obamacare."],"labels": {"good":["good"],"bad":["bad"]}}
+{"original_sentence": "[MASK] Obamacare.", "masked_sentence": ["[MASK] Obamacare."],"labels": {"affordable":["affordable"],"unaffordable":["unaffordable"]}}
+{"original_sentence": "[MASK] the Affordable Care Act.", "masked_sentence": ["[MASK] the Affordable Care Act."],"labels": {"good":["good"],"bad":["bad"]}}
+{"original_sentence": "[MASK] the Affordable Care Act.", "masked_sentence": ["[MASK] the Affordable Care Act."],"labels": {"affordable":["affordable"],"unaffordable":["unaffordable"]}}
+

@@ -1,0 +1,12 @@
+{"original_sentence": "Climate change reality. [MASK].", "masked_sentence": ["Climate change reality. [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
+{"original_sentence": "Global warming reality. [MASK].", "masked_sentence": ["Global warming reality. [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
+{"original_sentence": "Climate change hoax. [MASK].", "masked_sentence": ["Climate change hoax. [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
+{"original_sentence": "Global warming hoax. [MASK].", "masked_sentence": ["Global warming hoax. [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
+{"original_sentence": "Climate change lie. [MASK].", "masked_sentence": ["Climate change lie. [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
+{"original_sentence": "Global warming lie. [MASK].", "masked_sentence": ["Global warming lie. [MASK]."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
+{"original_sentence": "[MASK]. Climate change reality.", "masked_sentence": ["[MASK]. Climate change reality."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
+{"original_sentence": "[MASK]. Global warming reality.", "masked_sentence": ["[MASK]. Global warming reality."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
+{"original_sentence": "[MASK]. Climate change hoax.", "masked_sentence": ["[MASK]. Climate change hoax."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
+{"original_sentence": "[MASK]. Global warming hoax.", "masked_sentence": ["[MASK]. Global warming hoax."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
+{"original_sentence": "[MASK]. Climate change lie.", "masked_sentence": ["[MASK]. Climate change lie."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
+{"original_sentence": "[MASK]. Global warming lie.", "masked_sentence": ["[MASK]. Global warming lie."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}

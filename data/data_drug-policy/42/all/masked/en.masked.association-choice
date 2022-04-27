@@ -1,0 +1,4 @@
+{"original_sentence": "Legalizing recreational marijuana [MASK].", "masked_sentence": ["Legalizing recreational marijuana [MASK]."],"labels": {"good":["good"],"bad":["bad"]}}
+{"original_sentence": "Legalizing recreational marijuana [MASK].", "masked_sentence": ["Legalizing recreational marijuana [MASK]."],"labels": {"acceptable":["acceptable"],"unacceptable":["unacceptable"]}}
+{"original_sentence": "[MASK] legalizing recreational marijuana", "masked_sentence": ["[MASK] legalizing recreational marijuana"],"labels": {"good":["good"],"bad":["bad"]}}
+{"original_sentence": "[MASK] legalizing recreational marijuana", "masked_sentence": ["[MASK] legalizing recreational marijuana"],"labels": {"acceptable":["acceptable"],"unacceptable":["unacceptable"]}}
