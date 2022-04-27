@@ -6,4 +6,3 @@
 {"original_sentence": "[MASK]. The corporate rate too low.", "masked_sentence": ["[MASK]. The corporate rate too low."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
 {"original_sentence": "[MASK]. The corporate rate high enough.", "masked_sentence": ["[MASK]. The corporate rate high enough."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
 {"original_sentence": "[MASK]. The corporate rate low enough.", "masked_sentence": ["[MASK]. The corporate rate low enough."],"labels": {"positive":["True","Yes"],"negative":["False", "No"],"Neutral":["Maybe"]}}
-

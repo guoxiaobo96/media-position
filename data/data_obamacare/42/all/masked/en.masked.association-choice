@@ -6,4 +6,3 @@
 {"original_sentence": "[MASK] Obamacare.", "masked_sentence": ["[MASK] Obamacare."],"labels": {"affordable":["affordable"],"unaffordable":["unaffordable"]}}
 {"original_sentence": "[MASK] the Affordable Care Act.", "masked_sentence": ["[MASK] the Affordable Care Act."],"labels": {"good":["good"],"bad":["bad"]}}
 {"original_sentence": "[MASK] the Affordable Care Act.", "masked_sentence": ["[MASK] the Affordable Care Act."],"labels": {"affordable":["affordable"],"unaffordable":["unaffordable"]}}
-
