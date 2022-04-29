@@ -13,7 +13,7 @@ class TokenChecker(object):
         self._model_type = model_type
         self._tokenizer = tokenizer
         self._check_func = None
-        if self._model_type == 'bert-base-uncased':
+        if self._model_type in ['bert-base-uncased','bert-base-cased']:
             self._check_func = self._bert_check
         elif self._model_type == 'roberta-base':
             self._check_func = self._roberta_check
