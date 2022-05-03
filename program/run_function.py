@@ -233,8 +233,6 @@ def predict_token(
 
     for sentence, item in results.items():
         original_sentence = masked_sentence_dict[sentence]['sentence']
-        if 'By some accounts, losing Curry was one of ' in original_sentence:
-            print('test')
         if predict_args.predict_chosen_args == "manual":
             token_list = masked_sentence_dict[sentence]['tokens']
         if original_sentence not in record_dict:
