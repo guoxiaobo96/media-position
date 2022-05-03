@@ -27,7 +27,7 @@ class TokenChecker(object):
         return False
 
     def _roberta_check(self, token:str) -> bool:
-        if token[0] == " " and token[1].isalpha():
+        if token[0] == " " and len(token)>1 and token[1].isalpha():
             return True
         return False
         
