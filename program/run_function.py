@@ -233,6 +233,8 @@ def predict_token(
 
     for sentence, item in results.items():
         original_sentence = masked_sentence_dict[sentence]['sentence']
+        if 'By some accounts, losing Curry was one of ' in original_sentence:
+            print('test')
         if predict_args.predict_chosen_args == "manual":
             token_list = masked_sentence_dict[sentence]['tokens']
         if original_sentence not in record_dict:
@@ -347,9 +349,13 @@ def predict_token(
                 if not predict_args.predict_word_only or token_checker.check_token(token):
                     count += 1
                     res[token] = str(round(pow(math.e,score), 3))
+                    prob_list.append(pow(math.e,score))        
                     temp_word_set.add(token)
                 if count == predict_args.predict_chosen_number:
-                    record_dict[original_sentence]['word'][masked_index] = res
+                    prob_list = np.array(prob_list)
+                    prob_list = prob_list / np.sum(prob_list)
+                    prob_list = [str(round(prob,6)) for prob in prob_list]
+                    record_dict[original_sentence]['word'][masked_index] = {'prob':res,'distribution':prob_list}
                     word_set.update(temp_word_set)
                     break
         else:
@@ -360,6 +366,7 @@ def predict_token(
                 if not predict_args.predict_word_only or token_checker.check_token(token):
                     count += 1
                     res[token] = str(round(pow(math.e,score), 3))
+                    prob_list.append(pow(math.e,score))
                     temp_word_set.add(token)
                 if count == predict_args.predict_chosen_number / 2:
                     break
@@ -370,11 +377,15 @@ def predict_token(
                 if not predict_args.predict_word_only or token_checker.check_token(token):
                     count += 1
                     res[token] = str(round(pow(math.e,score), 3))
+                    prob_list.append(pow(math.e,score))
                     temp_word_set.add(token)
                 if count == predict_args.predict_chosen_number / 2:
                     break
             if len(res) == predict_args.predict_chosen_number:
-                record_dict[original_sentence]['word'][masked_index] = res
+                prob_list = np.array(prob_list)
+                prob_list = prob_list / np.sum(prob_list)
+                prob_list = [str(round(prob,6)) for prob in prob_list]
+                record_dict[original_sentence]['word'][masked_index] = {'prob':res,'distribution':prob_list}
                 word_set.update(temp_word_set)
 
     with open(log_file, mode='w', encoding='utf8') as fp:
@@ -521,7 +532,7 @@ def label_score_analysis(
                     analysis_data['media_average'][dataset_list[i]] = list()
                 analysis_data['media_average'][dataset_list[i]].append(
                     encoded_data)
-        except ValueError:
+        except (ValueError,KeyError):
             continue
     average_distance_matrix = np.zeros(
         (len(data_map.dataset_list), len(data_map.dataset_list)))
