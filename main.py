@@ -28,12 +28,14 @@ def main(
         predict_token(misc_args, model_args, data_args,
                             training_args, predict_args)
     elif misc_args.task == 'label_score_analysis':
+        # label_score_analysis(misc_args, model_args,
+        #                      data_args, training_args, analysis_args, predict_args, 'SoA-t')
+        # label_score_analysis(misc_args, model_args,
+        #                      data_args, training_args, analysis_args, predict_args, 'SoA-s')
+        # label_score_analysis(misc_args, model_args,
+        #                      data_args, training_args, analysis_args, predict_args, 'MBR')
         label_score_analysis(misc_args, model_args,
-                             data_args, training_args, analysis_args, predict_args, 'SoA-t')
-        label_score_analysis(misc_args, model_args,
-                             data_args, training_args, analysis_args, predict_args, 'SoA-s')
-        label_score_analysis(misc_args, model_args,
-                             data_args, training_args, analysis_args, predict_args, 'MBR')
+                             data_args, training_args, analysis_args, predict_args, 'human')
     elif misc_args.task == "data_collect":
         if aug_args.augment_type == 'original':
             data_collect(misc_args, data_args)
