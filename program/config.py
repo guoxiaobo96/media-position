@@ -4,6 +4,7 @@ from typing import Optional, List, Dict, Tuple
 
 from transformers import MODEL_WITH_LM_HEAD_MAPPING, HfArgumentParser, set_seed, logging
 import transformers
+import json
 
 
 MODEL_CONFIG_CLASSES = list(MODEL_WITH_LM_HEAD_MAPPING.keys())
@@ -342,12 +343,13 @@ def get_config() -> Tuple:
 
         misc_args.log_dir = os.path.join(
             misc_args.log_dir, model_args.model_dataset)
-        misc_args.log_dir = os.path.join(
-            misc_args.log_dir, predict_args.predict_prob_args + "/" + predict_args.predict_chosen_args)
-        misc_args.log_dir = os.path.join(misc_args.log_dir, str(predict_args.predict_word_only))
-        analysis_args.analysis_data_dir = misc_args.log_dir
-        analysis_args.analysis_result_dir = os.path.join(
-            analysis_args.analysis_result_dir, model_args.model_dataset)
+        if misc_args.task != 'encode_media':
+            misc_args.log_dir = os.path.join(
+                misc_args.log_dir, predict_args.predict_prob_args + "/" + predict_args.predict_chosen_args)
+            misc_args.log_dir = os.path.join(misc_args.log_dir, str(predict_args.predict_word_only))
+            analysis_args.analysis_data_dir = misc_args.log_dir
+            analysis_args.analysis_result_dir = os.path.join(
+                analysis_args.analysis_result_dir, model_args.model_dataset)
 
         if aug_args.augment_type != 'original':
             data_args.data_type = os.path.join(
@@ -371,6 +373,32 @@ def get_config() -> Tuple:
                 data_args.eval_data_file = os.path.join(
                     data_args.data_path, 'en.valid')
         else:
+            if not os.path.exists(os.path.join(data_args.data_path, 'en.full')):
+                data = list()
+                train_data_file = os.path.join(
+                    data_args.data_path, 'en.train')
+                eval_data_file = os.path.join(
+                    data_args.data_path, 'en.valid')
+
+                with open(train_data_file, mode='r', encoding='utf8') as fp:
+                    for line in fp.readlines():
+                        try:
+                            json.loads(line.strip())
+                            data.append(line.strip)
+                        except:
+                            item = {"original":line.strip()}
+                            data.append(json.dumps(item,ensure_ascii=False))
+
+                with open(eval_data_file, mode='r', encoding='utf8') as fp:
+                    for line in fp.readlines():
+                        item = {"original":line.strip()}
+                        data.append(json.dumps(item,ensure_ascii=False))
+
+                with open(os.path.join(data_args.data_path, 'en.full'),mode='w',encoding='utf8') as fp:
+                    for item in data:
+                        fp.write(item+'\n')
+
+            
             data_args.train_data_file = os.path.join(
                 data_args.data_path, 'en.full')
             data_args.eval_data_file = os.path.join(

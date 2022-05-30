@@ -102,55 +102,55 @@ def build_baseline(label_type):
                 if d_o == d_j:
                     distance_order_matrix[i][j] = o
 
-    label_list = list(data_map.name_to_dataset.keys())
-    data = list()
-    data_temp = dict()
-    with open('./data/ground-truth/'+label_type+'.csv', mode='r', encoding='utf8') as fp:
-        reader = csv.reader(fp)
-        header = next(reader)
-        for row in reader:
-            data_temp[row[0]] = [float(x.strip()) for x in row[1:]]
-    for k, _ in data_map.name_to_dataset.items():
-        try:
-            data_item = deepcopy(data_temp[k])
-            for i in range(1, len(data_item)):
-                data_item[i] /= data_item[0]
-            data.append(data_item)
-        except:
-            print(k)
-    media_distance = np.zeros(
-        shape=(len(data_map.dataset_list), len(data_map.dataset_list)))
-    for i, data_i in enumerate(data):
-        for j, data_j in enumerate(data):
-            media_distance[i][j] = euclidean_distances(
-                np.array(data_i).reshape(1, -1), np.array(data_j).reshape(1, -1))
-    media_distance_order_matrix = np.zeros(
-        shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=int)
-    for i, media_a in enumerate(data_map.dataset_list):
-        temp_distance = list()
-        for j, media_b in enumerate(data_map.dataset_list):
-            temp_distance.append(media_distance[i][j])
-        order_list = np.argsort(temp_distance)
-        order_list = order_list.tolist()
-        for j in range(len(data_map.dataset_list)):
-            order = order_list.index(j)
-            media_distance_order_matrix[i][j] = order
-    sort_distance = 0
-    for i in range(len(data_map.dataset_list)):
-        tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(
-            1, -1), distance_order_matrix[i].reshape(1, -1))
-        sort_distance += tau
-    sort_distance /= len(data_map.dataset_list)
+    # label_list = list(data_map.name_to_dataset.keys())
+    # data = list()
+    # data_temp = dict()
+    # with open('./data/ground-truth/'+label_type+'.csv', mode='r', encoding='utf8') as fp:
+    #     reader = csv.reader(fp)
+    #     header = next(reader)
+    #     for row in reader:
+    #         data_temp[row[0]] = [float(x.strip()) for x in row[1:]]
+    # for k, _ in data_map.name_to_dataset.items():
+    #     try:
+    #         data_item = deepcopy(data_temp[k])
+    #         for i in range(1, len(data_item)):
+    #             data_item[i] /= data_item[0]
+    #         data.append(data_item)
+    #     except:
+    #         print(k)
+    # media_distance = np.zeros(
+    #     shape=(len(data_map.dataset_list), len(data_map.dataset_list)))
+    # for i, data_i in enumerate(data):
+    #     for j, data_j in enumerate(data):
+    #         media_distance[i][j] = euclidean_distances(
+    #             np.array(data_i).reshape(1, -1), np.array(data_j).reshape(1, -1))
+    # media_distance_order_matrix = np.zeros(
+    #     shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=int)
+    # for i, media_a in enumerate(data_map.dataset_list):
+    #     temp_distance = list()
+    #     for j, media_b in enumerate(data_map.dataset_list):
+    #         temp_distance.append(media_distance[i][j])
+    #     order_list = np.argsort(temp_distance)
+    #     order_list = order_list.tolist()
+    #     for j in range(len(data_map.dataset_list)):
+    #         order = order_list.index(j)
+    #         media_distance_order_matrix[i][j] = order
+    # sort_distance = 0
+    # for i in range(len(data_map.dataset_list)):
+    #     tau, p_value = kendalltau(media_distance_order_matrix[i].reshape(
+    #         1, -1), distance_order_matrix[i].reshape(1, -1))
+    #     sort_distance += tau
+    # sort_distance /= len(data_map.dataset_list)
 
-    analyzer = AgglomerativeClustering(
-        n_clusters=2, compute_distances=True, affinity='euclidean', linkage='complete')
-    cluster_result = dict()
-    clusters = analyzer.fit(data)
-    labels = clusters.labels_
-    for i, label in enumerate(labels.tolist()):
-        if label not in cluster_result:
-            cluster_result[label] = list()
-        cluster_result[label].append(label_list[i])
+    # analyzer = AgglomerativeClustering(
+    #     n_clusters=2, compute_distances=True, affinity='euclidean', linkage='complete')
+    # cluster_result = dict()
+    # clusters = analyzer.fit(data)
+    # labels = clusters.labels_
+    # for i, label in enumerate(labels.tolist()):
+    #     if label not in cluster_result:
+    #         cluster_result[label] = list()
+    #     cluster_result[label].append(label_list[i])
 
     if not os.path.exists('./log/ground-truth/model/'):
         os.makedirs('./log/ground-truth/model/')

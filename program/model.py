@@ -275,21 +275,24 @@ class MLMModel(DeepModel):
     def predict(self, sentence_list, token_list=None, batch_size=64) -> Dict:
         result_dict = dict()
         for i, sequence in enumerate(sentence_list):
-            sequence = sequence.replace("[MASK]", self.tokenizer.mask_token)
-            input_ids = self.tokenizer.encode(sequence, return_tensors="pt")
-            if torch.cuda.is_available():
-                input_ids = input_ids.to(device=self._model.device)
-            mask_token_index = torch.where(input_ids == self.tokenizer.mask_token_id)[1]
+            try:
+                sequence = sequence.replace("[MASK]", self.tokenizer.mask_token)
+                input_ids = self.tokenizer.encode(sequence, return_tensors="pt")
+                if torch.cuda.is_available():
+                    input_ids = input_ids.to(device=self._model.device)
+                mask_token_index = torch.where(input_ids == self.tokenizer.mask_token_id)[1]
 
-            token_logits = self._model(input_ids)[0]
-            mask_token_logits = token_logits[0, mask_token_index, :]
-            mask_token_logits = torch.softmax(mask_token_logits, dim=1)
-            if torch.cuda.is_available():
-                mask_token_logits = mask_token_logits.detach().cpu()
-            if token_list:
-                result_dict[sentence_list[i]+" <split> "+",".join(token_list[i])] = mask_token_logits
-            else:
-                result_dict[sentence_list[i]] = mask_token_logits
+                token_logits = self._model(input_ids)[0]
+                mask_token_logits = token_logits[0, mask_token_index, :]
+                mask_token_logits = torch.softmax(mask_token_logits, dim=1)
+                if torch.cuda.is_available():
+                    mask_token_logits = mask_token_logits.detach().cpu()
+                if token_list:
+                    result_dict[sentence_list[i]+" <split> "+",".join(token_list[i])] = mask_token_logits
+                else:
+                    result_dict[sentence_list[i]] = mask_token_logits
+            except:
+                continue
         return result_dict
 
     def encode(self, sentence_list, batch_size=64) -> Dict:

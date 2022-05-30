@@ -42,7 +42,7 @@ def main(
         else:
             data_augemnt(misc_args, data_args, aug_args)
     elif misc_args.task == "encode_media":
-        encode_media(misc_args, model_args, data_args, training_args)
+        encode_media(misc_args, model_args, data_args, training_args,aug_args)
 
 
 if __name__ == '__main__':

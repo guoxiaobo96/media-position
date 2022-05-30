@@ -831,6 +831,7 @@ def encode_media(
     model_args: ModelArguments,
     data_args: DataArguments,
     training_args: TrainingArguments,
+    aug_args:DataAugArguments,
 ) -> Dict:
     model = MLMModel(model_args, data_args, training_args)
     train_dataset = (
@@ -871,9 +872,13 @@ def encode_media(
         encode_result.append(v)
     encode_result = np.array(encode_result)
     encode_result = encode_result.mean(axis=0)
+    saved_file = os.path.join(misc_args.log_dir,'baseline')
     saved_file = os.path.join(os.path.join(
-        misc_args.log_dir), data_args.dataset)
+        saved_file), '/'.join(data_args.data_dir.split('/')[2:])[5:])
+    saved_file = os.path.join(saved_file,training_args.loss_type)
+    saved_file = os.path.join(os.path.join(os.path.join(
+        saved_file), 'embedding'),aug_args.augment_type)
     if not os.path.exists(saved_file):
         os.makedirs(saved_file)
-    saved_file = os.path.join(saved_file, training_args.loss_type+'.npy')
+    saved_file = os.path.join(saved_file, data_args.dataset+'.npy')
     np.save(saved_file, encode_result)

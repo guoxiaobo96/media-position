@@ -1,0 +1,24 @@
+{"topic": "obamacare", "ground_truth": "human", "tau_performance": 0.3595}
+{"topic": "gay-marriage", "ground_truth": "human", "tau_performance": 0.3195}
+{"topic": "drug-policy", "ground_truth": "human", "tau_performance": 0.3839}
+{"topic": "corporate-tax", "ground_truth": "human", "tau_performance": 0.3117}
+{"topic": "climate-change", "ground_truth": "human", "tau_performance": 0.1127}
+{"topic": "average", "ground_truth": "human", "tau_performance": "0.296(0.1078)", "pearson_performance": []}
+{"topic": "obamacare", "ground_truth": "MBR", "tau_performance": 0.1959}
+{"topic": "gay-marriage", "ground_truth": "MBR", "tau_performance": 0.1485}
+{"topic": "drug-policy", "ground_truth": "MBR", "tau_performance": 0.0782}
+{"topic": "corporate-tax", "ground_truth": "MBR", "tau_performance": 0.3439}
+{"topic": "climate-change", "ground_truth": "MBR", "tau_performance": 0.2044}
+{"topic": "average", "ground_truth": "MBR", "tau_performance": "0.194(0.0953)", "pearson_performance": []}
+{"topic": "obamacare", "ground_truth": "SoA-s", "tau_performance": 0.08}
+{"topic": "gay-marriage", "ground_truth": "SoA-s", "tau_performance": 0.0667}
+{"topic": "drug-policy", "ground_truth": "SoA-s", "tau_performance": 0.0489}
+{"topic": "corporate-tax", "ground_truth": "SoA-s", "tau_performance": 0.1644}
+{"topic": "climate-change", "ground_truth": "SoA-s", "tau_performance": 0.3822}
+{"topic": "average", "ground_truth": "SoA-s", "tau_performance": "0.148(0.1363)", "pearson_performance": []}
+{"topic": "obamacare", "ground_truth": "SoA-t", "tau_performance": 0.0667}
+{"topic": "gay-marriage", "ground_truth": "SoA-t", "tau_performance": 0.0711}
+{"topic": "drug-policy", "ground_truth": "SoA-t", "tau_performance": 0.0089}
+{"topic": "corporate-tax", "ground_truth": "SoA-t", "tau_performance": 0.1689}
+{"topic": "climate-change", "ground_truth": "SoA-t", "tau_performance": 0.3867}
+{"topic": "average", "ground_truth": "SoA-t", "tau_performance": "0.142(0.1501)", "pearson_performance": []}

@@ -257,8 +257,8 @@ def tfidf_baseline(mean_method, file_list):
     return distance_dict
 
 
-def class_baseline():
-    data_path = "/home/xiaobo/data/media-position/log/"
+def class_baseline(model_name):
+    data_path = "./log/"
     topic_list = ["obamacare", "gay-marriage",
                   "drug-policy", "corporate-tax", "climate-change"]
     # topic_list = ["obamacare"]
@@ -266,8 +266,9 @@ def class_baseline():
     for topic in topic_list:
         outlets_vec_list = list()
         for outlet in outlets_list:
-            file = os.path.join(os.path.join(os.path.join(
-                data_path, topic), outlet), "class.npy")
+            file = os.path.join(data_path,model_name)
+            file = os.path.join(os.path.join(os.path.join(file,topic),'baseline/{}/42'.format(topic)),"class/embedding/original")
+            file = os.path.join(file,outlet+'.npy')
             data = np.load(file)
             outlets_vec_list.append(data.reshape(1, -1))
 
@@ -285,18 +286,18 @@ def class_baseline():
     return distance_dict
 
 
-def mlm_baseline():
-    data_path = "/home/xiaobo/data/media-position/log_bert/"
-    # data_path = "/data/xiaobo/media-position/log/"
-    topic_list = ["gay-marriage", "drug-policy",
-                  "corporate-tax", "climate-change"]
+def mlm_baseline(model_name):
+    data_path = "./log/"
+    topic_list = ["obamacare", "gay-marriage",
+                  "drug-policy", "corporate-tax", "climate-change"]
     # topic_list = ["obamacare"]
     distance_dict = dict()
     for topic in topic_list:
         outlets_vec_list = list()
         for outlet in outlets_list:
-            file = os.path.join(os.path.join(
-                os.path.join(data_path, topic), outlet), "mlm.npy")
+            file = os.path.join(data_path,model_name)
+            file = os.path.join(os.path.join(os.path.join(file,topic),'baseline/{}/42'.format(topic)),"mlm/embedding/no_augmentation")
+            file = os.path.join(file,outlet+'.npy')
             data = np.load(file)
             outlets_vec_list.append(data.reshape(1, -1))
 
@@ -314,7 +315,7 @@ def mlm_baseline():
     return distance_dict
 
 
-def get_baseline(ground_truth_list, file_list, method, combine_method):
+def get_baseline(ground_truth_list, method, model_name = "", file_list = [""], combine_method=""):
     data_map = BaselineArticleMap()
     bias_distance_matrix = np.zeros(
         shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)))
@@ -323,12 +324,13 @@ def get_baseline(ground_truth_list, file_list, method, combine_method):
     elif method == "lda":
         baseline_matrix_list = lda_baseline(combine_method, file_list)
     elif method == "mlm":
-        baseline_matrix_list = mlm_baseline()
+        baseline_matrix_list = mlm_baseline(model_name)
     elif method == "class":
-        baseline_matrix_list = class_baseline()
-
+        baseline_matrix_list = class_baseline(model_name)
+    if combine_method == "":
+        combine_method = model_name
     for ground_truth in ground_truth_list:
-        if ground_truth == "mbr":
+        if ground_truth == "MBR":
             ground_truth_distance_matrix = np.zeros(shape=(
                 len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=np.float32)
             ground_truth_distance_order_matrix = np.zeros(
@@ -348,9 +350,9 @@ def get_baseline(ground_truth_list, file_list, method, combine_method):
                     for j, d_j in enumerate(temp_distance):
                         if d_o == d_j:
                             ground_truth_distance_order_matrix[i][j] = o
-        elif ground_truth in ['source', 'trust']:
+        elif ground_truth in ['SoA-s', 'SoA-t']:
             ground_truth_distance_matrix = np.load(
-                './log/baseline/model/baseline_'+ground_truth+'_article.npy')
+                './log/ground-truth/model/ground-truth_'+ground_truth+'.npy')
             ground_truth_distance_order_matrix = np.zeros(
                 shape=(len(data_map.dataset_bias), len(data_map.dataset_bias)), dtype=np.int32)
             for i, media_a in enumerate(data_map.dataset_list):
@@ -396,7 +398,7 @@ def get_baseline(ground_truth_list, file_list, method, combine_method):
             media_count = len(data_map.dataset_list)
             if ground_truth == 'human':
                 chosen_media_distance_order_matrix = np.zeros(
-                    shape=(5, 5), dtype=np.int)
+                    shape=(5, 5), dtype=np.int32)
                 for i, media_index in enumerate(human_media_list):
                     chosen_media_distance_order_matrix[i] = media_distance_order_matrix[media_index, human_media_list]
                 media_distance_order_matrix = chosen_media_distance_order_matrix
@@ -418,19 +420,15 @@ def get_baseline(ground_truth_list, file_list, method, combine_method):
             pearson_performance /= media_count
 
             record_item = {'topic': topic, 'ground_truth': ground_truth, 'tau_performance': round(
-                tau_performance, 2), 'pearson_performance': round(pearson_performance, 2)}
+                tau_performance, 4)}
 
             performace_dict['tau_performance'].append(
                 round(tau_performance, 2))
-            performace_dict['pearson_performance'].append(
-                round(pearson_performance, 2))
             with open(baseline_file, mode='a', encoding='utf8') as fp:
                 fp.write(json.dumps(record_item, ensure_ascii=False)+'\n')
 
         performace_dict['tau_performance'] = str(round(np.mean(
-            performace_dict['tau_performance']), 2)) + "("+str(round(np.std(performace_dict['tau_performance'], ddof=1), 2))+")"
-        performace_dict['pearson_performance'] = str(round(np.mean(
-            performace_dict['pearson_performance']), 2)) + "("+str(round(np.std(performace_dict['pearson_performance'], ddof=1), 2))+")"
+            performace_dict['tau_performance']), 4)) + "("+str(round(np.std(performace_dict['tau_performance'], ddof=1), 4))+")"
         with open(baseline_file, mode='a', encoding='utf8') as fp:
             fp.write(json.dumps(performace_dict, ensure_ascii=False)+'\n')
 
@@ -520,13 +518,19 @@ def baseline_difference():
 
 
 def main():
-    for file_list in [['en.valid'],['en.train'],['en.valid','en.train']]:
+    # for file_list in [['en.valid'],['en.train'],['en.valid','en.train']]:
+    for file_list in [['en.valid']]:
         # for method in ["class"]:
         for method in ['tfidf','lda']:
             for combine_method in ["average"]:
                 # get_baseline(['trust','source','mbr'], file_list, method, combine_method)
                 # get_baseline(['human','trust','source','mbr'], file_list, method, combine_method)
-                get_baseline(['human'], file_list, method, combine_method)
+                get_baseline(['human'], method, file_list = file_list, combine_method = combine_method)
+    # for file_list in [['']]:
+    #     # for method in ["class"]:
+    #     for method in ['class','mlm']:
+    #         for model in ['roberta-base','bert-base-uncased','bert-base-cased']:
+    #             get_baseline(['human','MBR','SoA-s','SoA-t'], method,model)
     # baseline_difference()
 
 
