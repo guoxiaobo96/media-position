@@ -420,7 +420,7 @@ def get_baseline(ground_truth_list, method, model_name = "", file_list = [""], c
             pearson_performance /= media_count
 
             record_item = {'topic': topic, 'ground_truth': ground_truth, 'tau_performance': round(
-                tau_performance, 4)}
+                tau_performance, 2)}
 
             performace_dict['tau_performance'].append(
                 round(tau_performance, 2))
@@ -428,7 +428,7 @@ def get_baseline(ground_truth_list, method, model_name = "", file_list = [""], c
                 fp.write(json.dumps(record_item, ensure_ascii=False)+'\n')
 
         performace_dict['tau_performance'] = str(round(np.mean(
-            performace_dict['tau_performance']), 4)) + "("+str(round(np.std(performace_dict['tau_performance'], ddof=1), 4))+")"
+            performace_dict['tau_performance']), 2)) + "("+str(round(np.std(performace_dict['tau_performance'], ddof=1), 2))+")"
         with open(baseline_file, mode='a', encoding='utf8') as fp:
             fp.write(json.dumps(performace_dict, ensure_ascii=False)+'\n')
 
@@ -522,10 +522,8 @@ def main():
     for file_list in [['en.valid']]:
         # for method in ["class"]:
         for method in ['tfidf','lda']:
-            for combine_method in ["average"]:
-                # get_baseline(['trust','source','mbr'], file_list, method, combine_method)
-                # get_baseline(['human','trust','source','mbr'], file_list, method, combine_method)
-                get_baseline(['human'], method, file_list = file_list, combine_method = combine_method)
+            for combine_method in ["combine",'average']:
+                get_baseline(['human','MBR','SoA-s','SoA-t'], method, file_list = file_list, combine_method = combine_method)
     # for file_list in [['']]:
     #     # for method in ["class"]:
     #     for method in ['class','mlm']:
