@@ -296,7 +296,7 @@ def mlm_baseline(model_name):
         outlets_vec_list = list()
         for outlet in outlets_list:
             file = os.path.join(data_path,model_name)
-            file = os.path.join(os.path.join(os.path.join(file,topic),'baseline/{}/42'.format(topic)),"mlm/embedding/no_augmentation")
+            file = os.path.join(os.path.join(os.path.join(file,topic),'baseline/{}/42'.format(topic)),"mlm/embedding/manual_clean")
             file = os.path.join(file,outlet+'.npy')
             data = np.load(file)
             outlets_vec_list.append(data.reshape(1, -1))
@@ -519,17 +519,15 @@ def baseline_difference():
 
 def main():
     # for file_list in [['en.valid'],['en.train'],['en.valid','en.train']]:
-    for file_list in [['en.valid']]:
-        # for method in ["class"]:
-        for method in ['tfidf','lda']:
-            for combine_method in ["combine",'average']:
-                get_baseline(['human','MBR','SoA-s','SoA-t'], method, file_list = file_list, combine_method = combine_method)
-    # for file_list in [['']]:
+    # for file_list in [['en.valid']]:
     #     # for method in ["class"]:
-    #     for method in ['class','mlm']:
-    #         for model in ['roberta-base','bert-base-uncased','bert-base-cased']:
-    #             get_baseline(['human','MBR','SoA-s','SoA-t'], method,model)
-    # baseline_difference()
+    #     for method in ['tfidf','lda']:
+    #         for combine_method in ["combine",'average']:
+    #             get_baseline(['human','MBR','SoA-s','SoA-t'], method, file_list = file_list, combine_method = combine_method)
+    # for method in ['class','mlm']:
+    for method in ['mlm']:
+        for model in ['roberta-base','bert-base-uncased','bert-base-cased']:
+            get_baseline(['human','MBR','SoA-s','SoA-t'], method,model)
 
 
 if __name__ == '__main__':
